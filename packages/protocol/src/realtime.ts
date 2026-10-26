@@ -11,6 +11,33 @@ export const AGENT_EVENT_TOPIC = "agent-event";
 export const CLIENT_EVENT_TOPIC = "client-event";
 
 /**
+ * Participant attribute the agent sets once its pipeline is live and the opener
+ * is queued. Sticky, so a late or reconnecting client reads it on connect.
+ * Value: epoch milliseconds. Gate the "connected" UI on this attribute and fall
+ * back to `lk.agent.state` for older runtimes that never set it.
+ */
+export const AGENT_READY_ATTRIBUTE = "fish.agent.ready";
+
+/**
+ * Participant attribute the client sets to report audio readiness. Set it to
+ * `CLIENT_AUDIO_READY_PENDING` right after joining to announce a client that
+ * will report, then to epoch milliseconds once the agent's audio track is
+ * attached and the browser allows playback. The runtime waits a bounded time
+ * for the ready value before speaking the opener, so the first words are not
+ * lost to a blocked audio element. A client that never sets it only delays the
+ * opener. Publishing it needs a join token that lets the participant update
+ * its own attributes.
+ *
+ * The ready value also goes out as a `client.audio_ready` message on
+ * `CLIENT_EVENT_TOPIC`. LiveKit holds attribute updates from a participant that
+ * has published no track (a microphone-off session) for seconds, the data
+ * channel delivers at once. The attribute stays because it is sticky: a runtime
+ * that joins later still reads it.
+ */
+export const CLIENT_AUDIO_READY_ATTRIBUTE = "fish.client.audio_ready";
+export const CLIENT_AUDIO_READY_PENDING = "pending";
+
+/**
  * Where a tool call is executed; `background` is a call the agent delegated to a
  * background task, `unknown` a model call the runtime could not resolve (still
  * reported, as a failure).
@@ -51,6 +78,14 @@ export type ToolCallEventMessage =
       toolSource: ToolCallSource;
       nodeId: string;
       error: string;
+      /**
+       * HTTP status the tool's endpoint answered with when the call failed
+       * after a response arrived: a 3xx/4xx/5xx from a webhook tool, or a
+       * response an integration tool (reported as `builtin`) could not use.
+       * Absent when no response arrived (timeout, DNS failure) and for client
+       * and MCP tools.
+       */
+      httpStatus?: number;
     };
 
 /**
@@ -64,7 +99,12 @@ export type SessionEndedReason =
   | "user_hangup"
   | "agent_hangup"
   | "conversation_timeout"
-  | "escalated";
+  | "escalated"
+  /** The agent's custom LLM endpoint failed repeatedly and the runtime closed the session. */
+  | "llm_endpoint_failure";
+
+/** Pipeline stage an `error` message came from. `runtime` is the runtime's own code path. */
+export type AgentErrorStage = "llm" | "stt" | "tts" | "runtime";
 
 /** `agent-event` topic: agent→client, one complete JSON object per message. */
 export type AgentSessionMessage =
@@ -84,7 +124,19 @@ export type AgentSessionMessage =
   // runtime crash, network loss — surface only as a transport disconnect.
   | { type: "session.ended"; reason: SessionEndedReason }
   // Category only — raw provider/runtime error text is never sent to clients.
-  | { type: "error"; code: "provider_error" | "internal_error" };
+  | {
+      type: "error";
+      code: "provider_error" | "internal_error";
+      /** Which stage failed. Older runtimes omit it. */
+      stage?: AgentErrorStage;
+      /**
+       * true: the runtime is still going to answer this turn by itself (a retry
+       * or a silent regeneration), a light "retrying" hint is enough. false: the
+       * turn is lost and the caller has to act. Neither value means the session
+       * has ended. Older runtimes omit it.
+       */
+      recovered?: boolean;
+    };
 
 /** `client-event` topic: client→agent. `user.message` gets no echo — the sender finalizes its own bubble. */
 export type ClientSessionMessage =
@@ -95,4 +147,8 @@ export type ClientSessionMessage =
   | { type: "user.activity" }
   | { type: "user.interrupt" }
   | { type: "user.hangup" }
+  // Same report as the `fish.client.audio_ready` attribute's ready value, `at` is
+  // that epoch-ms stamp. Sent because attribute updates from a participant without
+  // a published track reach the agent late (see `CLIENT_AUDIO_READY_ATTRIBUTE`).
+  | { type: "client.audio_ready"; at: number }
   | { type: "client_tool.result"; callId: string; result?: unknown; isError?: boolean };

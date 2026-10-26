@@ -12,8 +12,15 @@ One topic constant per channel, plus the payload type that travels on it:
 
 | Topic | Direction | Payload |
 |---|---|---|
-| `AGENT_EVENT_TOPIC` | agent → client | `AgentSessionMessage`. Session control such as `client_tool.call`, `session.ended`, and `error`. One complete JSON object per message. |
-| `CLIENT_EVENT_TOPIC` | client → agent | `ClientSessionMessage`. Text injection, tool results, graceful hangup. |
+| `AGENT_EVENT_TOPIC` | agent → client | `AgentSessionMessage`. Session control such as `client_tool.call`, the `tool.started` / `tool.completed` / `tool.failed` lifecycle, `session.ended` (with a `SessionEndedReason`), and `error` (a category code plus `stage` and `recovered`). One complete JSON object per message. |
+| `CLIENT_EVENT_TOPIC` | client → agent | `ClientSessionMessage`. Text injection, tool results, graceful hangup, the audio readiness report (`client.audio_ready`). |
+
+Two participant attributes complete the room-level contract. They are published as constants so clients and the runtime share one definition:
+
+| Constant | Set by | Meaning |
+|---|---|---|
+| `AGENT_READY_ATTRIBUTE` (`fish.agent.ready`) | agent | Sticky, value epoch ms. The pipeline is live and the opener is queued. Gate the "connected" UI on it, with `lk.agent.state` as the fallback for older runtimes. |
+| `CLIENT_AUDIO_READY_ATTRIBUTE` (`fish.client.audio_ready`) | client | `CLIENT_AUDIO_READY_PENDING` (`"pending"`) right after joining announces a client that will report readiness. An epoch-ms value means the agent's audio track is attached and the browser allows playback. The runtime waits a bounded time for it before speaking the opener. Publishing it needs a join token that lets the participant update its own attributes. The ready value is also sent as a `client.audio_ready` message on `CLIENT_EVENT_TOPIC`, because LiveKit delays attribute updates from a participant that has published no track (a microphone-off session). The runtime takes whichever arrives first. |
 
 Transcripts (streaming assistant reply and user ASR, interim and final) are not part of this contract: they travel on LiveKit's built-in `lk.transcription` text streams, keyed by the `lk.segment_id` attribute, with `lk.transcription_final` marking finals and the stream's sender identity distinguishing user from agent.
 
@@ -21,7 +28,7 @@ Transcripts (streaming assistant reply and user ASR, interim and final) are not 
 
 The `POST /v1/agent/sessions` exchange:
 
-- `AgentSessionCreateRequest` is the request body. It carries the agent id, per-session `SessionOverrides`, dynamic variables, and attribution fields.
+- `AgentSessionCreateRequest` is the request body. It carries the agent id, per-session `SessionOverrides`, dynamic variables, attribution fields, and two fields meant for a backend's session-creation call rather than the SDK's public-agent options: `llm_extra_body` (forwarded to a custom LLM endpoint) and `record_audio` (per-session recording override).
 - `SessionOverrides` is the allow-listed per-session config replacement. It covers first message, system prompt, voice, language, and speech recognition model.
 - `SessionToken` is the response. It is a discriminated union on `transport` and is handed to the client verbatim.
 

@@ -17,7 +17,7 @@ curl https://api.fish.audio/v1/agent/sessions \
 # 201 → { "session_id", "transport", "livekit_url", "token", "expires_at", ... }
 ```
 
-`end_user_id` is optional. It is stored on the session record for attribution. The create body also accepts `language`, `overrides`, and `dynamic_variables` (see [Customization](customization.md)), `timezone` and `world_context` for the agent's sense of local time, free-form `metadata`, and `tool_events`. `tool_events` defaults to on. Set it to `false` to keep [tool-call arguments and results](events.md#tool-call-lifecycle) from streaming to the browser.
+`end_user_id` is optional. It is stored on the session record for attribution. The create body also accepts `language`, `overrides`, and `dynamic_variables` (see [Customization](customization.md)), `timezone` and `world_context` for the agent's sense of local time, free-form `metadata`, and `tool_events`. `tool_events` defaults to on. Set it to `false` to keep [tool-call arguments and results](events.md#tool-call-lifecycle) from streaming to the browser. Two more fields are not exposed through the SDK's public-agent options and belong on this backend call: `llm_extra_body`, a JSON object (at most 16 KB) forwarded verbatim to the agent's custom LLM endpoint on every request as `fishaudio_extra_body` (not stored, ignored for platform models), and `record_audio`, which overrides the agent's recording setting for this session (omit to follow the agent).
 
 ```js
 // server (Node / Express)

@@ -14,8 +14,8 @@ Subscribe with `session.on(event, listener)`, `off`, and `once`, or pass `callba
 | `message` | `{ role, text }` | Finalized messages only, in order. A ready-made chat log. |
 | `toolCallStarted` | `{ callId, toolName, source, input, inputTruncated }` | The agent started running a tool. |
 | `toolCallCompleted` | `{ callId, toolName, source, output, outputTruncated }` | The tool returned a result. |
-| `toolCallFailed` | `{ callId, toolName, source, error }` | The tool errored. |
-| `error` | `FishAgentError` | A recoverable error occurred (the session may still be live). |
+| `toolCallFailed` | `{ callId, toolName, source, error, httpStatus? }` | The tool errored. `httpStatus` is set when the tool's HTTP endpoint answered and the call still failed, see [Tool call lifecycle](#tool-call-lifecycle). |
+| `error` | `FishAgentError` | A recoverable error occurred (the session may still be live). For `provider_error` / `internal_error`, `error.recovered` says whether the runtime is retrying the turn itself. See [Errors](errors.md#in-call-errors). |
 
 ## Live transcripts
 
@@ -31,6 +31,8 @@ A listener attached late misses events fired before it subscribed. To backfill, 
 ## Tool call lifecycle
 
 Every tool the agent runs emits one `toolCallStarted`. That covers webhook, MCP, built-in, and [client tools](client-tools.md). Exactly one `toolCallCompleted` or `toolCallFailed` with the same `callId` resolves it. Terminal events repeat `toolName` and `source`, so a listener attached mid-call can still render a complete item. `input` and `output` are JSON strings truncated at 4 KB. Parse them only when the matching `*Truncated` flag is `false`.
+
+`httpStatus` on `toolCallFailed` is the HTTP status the tool's endpoint answered with when the call failed after a response arrived: a 3xx, 4xx or 5xx from a webhook tool, or a response a built-in integration tool could not use. The field is absent when no response arrived (timeout, DNS failure) and for client and MCP tools. `error` stays a short generic text when the agent is configured to hide tool errors, the status code travels separately.
 
 These events stream by default, and they carry tool arguments and results into the end user's browser. To keep tool data hidden, create the session with `toolEvents: false` for a public agent, or with `tool_events: false` on your backend's session-creation call. See [Sessions](sessions.md).
 

@@ -10,6 +10,16 @@ export function assertOutputSelectionSupported(): void {
   }
 }
 
+export interface AudioOutputOptions {
+  /**
+   * Fires each time a `play()` on the agent's speech stream resolves, which is
+   * the one reliable "the browser allows playback" signal under autoplay
+   * policies. Other tracks (background ambience) do not report, and neither
+   * does a `play()` that resolves after the track went away.
+   */
+  onPlaybackStarted?: () => void;
+}
+
 /**
  * Agent audio playback, one detached <audio> element per remote track (browser
  * only; inert elsewhere). The agent may publish speech and background ambience
@@ -19,8 +29,12 @@ export class AudioOutput {
   private readonly elements = new Map<string, HTMLAudioElement>();
   /** Created by setSinkId() before any audio arrives; the first track adopts it. */
   private spare?: HTMLAudioElement;
+  /** The agent's speech track, the one whose playback the runtime waits for. */
+  private voiceId?: string;
   private volume = 1;
   private sinkId?: string;
+
+  constructor(private readonly options: AudioOutputOptions = {}) {}
 
   private createElement(): HTMLAudioElement | undefined {
     if (typeof document === "undefined") {
@@ -46,7 +60,8 @@ export class AudioOutput {
     return all;
   }
 
-  setStream(id: string, stream: MediaStream): void {
+  /** `voice` marks the agent's speech track, whose playback is reported. */
+  setStream(id: string, stream: MediaStream, voice = false): void {
     let element = this.elements.get(id);
     if (!element) {
       element = this.spare ?? this.createElement();
@@ -56,8 +71,11 @@ export class AudioOutput {
       }
       this.elements.set(id, element);
     }
+    if (voice) {
+      this.voiceId = id;
+    }
     element.srcObject = stream;
-    void element.play().catch(() => {
+    void this.play(id, element).catch(() => {
       // Autoplay policy: playback stays pending until startAudio() runs in a user gesture.
     });
   }
@@ -69,11 +87,29 @@ export class AudioOutput {
       element.remove();
       this.elements.delete(id);
     }
+    if (this.voiceId === id) {
+      this.voiceId = undefined;
+    }
   }
 
   /** Call from a user gesture to satisfy browser autoplay policies. */
   async startAudio(): Promise<void> {
-    await Promise.all([...this.elements.values()].map((element) => element.play()));
+    await Promise.all([...this.elements].map(([id, element]) => this.play(id, element)));
+  }
+
+  private async play(id: string, element: HTMLAudioElement): Promise<void> {
+    const stream = element.srcObject;
+    await element.play();
+    // A late resolution for a removed track or a replaced stream says nothing
+    // about the stream playing now.
+    if (
+      id === this.voiceId &&
+      this.elements.get(id) === element &&
+      stream !== null &&
+      element.srcObject === stream
+    ) {
+      this.options.onPlaybackStarted?.();
+    }
   }
 
   /**
@@ -117,5 +153,6 @@ export class AudioOutput {
     }
     this.elements.clear();
     this.spare = undefined;
+    this.voiceId = undefined;
   }
 }

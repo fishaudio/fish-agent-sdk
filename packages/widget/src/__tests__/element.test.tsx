@@ -258,6 +258,34 @@ describe("<fish-agent>", () => {
     expect(localStorage.getItem("fish-agent-consent")).toBeNull();
   });
 
+  it("shows no banner for an in-call error the agent is recovering from, and forwards the detail", async () => {
+    const element = await mount({ "agent-id": "agent_1" });
+    const details: unknown[] = [];
+    element.addEventListener("fish-agent:error", (event) => {
+      details.push((event as CustomEvent).detail);
+    });
+    await openPanel(element);
+    click($(element, ".fa-cta"));
+    await tick();
+    const session = sessions[0]!;
+
+    session.emit("error", { code: "provider_error", message: "retrying", stage: "llm", recovered: true });
+    await tick();
+    expect(query(element, ".fa-error")).toBeNull();
+
+    session.emit("error", { code: "provider_error", message: "lost", stage: "llm", recovered: false });
+    await tick();
+    expect(query(element, ".fa-error")).not.toBeNull();
+
+    session.emit("error", { code: "internal_error", message: "older runtime" });
+    await tick();
+    expect(details).toEqual([
+      { code: "provider_error", message: "retrying", stage: "llm", recovered: true },
+      { code: "provider_error", message: "lost", stage: "llm", recovered: false },
+      { code: "internal_error", message: "older runtime" },
+    ]);
+  });
+
   it("renders streaming transcript segments and tool chips", async () => {
     const element = await mount({ "agent-id": "agent_1" });
     await openPanel(element);

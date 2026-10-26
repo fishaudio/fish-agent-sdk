@@ -153,6 +153,19 @@ export interface AgentSessionCreateRequest {
    */
   tool_events?: boolean;
   /**
+   * JSON object forwarded verbatim to the agent's custom LLM endpoint on every
+   * request as `fishaudio_extra_body`. Not stored. Ignored for platform models.
+   * At most 16 KB serialized. Not exposed through the SDK's public-agent
+   * options, set it from your backend's session-creation call.
+   */
+  llm_extra_body?: Record<string, unknown>;
+  /**
+   * Overrides the agent's recording setting for this session: true records the
+   * audio, false does not. Omit to follow the agent. Not exposed through the
+   * SDK's public-agent options, set it from your backend's session-creation call.
+   */
+  record_audio?: boolean;
+  /**
    * Caller-owned key-values (Stripe-metadata semantics): the platform stores
    * them verbatim and returns them verbatim on read surfaces, and never reads,
    * writes or interprets them. Platform attribution lives in dedicated

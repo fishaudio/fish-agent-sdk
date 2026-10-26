@@ -12,6 +12,9 @@ import {
 } from "livekit-client";
 import {
   AGENT_EVENT_TOPIC,
+  AGENT_READY_ATTRIBUTE,
+  CLIENT_AUDIO_READY_ATTRIBUTE,
+  CLIENT_AUDIO_READY_PENDING,
   CLIENT_EVENT_TOPIC,
   type AgentSessionMessage,
   type ClientSessionMessage,
@@ -19,6 +22,9 @@ import {
 } from "@fishaudio/agent-protocol";
 import { FishAgentError } from "../errors.js";
 import type { Transport, TransportCallbacks, TransportConnectOptions } from "./types.js";
+
+/** The agent framework's pipeline state. Presence fallback for runtimes without `fish.agent.ready`. */
+const AGENT_STATE_ATTRIBUTE = "lk.agent.state";
 
 function hasMessageType(value: unknown): value is { type: string } {
   return (
@@ -43,6 +49,8 @@ export class LiveKitTransport implements Transport {
   private room?: Room;
   private callbacks?: TransportCallbacks;
   private pendingMicTrack?: Promise<LocalAudioTrack>;
+  /** The epoch-ms value published as `fish.client.audio_ready`, kept to republish after a reconnect. */
+  private audioReadyStamp?: string;
 
   prepareMicrophone(options: { inputDeviceId?: string }): void {
     const pending = captureMicrophone(options.inputDeviceId);
@@ -54,6 +62,7 @@ export class LiveKitTransport implements Transport {
 
   async connect(sessionToken: SessionToken, options: TransportConnectOptions): Promise<void> {
     this.callbacks = options.callbacks;
+    this.audioReadyStamp = undefined;
     const room = new Room({
       audioCaptureDefaults: {
         deviceId: options.inputDeviceId,
@@ -79,12 +88,15 @@ export class LiveKitTransport implements Transport {
       }
     });
 
-    const AGENT_STATE_ATTRIBUTE = "lk.agent.state";
     room.on(RoomEvent.ParticipantAttributesChanged, (changed, participant) => {
-      const state = changed[AGENT_STATE_ATTRIBUTE];
-      if (!participant.isLocal && state) {
-        this.callbacks?.onAgentState(state);
+      if (!participant.isLocal) {
+        this.handleAgentAttributes(changed);
       }
+    });
+    // A participant that joins already carrying its sticky attributes (an
+    // agent back from its own reconnect) fires no attribute change.
+    room.on(RoomEvent.ParticipantConnected, (participant) => {
+      this.handleAgentAttributes(participant.attributes ?? {});
     });
 
     // The agent publishes its speech as a microphone-source track and extras such
@@ -138,12 +150,16 @@ export class LiveKitTransport implements Transport {
       this.callbacks?.onConnectionState("reconnecting");
     });
     room.on(RoomEvent.Reconnected, () => {
+      // A full reconnect recreates our participant without the attributes we
+      // set on it, so the handshake value goes out again.
+      this.publishAudioReady(room, this.audioReadyStamp ?? CLIENT_AUDIO_READY_PENDING);
       // A full reconnect replays the roster from the join response before this
       // event; an agent still missing here hung up while we were away.
       if (room.remoteParticipants.size === 0) {
         this.handleAgentLeft(room);
         return;
       }
+      this.replayAgentAttributes(room);
       this.callbacks?.onConnectionState("connected");
     });
     room.on(RoomEvent.Disconnected, (reason?: DisconnectReason) => {
@@ -193,19 +209,79 @@ export class LiveKitTransport implements Transport {
         cause,
       });
     }
-    // The attribute is sticky: if the agent joined and set its state before us,
-    // no change event will fire — replay the current value once.
-    for (const participant of room.remoteParticipants.values()) {
-      const state = participant.attributes?.[AGENT_STATE_ATTRIBUTE];
-      if (state) {
-        this.callbacks?.onAgentState(state);
-      }
-    }
+    // Before anything else awaits: the runtime holds its opening line only for
+    // a client it sees announce "pending" shortly after its pipeline is live,
+    // everyone else gets the opener right away. Playback may already have been
+    // reported while connect() was pending, that stamp must not be overwritten.
+    this.publishAudioReady(room, this.audioReadyStamp ?? CLIENT_AUDIO_READY_PENDING);
+    // The agent's attributes are sticky: an agent that joined and published
+    // before us fires no change event, so replay the current values once.
+    this.replayAgentAttributes(room);
     if (micTrack) {
       await room.localParticipant.publishTrack(micTrack);
       this.pendingMicTrack = undefined;
       this.publishInputStream();
     }
+  }
+
+  private replayAgentAttributes(room: Room): void {
+    for (const participant of room.remoteParticipants.values()) {
+      this.handleAgentAttributes(participant.attributes ?? {});
+    }
+  }
+
+  private handleAgentAttributes(attributes: Record<string, string>): void {
+    if (attributes[AGENT_READY_ATTRIBUTE]) {
+      this.callbacks?.onAgentReady();
+    }
+    const state = attributes[AGENT_STATE_ATTRIBUTE];
+    if (state) {
+      this.callbacks?.onAgentState(state);
+    }
+  }
+
+  markAudioReady(): void {
+    const room = this.room;
+    if (!room || this.audioReadyStamp !== undefined) {
+      return;
+    }
+    this.audioReadyStamp = Date.now().toString();
+    this.publishAudioReady(room, this.audioReadyStamp);
+  }
+
+  /**
+   * Best effort: the runtime's wait is bounded, a lost publish costs only the
+   * handshake. A rejection is logged at debug level so it can be diagnosed from
+   * the console, the usual cause being a join token without permission to
+   * update the participant's own attributes.
+   *
+   * The ready stamp also goes out on the data channel: LiveKit holds attribute
+   * updates from a participant that has published no track (a session started
+   * with the microphone off) for seconds, longer than the runtime waits.
+   */
+  private publishAudioReady(room: Room, value: string): void {
+    const settle = (publish: () => Promise<void>) => {
+      let result: Promise<void>;
+      try {
+        result = publish();
+      } catch (error) {
+        result = Promise.reject(error);
+      }
+      void result.catch((error: unknown) => {
+        console.debug("[fish-agent] audio readiness report rejected", error);
+      });
+    };
+    settle(() => room.localParticipant.setAttributes({ [CLIENT_AUDIO_READY_ATTRIBUTE]: value }));
+    if (value === CLIENT_AUDIO_READY_PENDING) {
+      return;
+    }
+    const message: ClientSessionMessage = { type: "client.audio_ready", at: Number(value) };
+    settle(() =>
+      room.localParticipant.publishData(new TextEncoder().encode(JSON.stringify(message)), {
+        reliable: true,
+        topic: CLIENT_EVENT_TOPIC,
+      }),
+    );
   }
 
   private handleAgentLeft(room: Room): void {
@@ -222,6 +298,7 @@ export class LiveKitTransport implements Transport {
     const room = this.room;
     this.room = undefined;
     this.callbacks = undefined;
+    this.audioReadyStamp = undefined;
     await room?.disconnect();
   }
 

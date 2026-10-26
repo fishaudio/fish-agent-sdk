@@ -92,7 +92,13 @@ session.getRoom();                   // underlying livekit-client Room; undefine
 
 `status` moves through `"connecting" → "connected" ⇄ "reconnecting" → "ended"`, surfaced by the `statusChange` event.
 
-`start()` resolves once the realtime connection is up; the agent itself joins moments later. If it never does (within 15 s), the session emits a `connection_failed` error and ends with reason `"connection_lost"` instead of idling on a dead call.
+`start()` resolves once the realtime connection is up. The agent itself joins moments later and announces when it is live. If it never does (within 15 s), the session emits a `connection_failed` error and ends with reason `"connection_lost"` instead of idling on a dead call.
+
+### Audio readiness
+
+The SDK reports playback readiness to the agent. Right after joining, the session announces that it will report, and once the agent's audio track is attached and the browser has allowed playback it reports ready. Where the runtime supports this handshake, the agent holds its opening line until the report arrives. That wait is bounded, about 1.5 seconds, so a page that never gets there only delays the opening line. Elsewhere the opening line plays right away, as before. Nothing to call, the SDK does this on its own, with or without a microphone.
+
+Autoplay policies are the one thing to watch. A browser can refuse playback until a user gesture, in which case the session stays unready and the opening line plays before anyone hears it. Starting the session from a click avoids the block in the first place. If playback was still blocked, call `session.startAudio()` from a user gesture: it unlocks playback and sends the readiness report.
 
 ### Reconnection
 
@@ -108,6 +114,7 @@ A session can be ended by anyone; the `disconnect` event carries who/why as an `
 | `agent_hangup` | The agent ended the call: a hang-up decision, or the workflow reaching an end node. |
 | `conversation_timeout` | The session hit its duration limit (`max_duration_seconds`). |
 | `escalated` | The call was handed off to a human agent. |
+| `llm_endpoint_failure` | The agent's custom LLM endpoint failed repeatedly and the runtime closed the call. |
 | `connection_lost` | Reconnection failed, the agent never joined (15 s), or the call dropped before the server could say why. |
 
 Reasons other than `connection_lost` are announced by the server over the protocol's `session.ended` event just before it tears the call down; the values match the session record your backend reads (`endReason`), so both sides reconcile exactly. Against an older runtime that never announces, every server-side end surfaces as `agent_hangup` (inferred from the room closing).

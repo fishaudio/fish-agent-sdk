@@ -8,12 +8,24 @@ class FakeMediaElement {
   srcObject: unknown = null;
   sinkCalls: string[] = [];
   sinkError?: unknown;
+  playCalls = 0;
+  /** Rejects the next `count` play() calls, like an autoplay block. */
+  blockPlays = 0;
 
   setAttribute(): void {}
   remove(): void {
     this.removed = true;
   }
-  async play(): Promise<void> {}
+
+  async play(): Promise<void> {
+    this.playCalls += 1;
+    if (this.blockPlays > 0) {
+      this.blockPlays -= 1;
+      const error = new Error("play() failed because the user didn't interact");
+      error.name = "NotAllowedError";
+      throw error;
+    }
+  }
 
   async setSinkId(sinkId: string): Promise<void> {
     if (this.sinkError) {
@@ -129,5 +141,72 @@ describe("AudioOutput with several agent tracks", () => {
     await Promise.resolve();
     expect(elements.map((element) => element.volume)).toEqual([0.4, 0.4]);
     expect(elements.map((element) => element.sinkCalls)).toEqual([["speaker-2"], ["speaker-2"]]);
+  });
+});
+
+describe("AudioOutput playback signal", () => {
+  it("fires once play() resolves on the attached speech stream", async () => {
+    stubDom();
+    const onPlaybackStarted = vi.fn();
+    const output = new AudioOutput({ onPlaybackStarted });
+    output.setStream("TR_voice", {} as MediaStream, true);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onPlaybackStarted).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores tracks other than the speech, playing or not", async () => {
+    const elements = stubDom();
+    const onPlaybackStarted = vi.fn();
+    const output = new AudioOutput({ onPlaybackStarted });
+    output.setStream("TR_ambience", {} as MediaStream);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onPlaybackStarted).not.toHaveBeenCalled();
+    elements[0]!.blockPlays = 1;
+    output.setStream("TR_voice", {} as MediaStream, true);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onPlaybackStarted).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays silent under an autoplay block and fires from startAudio()", async () => {
+    const elements = stubDom();
+    const onPlaybackStarted = vi.fn();
+    const output = new AudioOutput({ onPlaybackStarted });
+    await output.setSinkId("speaker-2");
+    elements[0]!.blockPlays = 1;
+    output.setStream("TR_voice", {} as MediaStream, true);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onPlaybackStarted).not.toHaveBeenCalled();
+    await output.startAudio();
+    expect(onPlaybackStarted).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not play or report an element with no stream attached", async () => {
+    const elements = stubDom();
+    const onPlaybackStarted = vi.fn();
+    const output = new AudioOutput({ onPlaybackStarted });
+    await output.setSinkId("speaker-2");
+    await output.startAudio();
+    expect(elements[0]!.playCalls).toBe(0);
+    expect(onPlaybackStarted).not.toHaveBeenCalled();
+  });
+
+  it("drops a play() that resolves after the track went away or after dispose", async () => {
+    stubDom();
+    const onPlaybackStarted = vi.fn();
+    const output = new AudioOutput({ onPlaybackStarted });
+    output.setStream("TR_voice", {} as MediaStream, true);
+    output.removeStream("TR_voice");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onPlaybackStarted).not.toHaveBeenCalled();
+    output.setStream("TR_voice", {} as MediaStream, true);
+    output.dispose();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onPlaybackStarted).not.toHaveBeenCalled();
   });
 });

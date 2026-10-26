@@ -259,12 +259,21 @@ export function FishAgentWidget({ host, attributes }: FishAgentWidgetProps) {
         emit("disconnect", { reason });
       });
       session.on("error", (sessionError) => {
-        setError(
-          sessionError.code === "mic_permission_denied"
-            ? texts.errorMicDenied
-            : errorText(sessionError.code),
-        );
-        emit("error", { code: sessionError.code, message: sessionError.message });
+        // A failure the agent is already recovering from on its own is not a
+        // broken call, so no banner for it. The host page still hears about it.
+        if (sessionError.recovered !== true) {
+          setError(
+            sessionError.code === "mic_permission_denied"
+              ? texts.errorMicDenied
+              : errorText(sessionError.code),
+          );
+        }
+        emit("error", {
+          code: sessionError.code,
+          message: sessionError.message,
+          ...(sessionError.stage !== undefined ? { stage: sessionError.stage } : {}),
+          ...(sessionError.recovered !== undefined ? { recovered: sessionError.recovered } : {}),
+        });
       });
       setMuted(session.micMuted);
       setPendingText(null);
