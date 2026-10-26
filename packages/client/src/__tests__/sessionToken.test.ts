@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import pkg from "../../package.json";
 import { DEFAULT_SERVER_URL, SDK_VERSION, resolveSessionToken } from "../sessionToken.js";
 
 const SESSION_TOKEN = {
@@ -38,7 +39,7 @@ describe("public session request", () => {
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe(`${DEFAULT_SERVER_URL}/v1/agent/sessions`);
     expect((init.headers as Record<string, string>)["X-Fish-SDK"]).toBe(
-      `agent-client/${SDK_VERSION}`,
+      `agent-client/${pkg.version}`,
     );
     expect(JSON.parse(init.body as string)).toEqual({
       agent_id: "agent-1",
@@ -51,6 +52,11 @@ describe("public session request", () => {
       metadata: { plan: "pro" },
       tool_events: false,
     });
+  });
+
+  it("reports the version from package.json, not a hardcoded one", () => {
+    expect(SDK_VERSION).toBe(pkg.version);
+    expect(SDK_VERSION).toMatch(/^\d+\.\d+\.\d+/);
   });
 
   it("lets an explicit overrides.language win over the language option", async () => {
