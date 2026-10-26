@@ -11,13 +11,15 @@ export type AgentMode = "listening" | "thinking" | "speaking";
  * say why); every other value is the runtime's own reason, delivered over the
  * protocol's `session.ended` announcement — or, against an older runtime that
  * never sends one, inferred from transport signals (where every server-side
- * end surfaces as `agent_hangup`).
+ * end surfaces as `agent_hangup`). `llm_endpoint_failure` means the agent's
+ * custom LLM endpoint failed repeatedly and the runtime closed the session.
  */
 export type EndReason =
   | "user_hangup"
   | "agent_hangup"
   | "conversation_timeout"
   | "escalated"
+  | "llm_endpoint_failure"
   | "connection_lost";
 
 export interface UserTranscriptEvent {
@@ -84,6 +86,13 @@ export interface ToolCallFailedEvent {
   toolName: string;
   source: ToolCallSource;
   error: string;
+  /**
+   * HTTP status the tool's endpoint answered with when the call failed after a
+   * response arrived: a 3xx/4xx/5xx from a webhook tool, or a response an
+   * integration tool (reported as `builtin`) could not use. Absent when no
+   * response arrived and for client and MCP tools.
+   */
+  httpStatus?: number;
 }
 
 export interface AgentSessionEvents {

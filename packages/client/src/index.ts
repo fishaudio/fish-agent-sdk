@@ -2,7 +2,7 @@
 // `AgentSession.getRoom()`, whose return type is livekit-client's `Room`.
 export { AgentSession, type AgentSessionOptions } from "./session/agentSession.js";
 export { DEFAULT_SERVER_URL } from "./sessionToken.js";
-export { FishAgentError, type FishAgentErrorCode } from "./errors.js";
+export { FishAgentError, type FishAgentErrorCode, type FishAgentErrorStage } from "./errors.js";
 export type {
   AgentMode,
   AgentResponseDeltaEvent,

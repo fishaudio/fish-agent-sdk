@@ -92,7 +92,7 @@ Outbound `CustomEvent`s (bubbling, composed) on the element:
 | `fish-agent:call` | `{ options }`, the **mutable** [`AgentSession.start` options](sessions.md) | Right before a session starts. Mutate `detail.options` to inject `clientTools`, `overrides`, `dynamicVariables`, or anything else. |
 | `fish-agent:connect` | `{ sessionId }` | Session established. |
 | `fish-agent:disconnect` | `{ reason }` | Session ended. |
-| `fish-agent:error` | `{ code, message }` | Start failure or in-call error (codes from [Errors](errors.md)). |
+| `fish-agent:error` | `{ code, message, stage?, recovered? }` | Start failure or in-call error (codes from [Errors](errors.md)). `stage` and `recovered` come with in-call `provider_error` / `internal_error` when the runtime reports them, see [In-call errors](errors.md#in-call-errors). The widget shows no error banner when `recovered` is `true`. |
 
 Inbound: dispatch `fish-agent:expand` on the element or `document` to open the panel programmatically.
 

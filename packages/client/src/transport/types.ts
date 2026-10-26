@@ -24,6 +24,13 @@ export interface TranscriptionSegmentUpdate {
 export interface TransportCallbacks {
   onAgentEvent(message: AgentSessionMessage): void;
   /**
+   * The agent announced that its pipeline is live and its opening line is
+   * queued (`fish.agent.ready`). Sticky: a late or reconnecting client gets it
+   * on connect. The primary "agent is present" signal. Older runtimes never
+   * send it, `onAgentState` is the fallback.
+   */
+  onAgentReady(): void;
+  /**
    * Agent pipeline state as published by the agent framework (`lk.agent.state`
    * participant attribute): "initializing" | "idle" | "listening" | "thinking" |
    * "speaking". Sticky — late joiners receive the current value on connect.
@@ -64,6 +71,13 @@ export interface Transport {
    */
   setInputDevice(deviceId: string): Promise<void>;
   sendClientEvent(message: ClientSessionMessage): Promise<void>;
+  /**
+   * The agent's audio is attached to the SDK's playback path and the browser
+   * has allowed it to play. The transport relays this to the runtime, which
+   * holds the opening line (bounded) until it hears it. Best effort: must
+   * never throw, a lost report only costs the handshake.
+   */
+  markAudioReady?(): void;
   /**
    * The transport's underlying connection object (a LiveKit `Room` for the
    * production transport), backing the session's `getRoom()` escape hatch.

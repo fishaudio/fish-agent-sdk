@@ -10,10 +10,21 @@ export function assertOutputSelectionSupported(): void {
   }
 }
 
+export interface AudioOutputOptions {
+  /**
+   * Fires each time a `play()` on the attached agent stream resolves, which is
+   * the one reliable "the browser allows playback" signal under autoplay
+   * policies. Not fired for a `play()` that resolves with no stream attached.
+   */
+  onPlaybackStarted?: () => void;
+}
+
 /** Agent audio playback via a detached <audio> element (browser only; inert elsewhere). */
 export class AudioOutput {
   private element?: HTMLAudioElement;
   private volume = 1;
+
+  constructor(private readonly options: AudioOutputOptions = {}) {}
 
   private ensureElement(): HTMLAudioElement | undefined {
     if (typeof document === "undefined") {
@@ -35,14 +46,26 @@ export class AudioOutput {
       return;
     }
     element.srcObject = stream;
-    void element.play().catch(() => {
+    void this.play(element).catch(() => {
       // Autoplay policy: playback stays pending until startAudio() runs in a user gesture.
     });
   }
 
   /** Call from a user gesture to satisfy browser autoplay policies. */
   async startAudio(): Promise<void> {
-    await this.element?.play();
+    if (this.element) {
+      await this.play(this.element);
+    }
+  }
+
+  private async play(element: HTMLAudioElement): Promise<void> {
+    const stream = element.srcObject;
+    await element.play();
+    // A late resolution for a disposed element or a replaced stream says
+    // nothing about the stream playing now.
+    if (this.element === element && stream !== null && element.srcObject === stream) {
+      this.options.onPlaybackStarted?.();
+    }
   }
 
   /**

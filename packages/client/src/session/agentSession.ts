@@ -1,6 +1,7 @@
 // Type-only: the transport implementation still loads lazily (see start()).
 import type { Room } from "livekit-client";
 import type {
+  AgentErrorStage,
   AgentSessionMessage,
   ClientSessionMessage,
   SessionToken,
@@ -74,7 +75,23 @@ const ANNOUNCED_END_REASONS: ReadonlySet<string> = new Set<EndReason>([
   "agent_hangup",
   "conversation_timeout",
   "escalated",
+  "llm_endpoint_failure",
 ]);
+
+/** `error.stage` values this SDK understands. Anything else is dropped, like an unknown field. */
+const ERROR_STAGES: ReadonlySet<string> = new Set<AgentErrorStage>(["llm", "stt", "tts", "runtime"]);
+
+/** `error` frames carry a category only, the wording is the SDK's own. */
+function describeRuntimeError(
+  code: "provider_error" | "internal_error",
+  recovered: boolean | undefined,
+): string {
+  const base =
+    code === "provider_error"
+      ? "An upstream provider failed during the session"
+      : "The agent runtime hit an internal error";
+  return recovered === true ? `${base}, the agent is retrying this turn` : base;
+}
 
 const EVENT_NAMES = new Set<string>(AGENT_SESSION_EVENT_NAMES);
 
@@ -131,7 +148,11 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
 
   #transport!: Transport;
   #tools!: ClientToolDispatcher;
-  readonly #output = new AudioOutput();
+  readonly #output = new AudioOutput({
+    // A resolved play() on the agent's stream is the browser allowing playback:
+    // tell the runtime it can speak the opening line now.
+    onPlaybackStarted: () => this.#transport.markAudioReady?.(),
+  });
   readonly #outputAnalyser = new AudioStreamAnalyser();
   readonly #inputAnalyser = new AudioStreamAnalyser();
   readonly #wakeLock = new WakeLockHolder();
@@ -145,7 +166,8 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
 
   // Data frames reach only participants already in the room — and the worker
   // registers its handlers while starting up — so typed messages wait here
-  // until the agent publishes its first pipeline state.
+  // until the agent announces itself: its ready signal, or for older runtimes
+  // its first pipeline state.
   #agentPresent = false;
   #pendingMessages: ClientSessionMessage[] = [];
   #joinTimer?: ReturnType<typeof setTimeout>;
@@ -412,12 +434,14 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
         microphone: options.microphone,
         callbacks: {
           onAgentEvent: (message) => session.#handleAgentEvent(message),
+          onAgentReady: () => session.#handleAgentPresent(),
           // Mode model: "listening" is the default state; the framework's agent
           // state supplies the thinking edge; speaking follows the playout-synced
           // transcription segments (open = audible, closed = back to listening).
           onAgentState: (state) => {
-            // Any published agent state proves the worker's pipeline is up and
-            // its event handlers are registered — the gate for queued messages.
+            // Presence fallback for runtimes without the ready signal: any
+            // published agent state proves the worker's pipeline is up and its
+            // event handlers are registered, the gate for queued messages.
             session.#handleAgentPresent();
             if (state === "thinking") {
               session.#setMode("thinking");
@@ -648,19 +672,23 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
           toolName: message.toolName,
           source: message.toolSource,
           error: message.error,
+          ...(typeof message.httpStatus === "number" ? { httpStatus: message.httpStatus } : {}),
         });
         return;
       case "session.ended":
         this.#handleSessionEnded(message.reason);
         return;
-      case "error":
+      case "error": {
+        const code = message.code === "provider_error" ? "provider_error" : "internal_error";
+        const stage =
+          typeof message.stage === "string" && ERROR_STAGES.has(message.stage) ? message.stage : undefined;
+        const recovered = typeof message.recovered === "boolean" ? message.recovered : undefined;
         this.emit(
           "error",
-          message.code === "provider_error"
-            ? new FishAgentError("provider_error", "An upstream provider failed during the session")
-            : new FishAgentError("internal_error", "The agent runtime hit an internal error"),
+          new FishAgentError(code, describeRuntimeError(code, recovered), { stage, recovered }),
         );
         return;
+      }
       default:
         // Forward compatibility: unknown message types are ignored by contract.
         return;

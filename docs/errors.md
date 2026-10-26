@@ -1,6 +1,6 @@
 # Errors
 
-All failures are `FishAgentError` with a stable `code` (plus `statusCode` for session-request HTTP errors). `start()` rejects with one; recoverable in-call failures surface through the `error` event instead.
+All failures are `FishAgentError` with a stable `code` (plus `statusCode` for session-request HTTP errors). `start()` rejects with one. Recoverable in-call failures surface through the `error` event instead. In-call `provider_error` and `internal_error` events also carry `stage` and `recovered` when the runtime reports them, see [In-call errors](#in-call-errors).
 
 ```js
 import { FishAgentError } from "@fishaudio/agent-client";
@@ -26,5 +26,27 @@ try {
 | `session_expired` | The session token's join deadline passed before connecting. |
 | `tool_failed` | A client tool threw, was not registered, or its result could not be delivered. See [Client tools](client-tools.md). |
 | `tool_timeout` | A client tool exceeded `clientToolTimeoutMs` (default 15 s). |
-| `provider_error` | An upstream model or speech provider failed during the session. Delivered as an `error` event. The session may recover. |
-| `internal_error` | The agent runtime hit an internal error. Delivered as an `error` event. The session may recover. |
+| `provider_error` | An upstream model or speech provider failed during the session. Delivered as an `error` event, with `stage` and `recovered` when the runtime reports them. The session may recover. |
+| `internal_error` | The agent runtime hit an internal error. Delivered as an `error` event, with `stage` and `recovered` when the runtime reports them. The session may recover. |
+
+## In-call errors
+
+`provider_error` and `internal_error` describe one failed step of one turn, never the session as a whole. The runtime adds two fields so the UI can pick the right strength of message:
+
+| Field | Values | Meaning |
+|---|---|---|
+| `stage` | `"llm"` \| `"stt"` \| `"tts"` \| `"runtime"` | Which part of the pipeline failed. `runtime` is the runtime's own code. |
+| `recovered` | `boolean` | `true`: the runtime is still going to answer this turn by itself (a retry or a silent regeneration). Show at most a light "retrying" hint. `false`: the turn is lost and the user has to act, for example repeat what they said. |
+
+Both are `undefined` against an older runtime that does not send them, and on the bare `internal_error` the server sends as its last frame before closing a call it has given up on (the session then ends with a transport-derived [`EndReason`](sessions.md#ending)). Neither value means the session has ended, and neither says anything about tool calls that ran earlier in the turn. A session that is closed because of repeated failures ends with its own `EndReason`.
+
+```js
+session.on("error", (error) => {
+  if (error.code !== "provider_error" && error.code !== "internal_error") return;
+  if (error.recovered) {
+    showToast("One moment...");
+  } else {
+    showBanner("Sorry, I missed that. Could you say it again?");
+  }
+});
+```

@@ -112,8 +112,20 @@ class MockTransport implements Transport {
     this.callbacks!.onConnectionState(state, reason);
   }
 
+  /** The agent's ready signal, the primary presence signal. */
+  ready(): void {
+    this.callbacks!.onAgentReady();
+  }
+
+  /** An older runtime: no ready signal, only the framework's agent state. */
   join(): void {
     this.callbacks!.onAgentState("initializing");
+  }
+
+  audioReadyMarks = 0;
+
+  markAudioReady(): void {
+    this.audioReadyMarks += 1;
   }
 
   room: unknown = { name: "mock-room" };
@@ -525,6 +537,109 @@ describe("agent presence", () => {
       vi.useRealTimers();
     }
   });
+
+  it("releases queued messages on the agent's ready signal", async () => {
+    const { session, transport } = await start({}, { agentJoins: false });
+    session.sendUserMessage("first");
+    await tick();
+    expect(transport.sent).toEqual([]);
+    transport.ready();
+    await tick();
+    expect(transport.sent).toEqual([{ type: "user.message", text: "first", audio: false }]);
+    // The fallback signal arriving afterwards must not resend anything.
+    transport.join();
+    await tick();
+    expect(transport.sent).toHaveLength(1);
+  });
+
+  it("disarms the join watchdog on the agent's ready signal alone", async () => {
+    vi.useFakeTimers();
+    try {
+      const errors: unknown[] = [];
+      const { session, transport } = await start({}, { agentJoins: false });
+      session.on("error", (error) => errors.push(error));
+      transport.ready();
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(errors).toEqual([]);
+      expect(session.status).toBe("connected");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("audio-ready handshake", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  class FakeMediaElement {
+    autoplay = false;
+    volume = 1;
+    srcObject: unknown = null;
+    /** Rejects the next `count` play() calls, like an autoplay block. */
+    blockPlays = 0;
+
+    setAttribute(): void {}
+    remove(): void {}
+
+    async play(): Promise<void> {
+      if (this.blockPlays > 0) {
+        this.blockPlays -= 1;
+        const error = new Error("play() failed because the user didn't interact");
+        error.name = "NotAllowedError";
+        throw error;
+      }
+    }
+
+    async setSinkId(): Promise<void> {}
+  }
+
+  function stubPlayback(): FakeMediaElement[] {
+    const elements: FakeMediaElement[] = [];
+    class StubHTMLMediaElement {
+      setSinkId(): Promise<void> {
+        return Promise.resolve();
+      }
+    }
+    vi.stubGlobal("HTMLMediaElement", StubHTMLMediaElement);
+    vi.stubGlobal("document", {
+      createElement: () => {
+        const element = new FakeMediaElement();
+        elements.push(element);
+        return element;
+      },
+    });
+    return elements;
+  }
+
+  it("reports playback readiness once the agent's audio plays", async () => {
+    stubPlayback();
+    const { transport } = await start({ wakeLock: false });
+    expect(transport.audioReadyMarks).toBe(0);
+    transport.callbacks!.onOutputStream({} as MediaStream);
+    await tick();
+    expect(transport.audioReadyMarks).toBe(1);
+  });
+
+  it("holds the report while autoplay blocks and sends it from startAudio()", async () => {
+    const elements = stubPlayback();
+    const { session, transport } = await start({ wakeLock: false, audio: { outputDeviceId: "spk" } });
+    elements[0]!.blockPlays = 1;
+    transport.callbacks!.onOutputStream({} as MediaStream);
+    await tick();
+    expect(transport.audioReadyMarks).toBe(0);
+    await session.startAudio();
+    expect(transport.audioReadyMarks).toBe(1);
+  });
+
+  it("does not report readiness before the agent's audio is attached", async () => {
+    stubPlayback();
+    const { session, transport } = await start({ wakeLock: false, audio: { outputDeviceId: "spk" } });
+    // The element exists (created to validate the device), nothing plays yet.
+    await session.startAudio();
+    expect(transport.audioReadyMarks).toBe(0);
+  });
 });
 
 describe("user transcripts", () => {
@@ -649,6 +764,31 @@ describe("agent responses and mode", () => {
     expect(errors[1]).toMatchObject({ code: "internal_error" });
   });
 
+  it("attaches stage and recovered from the error frame", async () => {
+    const { session, transport } = await start();
+    const errors: FishAgentError[] = [];
+    session.on("error", (error) => errors.push(error));
+    transport.agent({ type: "error", code: "provider_error", stage: "llm", recovered: true });
+    transport.agent({ type: "error", code: "internal_error", stage: "runtime", recovered: false });
+    expect(errors[0]).toMatchObject({ code: "provider_error", stage: "llm", recovered: true });
+    expect(errors[0]?.message).toContain("retrying");
+    expect(errors[1]).toMatchObject({ code: "internal_error", stage: "runtime", recovered: false });
+    expect(errors[1]?.message).not.toContain("retrying");
+  });
+
+  it("leaves stage and recovered undefined when the frame omits them or carries an unknown stage", async () => {
+    const { session, transport } = await start();
+    const errors: FishAgentError[] = [];
+    session.on("error", (error) => errors.push(error));
+    transport.agent({ type: "error", code: "provider_error" });
+    transport.agent({ type: "error", code: "provider_error", stage: "vad", recovered: "yes" } as never);
+    expect(errors[0]?.stage).toBeUndefined();
+    expect(errors[0]?.recovered).toBeUndefined();
+    expect(errors[1]?.stage).toBeUndefined();
+    expect(errors[1]?.recovered).toBeUndefined();
+    expect(errors[1]?.code).toBe("provider_error");
+  });
+
   it("keeps agent state values other than thinking off the mode surface", async () => {
     const { session, transport } = await start();
     transport.agentState("listening"); // agent-idle, not user-speaking
@@ -728,6 +868,43 @@ describe("tool call lifecycle", () => {
       source: "mcp",
       error: "upstream timed out",
     });
+  });
+
+  it("forwards httpStatus on webhook failures and leaves it off otherwise", async () => {
+    const { session, transport } = await start();
+    const failed: unknown[] = [];
+    session.on("toolCallFailed", (event) => failed.push(event));
+    transport.agent({
+      type: "tool.failed",
+      callId: "tc_3",
+      toolName: "lookup_order",
+      toolSource: "webhook",
+      nodeId: "main",
+      error: "endpoint returned 502",
+      httpStatus: 502,
+    });
+    transport.agent({
+      type: "tool.failed",
+      callId: "tc_4",
+      toolName: "lookup_order",
+      toolSource: "webhook",
+      nodeId: "main",
+      error: "request timed out",
+    });
+    expect(failed[0]).toEqual({
+      callId: "tc_3",
+      toolName: "lookup_order",
+      source: "webhook",
+      error: "endpoint returned 502",
+      httpStatus: 502,
+    });
+    expect(failed[1]).toEqual({
+      callId: "tc_4",
+      toolName: "lookup_order",
+      source: "webhook",
+      error: "request timed out",
+    });
+    expect(failed[1]).not.toHaveProperty("httpStatus");
   });
 });
 
@@ -1012,6 +1189,18 @@ describe("lifecycle", () => {
     transport.agent({ type: "session.ended", reason: "agent_hangup" });
     transport.state("disconnected", "SIGNAL_CLOSE");
     expect(session.endReason).toBe("agent_hangup");
+  });
+
+  it("ends with llm_endpoint_failure when the runtime announces its LLM endpoint gave up", async () => {
+    const { session, transport } = await start();
+    const disconnects: unknown[] = [];
+    session.on("disconnect", (event) => disconnects.push(event));
+    transport.agent({ type: "session.ended", reason: "llm_endpoint_failure" });
+    expect(session.status).toBe("connected");
+    transport.state("disconnected", "ROOM_DELETED");
+    expect(session.status).toBe("ended");
+    expect(session.endReason).toBe("llm_endpoint_failure");
+    expect(disconnects).toEqual([{ reason: "llm_endpoint_failure" }]);
   });
 
   it("ignores a session.ended carrying an unrecognized reason (forward compat)", async () => {

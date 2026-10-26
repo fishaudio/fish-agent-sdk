@@ -18,6 +18,14 @@ import type { AgentSessionOptions, EndReason } from "@fishaudio/agent-client";
 import { registerWidget, type FishAgentElement } from "./element.js";
 import type { SessionTokenProvider, WidgetPosition, WidgetTextContents } from "./config.js";
 
+/** `fish-agent:error` detail. `stage` and `recovered` come with in-call runtime errors that report them. */
+export interface FishAgentWidgetErrorDetail {
+  code: string;
+  message: string;
+  stage?: string;
+  recovered?: boolean;
+}
+
 /** Attributes of the raw `<fish-agent>` element (see docs/widget.md). */
 export interface FishAgentAttributes {
   "agent-id"?: string;
@@ -99,7 +107,7 @@ export interface FishAgentWidgetProps {
   onCall?(options: AgentSessionOptions): void;
   onConnect?(event: { sessionId: string }): void;
   onDisconnect?(event: { reason: EndReason }): void;
-  onError?(event: { code: string; message: string }): void;
+  onError?(event: FishAgentWidgetErrorDetail): void;
   className?: string;
   style?: CSSProperties;
 }
@@ -137,9 +145,7 @@ export const FishAgentWidget = forwardRef<HTMLElement, FishAgentWidgetProps>(
       const onDisconnect = (event: Event) =>
         current.current.onDisconnect?.((event as CustomEvent<{ reason: EndReason }>).detail);
       const onError = (event: Event) =>
-        current.current.onError?.(
-          (event as CustomEvent<{ code: string; message: string }>).detail,
-        );
+        current.current.onError?.((event as CustomEvent<FishAgentWidgetErrorDetail>).detail);
       host.addEventListener("fish-agent:call", onCall);
       host.addEventListener("fish-agent:connect", onConnect);
       host.addEventListener("fish-agent:disconnect", onDisconnect);
