@@ -81,10 +81,7 @@ export type SessionLanguage =
 
 /** Per-session subset of the agent's `asr` configuration, same field names. */
 export interface SessionAsrOverrides {
-  /**
-   * Speech recognition model, same values as the agent's `asr.model` (e.g. "deepgram:nova-3").
-   * A preview model the account cannot use is rejected with 403.
-   */
+  /** Speech recognition model, same values as the agent's `asr.model` (e.g. "deepgram:nova-3"). */
   model?: string;
 }
 
