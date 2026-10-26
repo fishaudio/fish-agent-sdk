@@ -7,7 +7,8 @@ import {
 } from "@fishaudio/agent-protocol";
 import { FishAgentError } from "./errors.js";
 
-export const SDK_VERSION = "0.0.1";
+// Replaced at build time, see buildConstants.d.ts.
+export const SDK_VERSION = __SDK_VERSION__;
 export const DEFAULT_SERVER_URL = "https://api.fish.audio";
 
 const SUPPORTED_TRANSPORTS: string[] = [SESSION_TRANSPORT_LIVEKIT];
