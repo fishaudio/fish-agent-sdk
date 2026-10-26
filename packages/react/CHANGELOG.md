@@ -1,5 +1,15 @@
 # @fishaudio/agent-react
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [1e263f5]
+- Updated dependencies [1e263f5]
+- Updated dependencies [e2751b1]
+- Updated dependencies [6759dc7]
+  - @fishaudio/agent-client@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes

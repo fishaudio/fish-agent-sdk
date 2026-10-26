@@ -1,5 +1,19 @@
 # @fishaudio/agent-widget
 
+## 0.4.0
+
+### Minor Changes
+
+- 1e263f5: The widget no longer shows its "connection failed" banner for an in-call `provider_error` / `internal_error` the agent is recovering from on its own (`recovered` is `true`), so a transient retry no longer looks like a broken call. The `fish-agent:error` event detail, and the React wrapper's `onError`, now include `stage` and `recovered` when the runtime reports them (typed as `FishAgentWidgetErrorDetail`), so the host page can tell a recovered retry from a lost turn.
+
+### Patch Changes
+
+- Updated dependencies [1e263f5]
+- Updated dependencies [1e263f5]
+- Updated dependencies [e2751b1]
+- Updated dependencies [6759dc7]
+  - @fishaudio/agent-client@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes
