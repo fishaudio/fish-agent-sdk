@@ -1,6 +1,6 @@
 {
   "name": "@fishaudio/agent-react",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "React hooks and components for Fish Audio voice agents.",
   "keywords": [
     "fish-audio",
