@@ -1,0 +1,482 @@
+[
+  {
+    "id": "Beau",
+    "n": 66642,
+    "shape": 6,
+    "shapeName": "softtri",
+    "color": 4,
+    "main": "#2B2926",
+    "palette": [
+      "#23221f",
+      "#2b2926",
+      "#807f7d",
+      "#eaeae9",
+      "#5a5a56",
+      "#3c3837"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 6,
+    "flowAngle": -2.4000000000000004,
+    "eyeAnchor": [
+      0.06,
+      -0.04,
+      0.95
+    ]
+  },
+  {
+    "id": "Maya",
+    "n": 4261,
+    "shape": 13,
+    "shapeName": "softdiamond",
+    "color": 10,
+    "main": "#B8796A",
+    "palette": [
+      "#976357",
+      "#b8796a",
+      "#d4afa6",
+      "#f8f2f0",
+      "#c8ad8b",
+      "#be7680"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 93,
+    "flowAngle": 1.7899999999999996,
+    "eyeAnchor": [
+      0.1,
+      -0.06,
+      0.95
+    ]
+  },
+  {
+    "id": "Luca",
+    "n": 13326,
+    "shape": 6,
+    "shapeName": "softtri",
+    "color": 1,
+    "main": "#D9773B",
+    "palette": [
+      "#b26230",
+      "#d9773b",
+      "#e8ad89",
+      "#fbf1eb",
+      "#e1c266",
+      "#dc514b"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 40,
+    "flowAngle": -1.7600000000000002,
+    "eyeAnchor": [
+      0.06,
+      -0.04,
+      0.95
+    ]
+  },
+  {
+    "id": "Iris",
+    "n": 51366,
+    "shape": 12,
+    "shapeName": "softhex",
+    "color": 3,
+    "main": "#8D77C9",
+    "palette": [
+      "#7462a5",
+      "#8d77c9",
+      "#bbaddf",
+      "#f4f1fa",
+      "#bd95d5",
+      "#8286cd"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 56,
+    "flowAngle": 1.8400000000000003,
+    "eyeAnchor": [
+      0.12,
+      -0.12,
+      1
+    ]
+  },
+  {
+    "id": "Noah",
+    "n": 42411,
+    "shape": 3,
+    "shapeName": "pebble",
+    "color": 5,
+    "main": "#C9677E",
+    "palette": [
+      "#a55467",
+      "#c9677e",
+      "#dfa4b2",
+      "#faf0f2",
+      "#d59388",
+      "#cd73a7"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 25,
+    "flowAngle": 0.20999999999999996,
+    "eyeAnchor": [
+      0.16,
+      -0.1,
+      1
+    ]
+  },
+  {
+    "id": "Ava",
+    "n": 17949,
+    "shape": 3,
+    "shapeName": "pebble",
+    "color": 9,
+    "main": "#6E8FB0",
+    "palette": [
+      "#5a7590",
+      "#6e8fb0",
+      "#a8bcd0",
+      "#f1f4f7",
+      "#8e95c1",
+      "#7aacb6"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 7,
+    "flowAngle": 0.5099999999999998,
+    "eyeAnchor": [
+      0.16,
+      -0.1,
+      1
+    ]
+  },
+  {
+    "id": "Theo",
+    "n": 67497,
+    "shape": 15,
+    "shapeName": "cookie",
+    "color": 1,
+    "main": "#D9773B",
+    "palette": [
+      "#b26230",
+      "#d9773b",
+      "#e8ad89",
+      "#fbf1eb",
+      "#e1c266",
+      "#dc514b"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 85,
+    "flowAngle": -0.13000000000000034,
+    "eyeAnchor": [
+      0.12,
+      -0.12,
+      1
+    ]
+  },
+  {
+    "id": "Nora",
+    "n": 65243,
+    "shape": 11,
+    "shapeName": "wideegg",
+    "color": 9,
+    "main": "#6E8FB0",
+    "palette": [
+      "#5a7590",
+      "#6e8fb0",
+      "#a8bcd0",
+      "#f1f4f7",
+      "#8e95c1",
+      "#7aacb6"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 62,
+    "flowAngle": 2.4499999999999997,
+    "eyeAnchor": [
+      0.14,
+      -0.12,
+      1
+    ]
+  },
+  {
+    "id": "agent-1",
+    "n": 59584,
+    "shape": 4,
+    "shapeName": "egg",
+    "color": 5,
+    "main": "#C9677E",
+    "palette": [
+      "#a55467",
+      "#c9677e",
+      "#dfa4b2",
+      "#faf0f2",
+      "#d59388",
+      "#cd73a7"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 29,
+    "flowAngle": 2.3799999999999994,
+    "eyeAnchor": [
+      0.12,
+      -0.14,
+      1
+    ]
+  },
+  {
+    "id": "agent-2",
+    "n": 92441,
+    "shape": 11,
+    "shapeName": "wideegg",
+    "color": 11,
+    "main": "#7E9C5E",
+    "palette": [
+      "#67804d",
+      "#7e9c5e",
+      "#b2c49e",
+      "#f2f5ef",
+      "#88b281",
+      "#9ca46b"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 3,
+    "flowAngle": -1.8900000000000001,
+    "eyeAnchor": [
+      0.14,
+      -0.12,
+      1
+    ]
+  },
+  {
+    "id": "agent-3",
+    "n": 14822,
+    "shape": 8,
+    "shapeName": "loaf",
+    "color": 2,
+    "main": "#4E9A78",
+    "palette": [
+      "#407e62",
+      "#4e9a78",
+      "#95c2ae",
+      "#edf5f2",
+      "#75b0ac",
+      "#5ca26c"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 81,
+    "flowAngle": 0.6399999999999997,
+    "eyeAnchor": [
+      0.12,
+      -0.14,
+      1
+    ]
+  },
+  {
+    "id": "agent-42",
+    "n": 9783,
+    "shape": 9,
+    "shapeName": "softpent",
+    "color": 7,
+    "main": "#C9993D",
+    "palette": [
+      "#a57d32",
+      "#c9993d",
+      "#dfc28b",
+      "#faf5ec",
+      "#d3d568",
+      "#cd764d"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 86,
+    "flowAngle": 0.48999999999999977,
+    "eyeAnchor": [
+      0.1,
+      -0.1,
+      0.98
+    ]
+  },
+  {
+    "id": "template:customer-support",
+    "n": 40877,
+    "shape": 17,
+    "shapeName": "blossom",
+    "color": 5,
+    "main": "#C9677E",
+    "palette": [
+      "#a55467",
+      "#c9677e",
+      "#dfa4b2",
+      "#faf0f2",
+      "#d59388",
+      "#cd73a7"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 43,
+    "flowAngle": -2.5700000000000003,
+    "eyeAnchor": [
+      0.12,
+      -0.08,
+      0.95
+    ]
+  },
+  {
+    "id": "template:receptionist",
+    "n": 13292,
+    "shape": 8,
+    "shapeName": "loaf",
+    "color": 6,
+    "main": "#4A979D",
+    "palette": [
+      "#3d7c81",
+      "#4a979d",
+      "#92c1c4",
+      "#edf5f5",
+      "#7296b3",
+      "#58a591"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 6,
+    "flowAngle": -2.1,
+    "eyeAnchor": [
+      0.12,
+      -0.14,
+      1
+    ]
+  },
+  {
+    "id": "template:appointment-booking",
+    "n": 92470,
+    "shape": 4,
+    "shapeName": "egg",
+    "color": 1,
+    "main": "#D9773B",
+    "palette": [
+      "#b26230",
+      "#d9773b",
+      "#e8ad89",
+      "#fbf1eb",
+      "#e1c266",
+      "#dc514b"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 32,
+    "flowAngle": -1.6,
+    "eyeAnchor": [
+      0.12,
+      -0.14,
+      1
+    ]
+  },
+  {
+    "id": "6a1f0c9e2b7d4e01a3c5f789",
+    "n": 39283,
+    "shape": 7,
+    "shapeName": "tallcap",
+    "color": 10,
+    "main": "#B8796A",
+    "palette": [
+      "#976357",
+      "#b8796a",
+      "#d4afa6",
+      "#f8f2f0",
+      "#c8ad8b",
+      "#be7680"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 98,
+    "flowAngle": 0.33000000000000007,
+    "eyeAnchor": [
+      0.12,
+      -0.22,
+      0.95
+    ]
+  },
+  {
+    "id": "",
+    "n": 36261,
+    "shape": 9,
+    "shapeName": "softpent",
+    "color": 4,
+    "main": "#2B2926",
+    "palette": [
+      "#23221f",
+      "#2b2926",
+      "#807f7d",
+      "#eaeae9",
+      "#5a5a56",
+      "#3c3837"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 83,
+    "flowAngle": 1.5100000000000002,
+    "eyeAnchor": [
+      0.1,
+      -0.1,
+      0.98
+    ]
+  },
+  {
+    "id": "🐟",
+    "n": 72622,
+    "shape": 10,
+    "shapeName": "dome",
+    "color": 4,
+    "main": "#2B2926",
+    "palette": [
+      "#23221f",
+      "#2b2926",
+      "#807f7d",
+      "#eaeae9",
+      "#5a5a56",
+      "#3c3837"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 69,
+    "flowAngle": 0.8799999999999994,
+    "eyeAnchor": [
+      0.12,
+      -0.12,
+      1
+    ]
+  },
+  {
+    "id": "Agent with spaces",
+    "n": 1413,
+    "shape": 9,
+    "shapeName": "softpent",
+    "color": 9,
+    "main": "#6E8FB0",
+    "palette": [
+      "#5a7590",
+      "#6e8fb0",
+      "#a8bcd0",
+      "#f1f4f7",
+      "#8e95c1",
+      "#7aacb6"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 58,
+    "flowAngle": -1.57,
+    "eyeAnchor": [
+      0.1,
+      -0.1,
+      0.98
+    ]
+  },
+  {
+    "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "n": 10693,
+    "shape": 1,
+    "shapeName": "squircle",
+    "color": 7,
+    "main": "#C9993D",
+    "palette": [
+      "#a57d32",
+      "#c9993d",
+      "#dfc28b",
+      "#faf5ec",
+      "#d3d568",
+      "#cd764d"
+    ],
+    "eyeColor": "#FFFFFF",
+    "seed": 26,
+    "flowAngle": -2.97,
+    "eyeAnchor": [
+      0.12,
+      -0.14,
+      1
+    ]
+  }
+]
