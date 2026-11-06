@@ -19,6 +19,7 @@ try {
 | `session_request_failed` | The session endpoint rejected the request or was unreachable. |
 | `agent_not_public` | Keyless session request against an agent without public access. |
 | `origin_forbidden` | Page origin is not on the agent's allowlist. |
+| `insufficient_credit` | Keyless session request, but the agent owner's account has no Agent credit left (HTTP 402). The owner needs to top up. |
 | `unsupported_transport` | The session uses a transport this SDK version doesn't know. Upgrade the package. |
 | `mic_permission_denied` | The user declined microphone access. |
 | `device_change_failed` | A requested audio device could not be activated, or the browser does not support output selection (`setSinkId`, common on mobile browsers). Output stays on the previous device; a failed mic switch switches back to the previous microphone (best effort). |

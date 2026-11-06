@@ -173,6 +173,8 @@ export function FishAgentWidget({ host, attributes }: FishAgentWidgetProps) {
       case "origin_forbidden":
       case "agent_not_public":
         return texts.errorOrigin;
+      case "insufficient_credit":
+        return texts.errorUnavailable;
       default:
         return texts.errorConnection;
     }

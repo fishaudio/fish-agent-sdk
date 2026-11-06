@@ -167,6 +167,9 @@ async function createSessionError(response: Response): Promise<FishAgentError> {
       options,
     );
   }
+  if (response.status === 402) {
+    return new FishAgentError("insufficient_credit", message, options);
+  }
   if (response.status === 403) {
     return /origin/i.test(message)
       ? new FishAgentError("origin_forbidden", message, options)
