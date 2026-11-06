@@ -8,6 +8,7 @@ import {
   TrackEvent,
   type LocalAudioTrack,
   type RemoteTrack,
+  type RemoteTrackPublication,
 } from "livekit-client";
 import {
   AGENT_EVENT_TOPIC,
@@ -86,9 +87,20 @@ export class LiveKitTransport implements Transport {
       }
     });
 
-    room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
+    // The agent publishes its speech as a microphone-source track and extras such
+    // as background ambience as separate tracks; every one of them plays.
+    room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, publication: RemoteTrackPublication) => {
       if (track.kind === Track.Kind.Audio && track.mediaStreamTrack) {
-        this.callbacks?.onOutputStream(new MediaStream([track.mediaStreamTrack]));
+        this.callbacks?.onOutputStream(
+          publication.trackSid,
+          new MediaStream([track.mediaStreamTrack]),
+          track.source === Track.Source.Microphone,
+        );
+      }
+    });
+    room.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack, publication: RemoteTrackPublication) => {
+      if (track.kind === Track.Kind.Audio) {
+        this.callbacks?.onOutputStreamEnded(publication.trackSid);
       }
     });
 

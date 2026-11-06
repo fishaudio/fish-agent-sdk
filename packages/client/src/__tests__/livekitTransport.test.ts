@@ -95,11 +95,18 @@ function flush(): Promise<void> {
 async function connectTransport() {
   const states: Array<{ state: TransportConnectionState; reason?: string }> = [];
   const inputStreams: unknown[] = [];
+  const outputStreams: Array<{ id: string; voice: boolean }> = [];
+  const endedOutputStreams: string[] = [];
   const callbacks: TransportCallbacks = {
     onAgentEvent: () => {},
     onAgentState: () => {},
     onTranscription: () => {},
-    onOutputStream: () => {},
+    onOutputStream: (id, _stream, voice) => {
+      outputStreams.push({ id, voice });
+    },
+    onOutputStreamEnded: (id) => {
+      endedOutputStreams.push(id);
+    },
     onInputStream: (stream) => {
       inputStreams.push(stream);
     },
@@ -114,7 +121,7 @@ async function connectTransport() {
     throw new Error("FakeRoom was not constructed");
   }
   room.remoteParticipants.set("agent", {});
-  return { transport, room, states, inputStreams };
+  return { transport, room, states, inputStreams, outputStreams, endedOutputStreams };
 }
 
 // Mirrors livekit-client 2.20 Room.handleRestarting: the roster is cleared and
@@ -282,5 +289,31 @@ describe("LiveKitTransport remote-initiated ends", () => {
     // ...so a later device switch is a no-op, not a fake success on a dead room.
     await transport.setInputDevice("mic-2");
     expect(room.switchActiveDeviceCalls).toEqual([]);
+  });
+});
+
+describe("LiveKitTransport agent audio tracks", () => {
+  it("reports every agent audio track and marks only the microphone-source one as voice", async () => {
+    vi.stubGlobal(
+      "MediaStream",
+      class {
+        constructor(readonly tracks: unknown[]) {}
+      },
+    );
+    try {
+      const { room, outputStreams, endedOutputStreams } = await connectTransport();
+      const audio = (source: string) => ({ kind: "audio", source, mediaStreamTrack: { id: source } });
+      room.emit(RoomEvent.TrackSubscribed, audio("microphone"), { trackSid: "TR_voice" });
+      room.emit(RoomEvent.TrackSubscribed, audio("unknown"), { trackSid: "TR_ambience" });
+      room.emit(RoomEvent.TrackSubscribed, { kind: "video", source: "camera" }, { trackSid: "TR_video" });
+      expect(outputStreams).toEqual([
+        { id: "TR_voice", voice: true },
+        { id: "TR_ambience", voice: false },
+      ]);
+      room.emit(RoomEvent.TrackUnsubscribed, audio("unknown"), { trackSid: "TR_ambience" });
+      expect(endedOutputStreams).toEqual(["TR_ambience"]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

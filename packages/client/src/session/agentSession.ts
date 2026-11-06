@@ -424,10 +424,13 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
             }
           },
           onTranscription: (update) => session.#handleTranscription(update),
-          onOutputStream: (stream) => {
-            session.#output.setStream(stream);
-            session.#outputAnalyser.setStream(stream);
+          onOutputStream: (id, stream, voice) => {
+            session.#output.setStream(id, stream);
+            if (voice) {
+              session.#outputAnalyser.setStream(stream);
+            }
           },
+          onOutputStreamEnded: (id) => session.#output.removeStream(id),
           onInputStream: (stream) => session.#inputAnalyser.setStream(stream),
           onConnectionState: (state, reason) => session.#handleConnectionState(state, reason),
         },
