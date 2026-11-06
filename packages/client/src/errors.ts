@@ -4,6 +4,8 @@ export type FishAgentErrorCode =
   | "session_request_failed"
   | "agent_not_public"
   | "origin_forbidden"
+  /** The session request was refused for lack of credit (HTTP 402): the agent owner's account has no Agent credit left. */
+  | "insufficient_credit"
   | "unsupported_transport"
   | "mic_permission_denied"
   /** A requested audio device could not be activated, or the browser does not support selecting it. */

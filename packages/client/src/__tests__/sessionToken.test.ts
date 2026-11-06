@@ -135,6 +135,13 @@ describe("public session request", () => {
       code: "agent_not_public",
     });
 
+    stubFetch(402, { message: "Out of API credit" });
+    await expect(resolveSessionToken({ agentId: "a" })).rejects.toMatchObject({
+      code: "insufficient_credit",
+      statusCode: 402,
+      message: "Out of API credit",
+    });
+
     stubFetch(400, { message: "Overrides not enabled for this agent: first_message" });
     await expect(resolveSessionToken({ agentId: "a" })).rejects.toMatchObject({
       code: "session_request_failed",

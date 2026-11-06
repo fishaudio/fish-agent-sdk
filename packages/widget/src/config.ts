@@ -36,6 +36,7 @@ export interface WidgetTextContents {
   speaking: string;
   errorMicDenied: string;
   errorOrigin: string;
+  errorUnavailable: string;
   errorConnection: string;
   openLabel: string;
   closeLabel: string;
@@ -76,6 +77,7 @@ export const DEFAULT_TEXTS: WidgetTextContents = {
   speaking: "Speaking",
   errorMicDenied: "Microphone access was denied — check your browser settings.",
   errorOrigin: "This site isn't allowed to talk to this agent.",
+  errorUnavailable: "This agent is temporarily unavailable.",
   errorConnection: "Connection failed — please try again.",
   openLabel: "Open assistant",
   closeLabel: "Close",

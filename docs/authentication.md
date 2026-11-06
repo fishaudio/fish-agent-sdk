@@ -73,4 +73,4 @@ For agents with public access enabled in the dashboard (with an Origin allowlist
 const session = await AgentSession.start({ agentId: "your-agent-id" });
 ```
 
-A keyless request against an agent without public access fails with [`agent_not_public`](errors.md); a page origin missing from the allowlist fails with [`origin_forbidden`](errors.md).
+A keyless request against an agent without public access fails with [`agent_not_public`](errors.md); a page origin missing from the allowlist fails with [`origin_forbidden`](errors.md). When the agent owner's account has no Agent credit left, the request fails with [`insufficient_credit`](errors.md) (HTTP 402), so a page that suddenly stops working after a run of calls is a top-up problem, not a public-access one.
