@@ -30,8 +30,14 @@ export interface TransportCallbacks {
    */
   onAgentState(state: string): void;
   onTranscription(update: TranscriptionSegmentUpdate): void;
-  /** Remote (agent) audio; the session routes it to playback + analysis. */
-  onOutputStream(stream: MediaStream): void;
+  /**
+   * One remote (agent) audio track, keyed by its id. An agent can publish several
+   * at once (speech plus background ambience); each plays on its own. `voice` marks
+   * the agent's speech, the only track that feeds output analysis.
+   */
+  onOutputStream(id: string, stream: MediaStream, voice: boolean): void;
+  /** The remote audio track with this id went away. */
+  onOutputStreamEnded(id: string): void;
   /** Local microphone audio, for input level/FFT reporting. */
   onInputStream(stream: MediaStream): void;
   onConnectionState(state: TransportConnectionState, reason?: string): void;
