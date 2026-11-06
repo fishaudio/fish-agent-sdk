@@ -44,6 +44,7 @@ Starting a session requests microphone access. Call `start()` from a user gestur
 | `audio.inputDeviceId` | `string` | Microphone device to capture from. |
 | `audio.outputDeviceId` | `string` | Playback device (`setSinkId`). `start()` rejects with `device_change_failed` where the browser doesn't support output selection (common on mobile; checked before a server session is created) or the device can't be used (checked before connecting). |
 | `wakeLock` | `boolean` | Hold a screen wake lock while the session is live, so long calls survive the phone trying to sleep. Default `true`; denial (battery saver, unsupported browser) is silent. |
+| `playoutProbe` | `boolean` | Report the turn latency as the caller's ear has it, measured in the browser (see [Playout probe](#playout-probe)). Default `true`. |
 | `callbacks` | `Partial<AgentSessionCallbacks>` | Shorthand for `.on(...)`. Each `onXxx` key subscribes the `xxx` event, so `onUserTranscript` subscribes `userTranscript`. An unknown key makes `start()` throw a `TypeError`. |
 
 Returns a connected `AgentSession`. Rejects with a [`FishAgentError`](errors.md) if session creation, permissions, or the connection fail.
@@ -99,6 +100,10 @@ session.getRoom();                   // underlying livekit-client Room; undefine
 The SDK reports playback readiness to the agent. Right after joining, the session announces that it will report, and once the agent's audio track is attached and the browser has allowed playback it reports ready. Where the runtime supports this handshake, the agent holds its opening line until the report arrives. That wait is bounded, about 1.5 seconds, so a page that never gets there only delays the opening line. Elsewhere the opening line plays right away, as before. Nothing to call, the SDK does this on its own, with or without a microphone.
 
 Autoplay policies are the one thing to watch. A browser can refuse playback until a user gesture, in which case the session stays unready and the opening line plays before anyone hears it. Starting the session from a click avoids the block in the first place. If playback was still blocked, call `session.startAudio()` from a user gesture: it unlocks playback and sends the readiness report.
+
+### Playout probe
+
+The runtime measures a turn's voice-to-voice latency from its own view: the caller's speech end as its detector saw it to the moment its audio leaves for the room. The microphone's path up, the network down, the browser's jitter buffer and the audio output add to what the caller experiences. To measure that, the SDK watches both ends in the browser: the microphone (the caller's speech ends, a sample within 100 ms of agent sound ignored as the speakers' leak) and the agent's voice track (the first sample of each stretch of agent speech as it leaves the decoder, plus the output latency). Each stretch is reported with the time since the caller last spoke, both on the browser's clock, so no clock sync is involved and both network legs are in. The voice track's WebRTC stats (round trip to the media edge, jitter buffer delay) go along every 2 s. The runtime keeps the number as the turn's heard voice-to-voice, which the console's turn latency shows next to its own. Nothing to call. Set `playoutProbe: false` to send none of it. The probe needs WebAudio and `RTCRtpReceiver.getStats()`, elsewhere it sends what it can.
 
 ### Reconnection
 

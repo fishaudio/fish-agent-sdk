@@ -151,4 +151,18 @@ export type ClientSessionMessage =
   // that epoch-ms stamp. Sent because attribute updates from a participant without
   // a published track reach the agent late (see `CLIENT_AUDIO_READY_ATTRIBUTE`).
   | { type: "client.audio_ready"; at: number }
-  | { type: "client_tool.result"; callId: string; result?: unknown; isError?: boolean };
+  | { type: "client_tool.result"; callId: string; result?: unknown; isError?: boolean }
+  // The playout probe, sent by the SDK on its own while the agent's voice track
+  // is subscribed: the turn latency as the caller's ear has it, measured in the
+  // browser. The voice track's WebRTC stats every 2 s: the round trip to the
+  // media edge and the jitter buffer's delay over the interval, in whole ms,
+  // null where the browser has none yet.
+  | { type: "client.stats"; at: number; rttMs: number | null; jitterBufferMs: number | null }
+  // The client heard the first sample of a stretch of agent speech after 300 ms
+  // without agent sound. `at` is the client's clock, its output latency
+  // (`outputLatencyMs`) included. `sinceSpeechEndMs` is `at` minus the end of
+  // the caller's last speech at the microphone, both on the client's clock, so
+  // it is the voice-to-voice the caller experienced, both network legs in. Null
+  // when the microphone had no speech in the 10 s before the sound (the opening
+  // line, an agent-initiated turn, no microphone).
+  | { type: "client.heard"; at: number; sinceSpeechEndMs: number | null; outputLatencyMs: number };

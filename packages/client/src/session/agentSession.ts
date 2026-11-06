@@ -8,6 +8,7 @@ import type {
 } from "@fishaudio/agent-protocol";
 import { assertOutputSelectionSupported, AudioOutput } from "../audio/output.js";
 import { AudioStreamAnalyser } from "../audio/analysis.js";
+import { PlayoutProbe } from "../audio/playoutProbe.js";
 import { FishAgentError } from "../errors.js";
 import {
   AGENT_SESSION_EVENT_NAMES,
@@ -56,6 +57,15 @@ export interface AgentSessionOptions extends SessionRequestOptions {
    * leave screen policy to the page.
    */
   wakeLock?: boolean;
+  /**
+   * Report the turn latency as the caller's ear has it: the end of the
+   * caller's speech at the microphone to the first sample of each stretch of
+   * agent speech, measured in the browser, plus the voice track's WebRTC
+   * stats. The console shows it as the heard voice-to-voice next to the
+   * agent's own. Default true. Costs a stats message every 2 s, one report per
+   * stretch of agent speech and two AnalyserNodes. Set false to send nothing.
+   */
+  playoutProbe?: boolean;
   callbacks?: Partial<AgentSessionCallbacks>;
 }
 
@@ -156,6 +166,7 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
   readonly #outputAnalyser = new AudioStreamAnalyser();
   readonly #inputAnalyser = new AudioStreamAnalyser();
   readonly #wakeLock = new WakeLockHolder();
+  #probe?: PlayoutProbe;
 
   /** Text already delivered per agent segment, to derive deltas from full-text updates. */
   readonly #agentSegments = new Map<string, string>();
@@ -278,6 +289,7 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
   async startAudio(): Promise<void> {
     this.#outputAnalyser.resume();
     this.#inputAnalyser.resume();
+    this.#probe?.resume();
     await this.#output.startAudio();
   }
 
@@ -427,6 +439,13 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
       (message) => transport.sendClientEvent(message),
       (error) => session.emit("error", error),
     );
+    if (options.playoutProbe !== false) {
+      session.#probe = new PlayoutProbe({
+        // Reports are frequent and best effort: a lost one is no session error.
+        send: (message) => void transport.sendClientEvent(message).catch(() => undefined),
+        getVoiceReceiver: () => transport.getVoiceReceiver?.(),
+      });
+    }
 
     try {
       await transport.connect(sessionToken, {
@@ -452,10 +471,14 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
             session.#output.setStream(id, stream, voice);
             if (voice) {
               session.#outputAnalyser.setStream(stream);
+              session.#probe?.setVoiceStream(stream);
             }
           },
           onOutputStreamEnded: (id) => session.#output.removeStream(id),
-          onInputStream: (stream) => session.#inputAnalyser.setStream(stream),
+          onInputStream: (stream) => {
+            session.#inputAnalyser.setStream(stream);
+            session.#probe?.setInputStream(stream);
+          },
           onConnectionState: (state, reason) => session.#handleConnectionState(state, reason),
         },
       });
@@ -626,6 +649,7 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
     this.#output.dispose();
     this.#outputAnalyser.dispose();
     this.#inputAnalyser.dispose();
+    this.#probe?.stop();
     this.emit("disconnect", { reason });
   }
 

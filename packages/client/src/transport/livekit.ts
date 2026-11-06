@@ -51,6 +51,8 @@ export class LiveKitTransport implements Transport {
   private pendingMicTrack?: Promise<LocalAudioTrack>;
   /** The epoch-ms value published as `fish.client.audio_ready`, kept to republish after a reconnect. */
   private audioReadyStamp?: string;
+  /** The agent's voice track (microphone source), the one the playout probe reads stats from. */
+  private voiceTrack?: RemoteTrack;
 
   prepareMicrophone(options: { inputDeviceId?: string }): void {
     const pending = captureMicrophone(options.inputDeviceId);
@@ -103,15 +105,22 @@ export class LiveKitTransport implements Transport {
     // as background ambience as separate tracks; every one of them plays.
     room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, publication: RemoteTrackPublication) => {
       if (track.kind === Track.Kind.Audio && track.mediaStreamTrack) {
+        const voice = track.source === Track.Source.Microphone;
+        if (voice) {
+          this.voiceTrack = track;
+        }
         this.callbacks?.onOutputStream(
           publication.trackSid,
           new MediaStream([track.mediaStreamTrack]),
-          track.source === Track.Source.Microphone,
+          voice,
         );
       }
     });
     room.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack, publication: RemoteTrackPublication) => {
       if (track.kind === Track.Kind.Audio) {
+        if (this.voiceTrack === track) {
+          this.voiceTrack = undefined;
+        }
         this.callbacks?.onOutputStreamEnded(publication.trackSid);
       }
     });
@@ -173,6 +182,7 @@ export class LiveKitTransport implements Transport {
       if (this.room === room) {
         this.room = undefined;
         this.callbacks = undefined;
+        this.voiceTrack = undefined;
       }
     });
     // An agent-side hangup ends the worker without closing the room; the
@@ -299,6 +309,7 @@ export class LiveKitTransport implements Transport {
     this.room = undefined;
     this.callbacks = undefined;
     this.audioReadyStamp = undefined;
+    this.voiceTrack = undefined;
     await room?.disconnect();
   }
 
@@ -373,6 +384,10 @@ export class LiveKitTransport implements Transport {
         this.callbacks?.onInputStream(new MediaStream([mediaStreamTrack]));
       }
     }
+  }
+
+  getVoiceReceiver(): RTCRtpReceiver | undefined {
+    return this.voiceTrack?.receiver;
   }
 
   async sendClientEvent(message: ClientSessionMessage): Promise<void> {

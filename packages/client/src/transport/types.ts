@@ -90,6 +90,12 @@ export interface Transport {
    * `unknown` here so this seam stays free of transport vocabulary.
    */
   getRoom?(): unknown;
+  /**
+   * The RTP receiver of the agent's voice track, for the playout probe's
+   * WebRTC stats. Undefined before the track is subscribed, after it went
+   * away, or on a transport without one.
+   */
+  getVoiceReceiver?(): RTCRtpReceiver | undefined;
 }
 
 // No arguments: the transport must exist before the session token does, so

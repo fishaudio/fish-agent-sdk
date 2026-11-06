@@ -12,8 +12,8 @@ One topic constant per channel, plus the payload type that travels on it:
 
 | Topic | Direction | Payload |
 |---|---|---|
-| `AGENT_EVENT_TOPIC` | agent → client | `AgentSessionMessage`. Session control such as `client_tool.call`, the `tool.started` / `tool.completed` / `tool.failed` lifecycle, `session.ended` (with a `SessionEndedReason`), and `error` (a category code plus `stage` and `recovered`). One complete JSON object per message. |
-| `CLIENT_EVENT_TOPIC` | client → agent | `ClientSessionMessage`. Text injection, tool results, graceful hangup, the audio readiness report (`client.audio_ready`). |
+| `AGENT_EVENT_TOPIC` | agent → client | `AgentSessionMessage`. Session control such as `client_tool.call`, the `tool.started` / `tool.completed` / `tool.failed` lifecycle, `session.ended` (with a `SessionEndedReason`), `error` (a category code plus `stage` and `recovered`). One complete JSON object per message. |
+| `CLIENT_EVENT_TOPIC` | client → agent | `ClientSessionMessage`. Text injection, tool results, graceful hangup, the audio readiness report (`client.audio_ready`), and the playout probe (`client.stats`, `client.heard`: the voice-to-voice as the caller's ear had it, measured in the browser). |
 
 Two participant attributes complete the room-level contract. They are published as constants so clients and the runtime share one definition:
 
