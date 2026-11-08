@@ -13,6 +13,8 @@ export type AgentMode = "listening" | "thinking" | "speaking";
  * never sends one, inferred from transport signals (where every server-side
  * end surfaces as `agent_hangup`). `llm_endpoint_failure` means the agent's
  * custom LLM endpoint failed repeatedly and the runtime closed the session.
+ * `internal_error` means the runtime itself failed and closed the session (its
+ * process was stopped, or an internal error ended the call).
  */
 export type EndReason =
   | "user_hangup"
@@ -20,6 +22,7 @@ export type EndReason =
   | "conversation_timeout"
   | "escalated"
   | "llm_endpoint_failure"
+  | "internal_error"
   | "connection_lost";
 
 export interface UserTranscriptEvent {

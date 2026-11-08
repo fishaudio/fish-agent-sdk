@@ -1207,6 +1207,18 @@ describe("lifecycle", () => {
     expect(disconnects).toEqual([{ reason: "llm_endpoint_failure" }]);
   });
 
+  it("ends with internal_error when the runtime announces it failed and closed the session", async () => {
+    const { session, transport } = await start();
+    const disconnects: unknown[] = [];
+    session.on("disconnect", (event) => disconnects.push(event));
+    transport.agent({ type: "session.ended", reason: "internal_error" });
+    expect(session.status).toBe("connected");
+    transport.state("disconnected", "ROOM_DELETED");
+    expect(session.status).toBe("ended");
+    expect(session.endReason).toBe("internal_error");
+    expect(disconnects).toEqual([{ reason: "internal_error" }]);
+  });
+
   it("ignores a session.ended carrying an unrecognized reason (forward compat)", async () => {
     const { session, transport } = await start();
     transport.agent({ type: "session.ended", reason: "sun_exploded" } as never);

@@ -101,7 +101,12 @@ export type SessionEndedReason =
   | "conversation_timeout"
   | "escalated"
   /** The agent's custom LLM endpoint failed repeatedly and the runtime closed the session. */
-  | "llm_endpoint_failure";
+  | "llm_endpoint_failure"
+  /**
+   * The runtime failed and closed the session: its process was stopped (over its memory
+   * limit, or the worker shutting down) or an internal error ended the call.
+   */
+  | "internal_error";
 
 /** Pipeline stage an `error` message came from. `runtime` is the runtime's own code path. */
 export type AgentErrorStage = "llm" | "stt" | "tts" | "runtime";
