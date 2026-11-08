@@ -76,6 +76,7 @@ const ANNOUNCED_END_REASONS: ReadonlySet<string> = new Set<EndReason>([
   "conversation_timeout",
   "escalated",
   "llm_endpoint_failure",
+  "internal_error",
 ]);
 
 /** `error.stage` values this SDK understands. Anything else is dropped, like an unknown field. */
