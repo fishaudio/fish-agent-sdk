@@ -1,6 +1,6 @@
 {
   "name": "@fishaudio/agent-protocol",
-  "version": "0.4.1",
+  "version": "1.0.0",
   "description": "Wire contracts for Fish Audio agent sessions: realtime room-channel messages and session-creation shapes.",
   "keywords": [
     "fish-audio",

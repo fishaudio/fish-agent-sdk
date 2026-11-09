@@ -1,5 +1,22 @@
 # @fishaudio/agent-widget
 
+## 1.0.0
+
+### Major Changes
+
+- First stable release. The public API is the one 0.4.1 shipped plus the additions in this release, nothing was removed or renamed, so upgrading from 0.4.x needs no code changes. From 1.0.0 on the packages follow semantic versioning: a breaking change arrives only in a new major version.
+
+### Minor Changes
+
+- 66058fc: Keyless session requests now fail with `insufficient_credit` when the agent owner's account has no Agent credit left (HTTP 402). The API used to answer with a neutral 403 that the SDK reported as `agent_not_public`, which sent integrators to re-check their public-access settings when the fix was a top-up. The widget shows the new `errorUnavailable` text ("This agent is temporarily unavailable.") for it.
+
+### Patch Changes
+
+- Updated dependencies [66058fc]
+- Updated dependencies [3efd8ac]
+- Updated dependencies
+  - @fishaudio/agent-client@1.0.0
+
 ## 0.4.1
 
 ### Patch Changes

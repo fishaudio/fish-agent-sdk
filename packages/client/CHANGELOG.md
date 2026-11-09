@@ -1,5 +1,22 @@
 # @fishaudio/agent-client
 
+## 1.0.0
+
+### Major Changes
+
+- First stable release. The public API is the one 0.4.1 shipped plus the additions in this release, nothing was removed or renamed, so upgrading from 0.4.x needs no code changes. From 1.0.0 on the packages follow semantic versioning: a breaking change arrives only in a new major version.
+
+### Minor Changes
+
+- 66058fc: Keyless session requests now fail with `insufficient_credit` when the agent owner's account has no Agent credit left (HTTP 402). The API used to answer with a neutral 403 that the SDK reported as `agent_not_public`, which sent integrators to re-check their public-access settings when the fix was a top-up. The widget shows the new `errorUnavailable` text ("This agent is temporarily unavailable.") for it.
+- 3efd8ac: `session.ended` gains the reason `internal_error`: the runtime itself failed and closed the session, for example its process was stopped for exceeding its memory limit. Until now such an end reached clients only as a transport disconnect, which the SDK reported as `connection_lost`. `EndReason` on the client gains the same value, matching `end_reason: internal_error` on the session record.
+
+### Patch Changes
+
+- Updated dependencies [3efd8ac]
+- Updated dependencies
+  - @fishaudio/agent-protocol@1.0.0
+
 ## 0.4.1
 
 ### Patch Changes

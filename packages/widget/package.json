@@ -1,6 +1,6 @@
 {
   "name": "@fishaudio/agent-widget",
-  "version": "0.4.1",
+  "version": "1.0.0",
   "description": "Embeddable <fish-agent> voice-agent widget for Fish Audio agents (custom element, shadow DOM).",
   "keywords": [
     "fish-audio",

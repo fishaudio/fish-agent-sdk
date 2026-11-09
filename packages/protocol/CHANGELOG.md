@@ -1,5 +1,15 @@
 # @fishaudio/agent-protocol
 
+## 1.0.0
+
+### Major Changes
+
+- First stable release. The public API is the one 0.4.1 shipped plus the additions in this release, nothing was removed or renamed, so upgrading from 0.4.x needs no code changes. From 1.0.0 on the packages follow semantic versioning: a breaking change arrives only in a new major version.
+
+### Minor Changes
+
+- 3efd8ac: `session.ended` gains the reason `internal_error`: the runtime itself failed and closed the session, for example its process was stopped for exceeding its memory limit. Until now such an end reached clients only as a transport disconnect, which the SDK reported as `connection_lost`. `EndReason` on the client gains the same value, matching `end_reason: internal_error` on the session record.
+
 ## 0.4.1
 
 ## 0.4.0

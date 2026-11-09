@@ -1,5 +1,17 @@
 # @fishaudio/agent-widget-embed
 
+## 1.0.0
+
+### Major Changes
+
+- First stable release. The public API is the one 0.4.1 shipped plus the additions in this release, nothing was removed or renamed, so upgrading from 0.4.x needs no code changes. From 1.0.0 on the packages follow semantic versioning: a breaking change arrives only in a new major version.
+
+### Patch Changes
+
+- Updated dependencies [66058fc]
+- Updated dependencies
+  - @fishaudio/agent-widget@1.0.0
+
 ## 0.4.1
 
 ### Patch Changes
