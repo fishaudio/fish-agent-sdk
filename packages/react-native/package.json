@@ -1,6 +1,6 @@
 {
   "name": "@fishaudio/agent-react-native",
-  "version": "0.4.1",
+  "version": "1.0.0",
   "description": "React Native SDK for Fish Audio voice agents: the conversation hook plus mobile audio routing, permissions, and background calls.",
   "keywords": [
     "fish-audio",
