@@ -13,6 +13,7 @@ import {
 import {
   AGENT_EVENT_TOPIC,
   AGENT_READY_ATTRIBUTE,
+  AGENT_STATE_ATTRIBUTE,
   CLIENT_AUDIO_READY_ATTRIBUTE,
   CLIENT_AUDIO_READY_PENDING,
   CLIENT_EVENT_TOPIC,
@@ -22,9 +23,6 @@ import {
 } from "@fishaudio/agent-protocol";
 import { FishAgentError } from "../errors.js";
 import type { Transport, TransportCallbacks, TransportConnectOptions } from "./types.js";
-
-/** The agent framework's pipeline state. Presence fallback for runtimes without `fish.agent.ready`. */
-const AGENT_STATE_ATTRIBUTE = "lk.agent.state";
 
 function hasMessageType(value: unknown): value is { type: string } {
   return (
@@ -146,9 +144,11 @@ export class LiveKitTransport implements Transport {
       }
     });
 
-    room.on(RoomEvent.Reconnecting, () => {
-      this.callbacks?.onConnectionState("reconnecting");
-    });
+    // A signal-only resume (short network drop) emits SignalReconnecting and
+    // later Reconnected, never Reconnecting; nothing flows in between either way.
+    const onReconnecting = () => this.callbacks?.onConnectionState("reconnecting");
+    room.on(RoomEvent.Reconnecting, onReconnecting);
+    room.on(RoomEvent.SignalReconnecting, onReconnecting);
     room.on(RoomEvent.Reconnected, () => {
       // A full reconnect recreates our participant without the attributes we
       // set on it, so the handshake value goes out again.

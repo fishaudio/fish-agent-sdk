@@ -2,7 +2,7 @@
 
 The wire contract for [Fish Audio](https://fish.audio) agent sessions: the realtime room-channel messages exchanged between the agent runtime and end-user clients, and the shapes of the session-creation exchange. It contains TypeScript types and topic constants only. Zero runtime dependencies, no code.
 
-**This is a semi-internal package.** It lives in the open so that what travels over the wire is fully auditable, and so the SDK and the agent runtime conform to one published contract. It is not an API for applications. Do not depend on it directly. [`@fishaudio/agent-client`](https://www.npmjs.com/package/@fishaudio/agent-client) already re-exports the types application code needs: `SessionToken`, `SessionOverrides`, and `AgentSessionCreateRequest`. Reach for this package only when building a custom consumer of the realtime channel or auditing the protocol itself.
+**This is a semi-internal package.** It lives in the open so that what travels over the wire is fully auditable, and so the SDK and the agent runtime conform to one published contract. It is not an API for applications. Do not depend on it directly. [`@fishaudio/agent-client`](https://www.npmjs.com/package/@fishaudio/agent-client) already re-exports the types application code needs: `SessionToken`, `SessionOverrides`, and `AgentSessionCreateRequest`. Reach for this package only when building a custom consumer of the realtime channel or auditing the protocol itself. For that, read [Writing a client for the realtime protocol](https://github.com/fishaudio/fish-agent-sdk-web/blob/main/docs/protocol.md), which covers the behavior these types do not show: the join order, readiness, queueing, transcripts, reconnection, and end rules.
 
 ## What's inside
 
@@ -19,7 +19,7 @@ Two participant attributes complete the room-level contract. They are published 
 
 | Constant | Set by | Meaning |
 |---|---|---|
-| `AGENT_READY_ATTRIBUTE` (`fish.agent.ready`) | agent | Sticky, value epoch ms. The pipeline is live and the opener is queued. Gate the "connected" UI on it, with `lk.agent.state` as the fallback for older runtimes. |
+| `AGENT_READY_ATTRIBUTE` (`fish.agent.ready`) | agent | Sticky, value epoch ms. The pipeline is live and the opener is queued. Gate the "connected" UI on it. `AGENT_STATE_ATTRIBUTE` (`lk.agent.state`) arrives seconds earlier and only proves the agent joined: fall back to it only after about 8 s without the ready attribute (older runtimes never set it). |
 | `CLIENT_AUDIO_READY_ATTRIBUTE` (`fish.client.audio_ready`) | client | `CLIENT_AUDIO_READY_PENDING` (`"pending"`) right after joining announces a client that will report readiness. An epoch-ms value means the agent's audio track is attached and the browser allows playback. The runtime waits a bounded time for it before speaking the opener. Publishing it needs a join token that lets the participant update its own attributes. The ready value is also sent as a `client.audio_ready` message on `CLIENT_EVENT_TOPIC`, because LiveKit delays attribute updates from a participant that has published no track (a microphone-off session). The runtime takes whichever arrives first. |
 
 Transcripts (streaming assistant reply and user ASR, interim and final) are not part of this contract: they travel on LiveKit's built-in `lk.transcription` text streams, keyed by the `lk.segment_id` attribute, with `lk.transcription_final` marking finals and the stream's sender identity distinguishing user from agent.

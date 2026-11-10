@@ -245,6 +245,22 @@ describe("LiveKitTransport reconnect vs agent hangup", () => {
     expect(room.disconnectCalls).toBe(0);
   });
 
+  it("reports a signal-only resume as reconnecting, then connected", async () => {
+    const { room, states } = await connectTransport();
+
+    room.state = ConnectionState.SignalReconnecting;
+    room.emit(RoomEvent.SignalReconnecting);
+    room.state = ConnectionState.Connected;
+    room.emit(RoomEvent.Reconnected);
+    await flush();
+
+    expect(states).toEqual([
+      { state: "reconnecting", reason: undefined },
+      { state: "connected", reason: undefined },
+    ]);
+    expect(room.disconnectCalls).toBe(0);
+  });
+
   it("reports connected after Reconnected when the agent came back", async () => {
     const { room, states } = await connectTransport();
 

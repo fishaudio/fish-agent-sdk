@@ -142,7 +142,9 @@ async function start(
   const transport = new MockTransport();
   const session = await startAgentSession({ sessionToken: SESSION_TOKEN, ...extra }, () => transport);
   if (agentJoins) {
+    // A current runtime: the framework state lands first, then the ready signal.
     transport.join();
+    transport.ready();
   }
   return { session, transport };
 }
@@ -484,18 +486,58 @@ describe("reverse channel", () => {
 });
 
 describe("agent presence", () => {
-  it("holds typed messages until the agent joins, then flushes in order", async () => {
+  it("holds typed messages until the agent is ready, then flushes in order", async () => {
     const { session, transport } = await start({}, { agentJoins: false });
     session.sendUserMessage("first");
     session.sendUserMessage("second");
     await tick();
     expect(transport.sent).toEqual([]);
-    transport.join();
+    transport.ready();
     await tick();
     expect(transport.sent).toEqual([
       { type: "user.message", text: "first", audio: false },
       { type: "user.message", text: "second", audio: false },
     ]);
+  });
+
+  it("keeps holding messages when the agent state arrives before the ready signal", async () => {
+    vi.useFakeTimers();
+    try {
+      const { session, transport } = await start({}, { agentJoins: false });
+      transport.join();
+      session.sendUserMessage("early");
+      await vi.advanceTimersByTimeAsync(3_000);
+      expect(transport.sent).toEqual([]);
+      transport.ready();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(transport.sent).toEqual([{ type: "user.message", text: "early", audio: false }]);
+      // The fallback timer is disarmed: nothing is sent twice.
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(transport.sent).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("falls back to the agent state alone for runtimes without the ready signal", async () => {
+    vi.useFakeTimers();
+    try {
+      const errors: unknown[] = [];
+      const { session, transport } = await start({}, { agentJoins: false });
+      session.on("error", (error) => errors.push(error));
+      transport.join();
+      session.sendUserMessage("hello");
+      await vi.advanceTimersByTimeAsync(7_900);
+      expect(transport.sent).toEqual([]);
+      await vi.advanceTimersByTimeAsync(200);
+      expect(transport.sent).toEqual([{ type: "user.message", text: "hello", audio: false }]);
+      // The agent joined, so the join watchdog never fires.
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(errors).toEqual([]);
+      expect(session.status).toBe("connected");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("still pins held messages locally", async () => {
@@ -981,6 +1023,27 @@ describe("client tools", () => {
     await new Promise((resolve) => setTimeout(resolve, 30));
     expect(errors[0]).toMatchObject({ code: "tool_timeout" });
     expect(transport.sent[0]).toMatchObject({ isError: true });
+  });
+
+  it("waits as long as the agent says it will, over the configured timeout", async () => {
+    vi.useFakeTimers();
+    try {
+      let finish: (value: string) => void = () => {};
+      const { session, transport } = await start({
+        clientTools: { lookup: () => new Promise<string>((resolve) => (finish = resolve)) },
+        clientToolTimeoutMs: 15_000,
+      });
+      const errors: FishAgentError[] = [];
+      session.on("error", (error) => errors.push(error));
+      transport.agent({ ...call(), timeoutMs: 30_000 });
+      await vi.advanceTimersByTimeAsync(20_000);
+      expect(errors).toEqual([]);
+      finish("done");
+      await vi.advanceTimersByTimeAsync(0);
+      expect(transport.sent[0]).toMatchObject({ type: "client_tool.result", result: "done" });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("supports late registration via registerClientTool", async () => {

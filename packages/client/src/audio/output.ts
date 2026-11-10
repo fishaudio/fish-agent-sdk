@@ -67,6 +67,11 @@ export class AudioOutput {
       element = this.spare ?? this.createElement();
       this.spare = undefined;
       if (!element) {
+        // No DOM (React Native): native WebRTC plays a subscribed track on its
+        // own, with no autoplay gate, so the speech track arriving is playback.
+        if (voice) {
+          this.options.onPlaybackStarted?.();
+        }
         return;
       }
       this.elements.set(id, element);

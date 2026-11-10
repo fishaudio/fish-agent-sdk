@@ -54,6 +54,7 @@ export class ClientToolDispatcher {
       const result = await this.withTimeout(
         Promise.resolve(handler(call.params, { callId: call.callId, toolName: call.toolName })),
         call.toolName,
+        ClientToolDispatcher.timeoutFor(call, this.timeoutMs),
       );
       if (call.expectsResponse) {
         await this.reply(call.callId, result === undefined ? {} : { result });
@@ -137,16 +138,24 @@ export class ClientToolDispatcher {
     }
   }
 
-  private withTimeout<T>(promise: Promise<T>, toolName: string): Promise<T> {
+  /** The agent's own wait when the runtime sends it, else the configured fallback. */
+  private static timeoutFor(call: ClientToolCall, fallbackMs: number): number {
+    const fromAgent = call.timeoutMs;
+    return typeof fromAgent === "number" && Number.isFinite(fromAgent) && fromAgent > 0
+      ? fromAgent
+      : fallbackMs;
+  }
+
+  private withTimeout<T>(promise: Promise<T>, toolName: string, timeoutMs: number): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
         reject(
           new FishAgentError(
             "tool_timeout",
-            `Client tool "${toolName}" timed out after ${this.timeoutMs}ms`,
+            `Client tool "${toolName}" timed out after ${timeoutMs}ms`,
           ),
         );
-      }, this.timeoutMs);
+      }, timeoutMs);
       promise.then(
         (value) => {
           clearTimeout(timer);
