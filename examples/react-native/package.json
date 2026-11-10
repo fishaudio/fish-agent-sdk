@@ -6,6 +6,7 @@
     "@config-plugins/react-native-webrtc": "^15.0.2",
     "@fishaudio/agent-client": "workspace:^",
     "@fishaudio/agent-protocol": "workspace:^",
+    "@fishaudio/agent-react-native": "workspace:^",
     "@livekit/react-native": "^3.1.0",
     "@livekit/react-native-expo-plugin": "^1.1.0",
     "@livekit/react-native-webrtc": "^150.1.1",

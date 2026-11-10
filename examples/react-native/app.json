@@ -9,19 +9,11 @@
     "ios": {
       "bundleIdentifier": "com.fishaudio.agentdemo",
       "appleTeamId": "QPS58227AS",
-      "supportsTablet": true,
-      "infoPlist": {
-        "NSMicrophoneUsageDescription": "The voice agent needs the microphone to hear you.",
-        "UIBackgroundModes": ["audio"]
-      }
+      "supportsTablet": true
     },
     "android": {
       "package": "com.fishaudio.agentdemo",
-      "permissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.ACCESS_NETWORK_STATE"
-      ],
+      "permissions": ["android.permission.ACCESS_NETWORK_STATE"],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -33,6 +25,7 @@
     "plugins": [
       "@livekit/react-native-expo-plugin",
       "@config-plugins/react-native-webrtc",
+      ["@fishaudio/agent-react-native", { "microphonePermission": "用于和语音客服通话" }],
       "expo-dev-client"
     ]
   }

@@ -1,23 +1,46 @@
-import type { SessionLanguage, ToolCallEventMessage } from '@fishaudio/agent-protocol';
-import { AudioSession } from '@livekit/react-native';
+import { AGENT_EVENT_TOPIC, AGENT_READY_ATTRIBUTE, type SessionLanguage } from '@fishaudio/agent-protocol';
+import {
+  useConversation,
+  type AgentMode,
+  type EndReason,
+  type SessionStatus,
+} from '@fishaudio/agent-react-native';
 import * as Battery from 'expo-battery';
 import * as Device from 'expo-device';
 import * as Network from 'expo-network';
-import { useCallback, useRef, useState } from 'react';
-import { PermissionsAndroid, Platform } from 'react-native';
-import { ClientSdkCall } from './ClientSdkCall';
+import { RoomEvent, Track, type RemoteParticipant } from 'livekit-client';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { createSession, type SessionSource } from './createSession';
-import {
-  FishCall,
-  type AgentMode,
-  type CallMetrics,
-  type CallStatus,
-  type EndReason,
-  type LogEntry,
-  type TranscriptItem,
-} from './FishCall';
 
 const ORDER_CARD_TIMEOUT_MS = 24_000;
+/** Above the order card's own timeout, for runtimes that do not send `timeoutMs` yet. */
+const CLIENT_TOOL_TIMEOUT_MS = 28_000;
+
+export type CallStatus = Exclude<SessionStatus, 'ended'> | 'ended';
+export type { AgentMode, EndReason };
+
+export interface TranscriptItem {
+  id: string;
+  role: 'user' | 'agent';
+  text: string;
+  final: boolean;
+  typed?: boolean;
+}
+
+export interface LogEntry {
+  at: number;
+  dir: 'in' | 'out' | 'sys';
+  text: string;
+}
+
+export interface CallMetrics {
+  startedAt: number;
+  roomConnectedAt?: number;
+  agentReadyAt?: number;
+  firstAgentAudioAt?: number;
+  firstAgentTextAt?: number;
+}
 
 export interface OrderCard {
   callId: string;
@@ -33,25 +56,11 @@ export interface ToolChip {
   detail?: string;
 }
 
-/** `protocol`: FishCall on the raw protocol. `client-sdk`: the unmodified web SDK, as an experiment. */
-export type Engine = 'protocol' | 'client-sdk';
-
-type CallHandle = Pick<FishCall, 'sendText' | 'sendActivity' | 'interrupt' | 'setMuted' | 'hangUp'>;
-
 export type Phase = 'idle' | 'starting' | 'in-call' | 'ended';
 
 export interface EndInfo {
   reason: EndReason;
-  transportReason?: string;
   durationMs: number;
-}
-
-async function ensureMicPermission(): Promise<void> {
-  if (Platform.OS !== 'android') return; // iOS prompts on first capture
-  const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
-  if (result !== PermissionsAndroid.RESULTS.GRANTED) {
-    throw new Error('Microphone permission was denied');
-  }
 }
 
 async function readDeviceInfo() {
@@ -68,27 +77,30 @@ async function readDeviceInfo() {
   };
 }
 
+/** Demo state on top of the SDK's `useConversation`: transcript, tool chips, the order card, logs and timings. */
 export function useAgentCall() {
+  const conversation = useConversation({}, { callNotification: { title: '客服通话中' } });
   const [phase, setPhase] = useState<Phase>('idle');
-  const [status, setStatus] = useState<CallStatus>('connecting');
-  const [mode, setMode] = useState<AgentMode>('listening');
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [tools, setTools] = useState<ToolChip[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const [metrics, setMetrics] = useState<CallMetrics>();
-  const [muted, setMuted] = useState(false);
-  const [speaker, setSpeaker] = useState(true);
   const [orderCard, setOrderCard] = useState<OrderCard>();
   const [endInfo, setEndInfo] = useState<EndInfo>();
   const [startError, setStartError] = useState<string>();
 
-  const callRef = useRef<CallHandle | undefined>(undefined);
   const orderResolver = useRef<((confirmed: boolean) => void) | undefined>(undefined);
   const startedAt = useRef(0);
+  /** Per agent segment: deltas received and when the first one arrived, to see whether text follows playout. */
+  const segmentStats = useRef(new Map<string, { deltas: number; firstAt: number }>());
 
-  const pushLog = useCallback((entry: LogEntry) => {
-    setLogs((prev) => [...prev.slice(-300), entry]);
+  const pushLog = useCallback((dir: LogEntry['dir'], text: string) => {
+    setLogs((prev) => [...prev.slice(-300), { at: Date.now(), dir, text }]);
+  }, []);
+
+  const mark = useCallback((key: Exclude<keyof CallMetrics, 'startedAt'>) => {
+    setMetrics((prev) => (prev && prev[key] === undefined ? { ...prev, [key]: Date.now() } : prev));
   }, []);
 
   const upsertTranscript = useCallback((item: TranscriptItem) => {
@@ -101,42 +113,73 @@ export function useAgentCall() {
     });
   }, []);
 
-  const onToolEvent = useCallback((event: ToolCallEventMessage) => {
-    setTools((prev) => {
-      const others = prev.filter((t) => t.callId !== event.callId);
-      const state = event.type === 'tool.started' ? 'running' : event.type === 'tool.completed' ? 'done' : 'failed';
-      const detail = event.type === 'tool.failed' ? event.error : undefined;
-      return [...others, { callId: event.callId, toolName: event.toolName, state, detail }];
-    });
+  const setTool = useCallback((chip: ToolChip) => {
+    setTools((prev) => [...prev.filter((t) => t.callId !== chip.callId), chip]);
   }, []);
 
+  // Protocol-level view for the log: agent frames, readiness and the first audio track.
+  const { session } = conversation;
+  useEffect(() => {
+    const room = session?.getRoom();
+    if (!room) return;
+    const decoder = new TextDecoder();
+    const checkAgent = (participant: RemoteParticipant) => {
+      if (participant.attributes?.[AGENT_READY_ATTRIBUTE]) mark('agentReadyAt');
+      for (const publication of participant.audioTrackPublications.values()) {
+        if (publication.track && publication.source === Track.Source.Microphone) mark('firstAgentAudioAt');
+      }
+    };
+    room.remoteParticipants.forEach(checkAgent);
+    const onData = (payload: Uint8Array, _p: unknown, _k: unknown, topic?: string) => {
+      if (topic === AGENT_EVENT_TOPIC) pushLog('in', decoder.decode(payload));
+    };
+    const onAttributes = (_changed: Record<string, string>, participant: { isLocal?: boolean }) => {
+      if (!participant.isLocal) room.remoteParticipants.forEach(checkAgent);
+    };
+    const onTrack = (track: { kind: string; source: string }) => {
+      if (track.kind === Track.Kind.Audio && track.source === Track.Source.Microphone) {
+        mark('firstAgentAudioAt');
+        pushLog('sys', 'agent audio subscribed');
+      }
+    };
+    const onSignalReconnecting = () => pushLog('sys', 'signal reconnecting');
+    const onDisconnected = (reason?: number) => pushLog('sys', `room disconnected (${reason ?? '-'})`);
+    room.on(RoomEvent.DataReceived, onData);
+    room.on(RoomEvent.ParticipantAttributesChanged, onAttributes);
+    room.on(RoomEvent.TrackSubscribed, onTrack);
+    room.on(RoomEvent.SignalReconnecting, onSignalReconnecting);
+    room.on(RoomEvent.Disconnected, onDisconnected);
+    return () => {
+      room.off(RoomEvent.DataReceived, onData);
+      room.off(RoomEvent.ParticipantAttributesChanged, onAttributes);
+      room.off(RoomEvent.TrackSubscribed, onTrack);
+      room.off(RoomEvent.SignalReconnecting, onSignalReconnecting);
+      room.off(RoomEvent.Disconnected, onDisconnected);
+    };
+  }, [session, mark, pushLog]);
+
+  const { startSession } = conversation;
   const start = useCallback(
-    async (source: SessionSource, language?: SessionLanguage, engine: Engine = 'protocol') => {
+    async (source: SessionSource, language?: SessionLanguage) => {
       setPhase('starting');
       setStartError(undefined);
       setTranscript([]);
       setLogs([]);
       setTools([]);
       setErrors([]);
-      setMetrics(undefined);
       setEndInfo(undefined);
-      setMuted(false);
-      setSpeaker(true);
-      setStatus('connecting');
-      setMode('listening');
       startedAt.current = Date.now();
+      setMetrics({ startedAt: startedAt.current });
       try {
-        await ensureMicPermission();
-        pushLog({ at: Date.now(), dir: 'sys', text: 'requesting session token' });
-        const token = await createSession(source, { language });
-        pushLog({
-          at: Date.now(),
-          dir: 'sys',
-          text: `token ok: ${token.session_id} (${Date.now() - startedAt.current} ms), expires ${token.expires_at}`,
-        });
-        const Impl = engine === 'client-sdk' ? ClientSdkCall : FishCall;
-        pushLog({ at: Date.now(), dir: 'sys', text: `engine: ${engine}` });
-        const call = await Impl.start(token, {
+        pushLog('sys', 'requesting session token');
+        const sessionToken = await createSession(source, { language });
+        pushLog(
+          'sys',
+          `token ok: ${sessionToken.session_id} (${Date.now() - startedAt.current} ms), expires ${sessionToken.expires_at}`,
+        );
+        await startSession({
+          sessionToken,
+          clientToolTimeoutMs: CLIENT_TOOL_TIMEOUT_MS,
           clientTools: {
             show_order_card: (params, { callId }) =>
               new Promise<{ confirmed: boolean; timed_out?: boolean }>((resolve) => {
@@ -160,95 +203,87 @@ export function useAgentCall() {
             get_device_info: () => readDeviceInfo(),
           },
           callbacks: {
-            onStatus: setStatus,
-            onMode: setMode,
-            onTranscript: upsertTranscript,
-            onToolEvent,
-            onLog: pushLog,
-            onMetrics: setMetrics,
-            onError: (message) => setErrors((prev) => [...prev.slice(-4), message]),
-            onEnded: (reason, transportReason) => {
+            onConnect: () => {
+              mark('roomConnectedAt');
+              pushLog('sys', 'room connected');
+            },
+            onStatusChange: (status) => pushLog('sys', `status → ${status}`),
+            onModeChange: (mode) => pushLog('sys', `mode → ${mode}`),
+            onUserTranscript: ({ segmentId, text, final }) =>
+              upsertTranscript({ id: `user-${segmentId}`, role: 'user', text, final, typed: segmentId.startsWith('typed_') }),
+            onAgentResponseDelta: ({ segmentId, text }) => {
+              mark('firstAgentTextAt');
+              const stats = segmentStats.current.get(segmentId) ?? { deltas: 0, firstAt: Date.now() };
+              stats.deltas += 1;
+              segmentStats.current.set(segmentId, stats);
+              upsertTranscript({ id: `agent-${segmentId}`, role: 'agent', text, final: false });
+            },
+            onAgentResponse: ({ segmentId, text }) => {
+              const stats = segmentStats.current.get(segmentId);
+              segmentStats.current.delete(segmentId);
+              pushLog(
+                'sys',
+                `agent segment: ${text.length} chars, ${stats?.deltas ?? 0} deltas over ${stats ? Date.now() - stats.firstAt : 0} ms`,
+              );
+              upsertTranscript({ id: `agent-${segmentId}`, role: 'agent', text, final: true });
+            },
+            onToolCallStarted: ({ callId, toolName }) => setTool({ callId, toolName, state: 'running' }),
+            onToolCallCompleted: ({ callId, toolName }) => setTool({ callId, toolName, state: 'done' }),
+            onToolCallFailed: ({ callId, toolName, error }) =>
+              setTool({ callId, toolName, state: 'failed', detail: error }),
+            onError: (error) => {
+              pushLog('sys', `error ${error.code}: ${error.message}`);
+              setErrors((prev) => [...prev.slice(-4), `${error.code}: ${error.message}`]);
+            },
+            onDisconnect: ({ reason }) => {
               orderResolver.current?.(false);
-              callRef.current = undefined;
-              setEndInfo({ reason, transportReason, durationMs: Date.now() - startedAt.current });
+              pushLog('sys', `ended: ${reason}`);
+              setEndInfo({ reason, durationMs: Date.now() - startedAt.current });
               setPhase('ended');
             },
           },
         });
-        callRef.current = call;
         setPhase((p) => (p === 'starting' ? 'in-call' : p));
-        await applySpeaker(true);
       } catch (error) {
         setStartError(error instanceof Error ? error.message : String(error));
         setPhase('idle');
       }
     },
-    [onToolEvent, pushLog, upsertTranscript],
+    [startSession, mark, pushLog, setTool, upsertTranscript],
   );
 
-  const hangUp = useCallback(() => {
-    void callRef.current?.hangUp();
-  }, []);
-
-  const sendText = useCallback((text: string, audio: boolean) => {
-    callRef.current?.sendText(text, audio);
-  }, []);
-
-  const sendActivity = useCallback(() => callRef.current?.sendActivity(), []);
-  const interrupt = useCallback(() => callRef.current?.interrupt(), []);
-
-  const toggleMute = useCallback(async () => {
-    const next = !muted;
-    await callRef.current?.setMuted(next);
-    setMuted(next);
-  }, [muted]);
-
-  const toggleSpeaker = useCallback(async () => {
-    const next = !speaker;
-    await applySpeaker(next);
-    setSpeaker(next);
-  }, [speaker]);
+  const { endSession, sendUserMessage, sendUserActivity, interrupt, setMicMuted, micMuted, setAudioOutput, audioOutput } =
+    conversation;
 
   const respondOrderCard = useCallback((confirmed: boolean) => {
     orderResolver.current?.(confirmed);
   }, []);
 
-  const reset = useCallback(() => setPhase('idle'), []);
-
   return {
     phase,
-    status,
-    mode,
+    status: (conversation.status === 'idle' ? 'connecting' : conversation.status) as CallStatus,
+    mode: conversation.mode,
     transcript,
     logs,
     tools,
     errors,
     metrics,
-    muted,
-    speaker,
+    muted: micMuted,
+    speaker: audioOutput !== 'earpiece',
     orderCard,
     endInfo,
     startError,
     start,
-    hangUp,
-    sendText,
-    sendActivity,
+    hangUp: useCallback(() => void endSession().catch(() => undefined), [endSession]),
+    sendText: useCallback((text: string, audio: boolean) => sendUserMessage(text, { audio }), [sendUserMessage]),
+    sendActivity: sendUserActivity,
     interrupt,
-    toggleMute,
-    toggleSpeaker,
+    toggleMute: useCallback(() => setMicMuted(!micMuted), [setMicMuted, micMuted]),
+    toggleSpeaker: useCallback(
+      () => setAudioOutput(audioOutput === 'earpiece' ? 'auto' : 'earpiece').catch(() => undefined),
+      [setAudioOutput, audioOutput],
+    ),
     respondOrderCard,
-    reset,
+    reset: useCallback(() => setPhase('idle'), []),
   };
-}
-
-async function applySpeaker(on: boolean): Promise<void> {
-  try {
-    if (Platform.OS === 'ios') {
-      await AudioSession.selectAudioOutput(on ? 'force_speaker' : 'default');
-    } else {
-      await AudioSession.selectAudioOutput(on ? 'speaker' : 'earpiece');
-    }
-  } catch {
-    // route not available (e.g. headset plugged in)
-  }
 }

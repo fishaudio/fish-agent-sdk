@@ -17,8 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import type { SessionSource } from './src/agent/createSession';
-import type { AgentMode, CallMetrics, CallStatus } from './src/agent/FishCall';
-import { useAgentCall, type Engine } from './src/agent/useAgentCall';
+import { useAgentCall, type AgentMode, type CallMetrics, type CallStatus } from './src/agent/useAgentCall';
 
 const ENV_API_KEY = process.env.EXPO_PUBLIC_FISH_API_KEY ?? '';
 const ENV_AGENT_ID = process.env.EXPO_PUBLIC_FISH_AGENT_ID ?? '';
@@ -59,7 +58,6 @@ function HomeScreen({ call }: { call: Call }) {
   const [tokenJson, setTokenJson] = useState('');
   const [origin, setOrigin] = useState('https://example.com');
   const [language, setLanguage] = useState<SessionLanguage | undefined>('zh');
-  const [engine, setEngine] = useState<Engine>('protocol');
   const starting = call.phase === 'starting';
 
   const onStart = () => {
@@ -73,7 +71,7 @@ function HomeScreen({ call }: { call: Call }) {
         return;
       }
     }
-    void call.start(source, language, engine);
+    void call.start(source, language);
   };
 
   return (
@@ -127,16 +125,6 @@ function HomeScreen({ call }: { call: Call }) {
         value={language ?? 'default'}
         onChange={(v) => setLanguage(v === 'default' ? undefined : (v as SessionLanguage))}
         options={LANGUAGES.map((l) => ({ value: l.code ?? 'default', label: l.label }))}
-      />
-
-      <Text style={styles.label}>实现</Text>
-      <Segmented
-        value={engine}
-        onChange={setEngine}
-        options={[
-          { value: 'protocol', label: '直接用协议' },
-          { value: 'client-sdk', label: 'Web SDK（实验）' },
-        ]}
       />
 
       {call.startError && <Text style={styles.error}>{call.startError}</Text>}
@@ -378,7 +366,6 @@ function EndedScreen({ call }: { call: Call }) {
         <Text style={styles.title}>{info ? END_LABEL[info.reason] ?? info.reason : '通话结束'}</Text>
         <Text style={styles.subtitle}>
           reason: {info?.reason}
-          {info?.transportReason ? ` · transport: ${info.transportReason}` : ''}
           {info ? ` · ${Math.round(info.durationMs / 1000)} s` : ''}
         </Text>
         <Text style={styles.subtitle}>{call.transcript.length} 条对话</Text>

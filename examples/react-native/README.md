@@ -2,7 +2,7 @@
 
 A voice customer-support app ("小鱼商城语音客服") that talks to a Fish agent from React Native. It exists to test how well the realtime wire protocol works on mobile. Findings are in [FINDINGS.md](FINDINGS.md).
 
-It uses only `@fishaudio/agent-protocol` and `livekit-client`, not `@fishaudio/agent-client`. That is how a third party would integrate from the protocol alone. `src/agent/FishCall.ts` is a thin port of the web SDK's transport and session logic.
+It is built on `@fishaudio/agent-react-native` (`packages/react-native`): the call itself is the SDK's `useConversation`, and `src/agent/useAgentCall.ts` adds the demo's UI state, client tools and a protocol log. The first round of testing used a hand-written client on the raw protocol instead; it is in git history (commit b2bd550, `src/agent/FishCall.ts`).
 
 ## What it covers
 
@@ -11,7 +11,8 @@ It uses only `@fishaudio/agent-protocol` and `livekit-client`, not `@fishaudio/a
 - Live transcripts for both sides (`lk.transcription`)
 - Agent mode (listening / thinking / speaking), call status, reconnects
 - Typed messages, with or without a spoken reply
-- Mute, speaker/earpiece, interrupt, hang up
+- Mute, speaker/earpiece (headsets win in auto), interrupt, hang up
+- Background calls: iOS background audio, Android microphone foreground service
 - Client tools: `show_order_card` (shows a card and waits for the user to tap) and `get_device_info`
 - Tool progress chips (`tool.started/completed/failed`)
 - End reason (`session.ended` or the transport fallback)
@@ -23,7 +24,7 @@ You need Xcode (iOS) or the Android SDK (Android), and a physical device for any
 
 ```sh
 pnpm install
-pnpm --filter @fishaudio/agent-protocol build
+pnpm build                   # the example imports the SDK packages from their dist/
 cd examples/react-native
 cp .env.example .env.local   # then fill it in
 npx expo prebuild

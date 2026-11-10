@@ -17,6 +17,10 @@ Framework-agnostic JavaScript/TypeScript SDK.
 - [Customization](customization.md) covers per-session overrides and dynamic variables.
 - [Errors](errors.md) lists `FishAgentError` codes and what to do about each.
 
+## `@fishaudio/agent-react-native`
+
+React Native SDK: the `useConversation` hook plus the microphone permission, audio routing, and background calls. See the [package README](../packages/react-native/README.md).
+
 ## Building your own client
 
 - [Realtime protocol](protocol.md) spells out the join handshake, readiness, messages, transcripts, reconnection, and end rules, for clients that do not use the SDK.

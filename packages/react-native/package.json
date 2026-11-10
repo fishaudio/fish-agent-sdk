@@ -1,0 +1,89 @@
+{
+  "name": "@fishaudio/agent-react-native",
+  "version": "0.4.1",
+  "description": "React Native SDK for Fish Audio voice agents: the conversation hook plus mobile audio routing, permissions, and background calls.",
+  "keywords": [
+    "fish-audio",
+    "voice",
+    "agent",
+    "react-native",
+    "expo",
+    "webrtc",
+    "livekit"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fishaudio/fish-agent-sdk-web.git",
+    "directory": "packages/react-native"
+  },
+  "bugs": "https://github.com/fishaudio/fish-agent-sdk-web/issues",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./app.plugin.js": "./app.plugin.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "android/build.gradle",
+    "android/src",
+    "plugin",
+    "app.plugin.js",
+    "expo-module.config.json",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepack": "node ../../scripts/assert-pnpm.mjs",
+    "prepublishOnly": "node ../../scripts/assert-built.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fishaudio/agent-client": "workspace:^",
+    "@fishaudio/agent-react": "workspace:^"
+  },
+  "peerDependencies": {
+    "@livekit/react-native": ">=3.1.0",
+    "@livekit/react-native-webrtc": ">=137.0.0",
+    "expo": ">=52",
+    "livekit-client": "^2.20.0",
+    "react": ">=18",
+    "react-native": ">=0.76"
+  },
+  "devDependencies": {
+    "@livekit/react-native": "^3.1.0",
+    "@livekit/react-native-webrtc": "^150.1.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.1.0",
+    "expo": "~58.0.23",
+    "jsdom": "^26.1.0",
+    "livekit-client": "^2.20.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.5"
+  }
+}
