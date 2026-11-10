@@ -48,6 +48,7 @@
 | P2-2 | 中文回复的文字不随播放同步（英文正常） | 实测（逐段统计），runtime 待确认 | 需要 runtime |
 | P2-3 | 关键语义只在 SDK 源码里 | 源码已确认 | **已补 `docs/protocol.md`** |
 | P2-4 | RN 里 Web SDK 不上报 `audio_ready` 等 | 源码已确认 | `audio_ready` **已修（本分支）**，其余未处理 |
+| P2-5 | iOS 同一次启动后第二通电话麦克风无声 | 实测 + 对照实验 | **已修：RN SDK 在 iOS 上不再手动启停音频会话** |
 
 ## 需要找的人
 
@@ -212,6 +213,18 @@ LLM 生成的回复是按播放进度逐段推送的（有一条回复 14 秒内
 
 **建议**：写一页协议规范（"如何编写一个客户端"），覆盖以上内容，并配一张加入握手的时序图。demo 的 `src/agent/FishCall.ts`（约 450 行）基本就是第三方目前至少要写的代码量。
 
+### P2-5. iOS 上同一次启动后的第二通电话，麦克风没有声音
+
+**依据：实测 + 对照实验（2026-11-10，iPhone 12，iOS 26.6.1）。状态：已在 RN SDK 中修复。**
+
+现象：app 启动后的第一通电话正常；挂断后再打一通，状态栏没有橙色麦克风标志，对着手机说话完全没有转写。Android 没有这个问题。
+
+原因：通话结束时调用了 LiveKit 的 `AudioSession.stopAudioSession()`，它会直接把共享的 `AVAudioSession` 设为非激活。但 WebRTC 在麦克风启停时也会自己激活和关闭同一个会话，并维护自己的计数。两边一起操作，计数就乱了，下一通电话录音起不来。对照实验：只要去掉 iOS 上的这次关闭，第二通电话就正常。
+
+修复：`@fishaudio/agent-react-native` 在 iOS 上只设置类别和路由，激活和关闭交给 WebRTC 自己处理。复测连续两通电话都能正常收音；挂断后 WebRTC 会自己关闭会话，其他 app 的声音能恢复。
+
+这是 LiveKit RN 文档推荐用法（每通电话 start/stop）在 iOS 上的坑，自己接 LiveKit 的第三方开发者也会遇到，`docs/protocol.md` 之外值得在 RN 文档里提一句。
+
 ### P2-4. 其他小问题
 
 - 弱网下，设置 `fish.client.audio_ready` 属性的 `setAttributes` 超时过一次（`Request to update local metadata timed out`）。data channel 上只有 ready 值的副本，`pending` 没有。
@@ -285,9 +298,9 @@ ElevenLabs 的 `@elevenlabs/react-native` 基本就是他们的 Web 客户端，
 
 ## 还没测的
 
-以下需要有人拿着手机配合：
+以下还没测（测试方法：用 Appium 操作手机，用电脑 `say` 命令对着手机说话，用服务端会话记录核对转写）：
 
-- iOS 上的 Wi-Fi 断开重连、锁屏，以及 Web SDK 引擎。iOS 的基本通话、client tool 和切后台已经测过，都正常。
+- iOS 上的 Wi-Fi 断开重连。iOS 已测过（2026-11-10，RN SDK）：通话、client tool、听筒/扬声器切换（系统日志确认输出在 Receiver 和 Speaker 之间切换）、锁屏后继续收音和回答（电脑念的话在锁屏 9 秒后被识别，客服锁屏状态下回答）、连续两通电话。
 - 两个平台上，通话中来电（音频被打断后能否恢复）。
 - Wi-Fi 和蜂窝网络互切（Pixel 没插 SIM 卡），目前只测了断开 Wi-Fi。
 - 蓝牙耳机的音频路由。

@@ -173,6 +173,21 @@ describe("useConversation (React Native)", () => {
   });
 });
 
+describe("iOS audio session", () => {
+  it("leaves activating and deactivating the session to WebRTC", async () => {
+    platform.OS = "ios";
+    const { result } = renderHook(() => useConversation());
+    await act(async () => {
+      await result.current.startSession();
+      await result.current.endSession();
+    });
+    expect(calls).not.toContain("audio.start");
+    expect(calls).not.toContain("audio.stop");
+    expect(calls).toContain("audio.apple:videoChat");
+    expect(calls).toContain("web.start");
+  });
+});
+
 describe("applyAudioOutput", () => {
   it("leaves LiveKit's automatic routing alone at the start of an Android call", async () => {
     await applyAudioOutput("auto", { initial: true });

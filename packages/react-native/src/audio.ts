@@ -13,14 +13,25 @@ export type AudioOutputRoute = "auto" | "speaker" | "earpiece";
 const ANDROID_AUTO_ORDER = ["bluetooth", "headset", "speaker", "earpiece"];
 const IOS_ROUTE_OPTIONS = ["allowBluetooth", "allowBluetoothA2DP", "allowAirPlay"] as const;
 
-/** Starts the platform audio session for a call. Call before connecting. */
+/**
+ * Starts the platform audio session for a call. Call before connecting.
+ *
+ * iOS: WebRTC activates and deactivates the shared AVAudioSession itself as
+ * capture starts and stops, keeping its own count. Toggling it from here as
+ * well (LiveKit's start/stopAudioSession) leaves the second call of an app
+ * run with a dead microphone, so on iOS only the category and route are set.
+ */
 export async function startCallAudio(route: AudioOutputRoute): Promise<void> {
-  await AudioSession.startAudioSession();
+  if (Platform.OS !== "ios") {
+    await AudioSession.startAudioSession();
+  }
   await applyAudioOutput(route, { initial: true });
 }
 
 export async function stopCallAudio(): Promise<void> {
-  await AudioSession.stopAudioSession();
+  if (Platform.OS !== "ios") {
+    await AudioSession.stopAudioSession();
+  }
 }
 
 /**
