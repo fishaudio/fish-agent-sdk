@@ -227,6 +227,7 @@ LLM 生成的回复是按播放进度逐段推送的（有一条回复 14 秒内
 
 ### P2-4. 其他小问题
 
+- 开发者后端调用 `POST /v1/agent/sessions/{id}/end` 结束通话时，服务端记录的结束原因是 `user_hangup`（2026-11-10 实测），但用户什么也没做。客户端会据此显示"你挂断了通话"。建议给后端主动结束单独一个原因，比如 `ended_by_api`。
 - 弱网下，设置 `fish.client.audio_ready` 属性的 `setAttributes` 超时过一次（`Request to update local metadata timed out`）。data channel 上只有 ready 值的副本，`pending` 没有。
 - 每次断网，LiveKit 内部都会抛出一个没人处理的 promise 异常（一个裸的 `error` 类型 `Event`）。它不影响功能，但开发版里会弹红屏。SDK 应该把它吞掉。
 - 启动耗时（本次网络环境下的实测）：
@@ -300,6 +301,7 @@ ElevenLabs 的 `@elevenlabs/react-native` 基本就是他们的 Web 客户端，
 
 以下还没测（测试方法：用 Appium 操作手机，用电脑 `say` 命令对着手机说话，用服务端会话记录核对转写）：
 
+- Android 已复测（2026-11-10，RN SDK，Pixel 8）：连续两通电话、切后台和锁屏（屏幕熄灭）后电脑念的话都被识别并得到回答、听筒和自动路由切换、挂断后前台服务和录音停止、服务端结束通话时锁屏状态下也能自动释放。
 - iOS 上的 Wi-Fi 断开重连。iOS 已测过（2026-11-10，RN SDK）：通话、client tool、听筒/扬声器切换（系统日志确认输出在 Receiver 和 Speaker 之间切换）、锁屏后继续收音和回答（电脑念的话在锁屏 9 秒后被识别，客服锁屏状态下回答）、连续两通电话。
 - 两个平台上，通话中来电（音频被打断后能否恢复）。
 - Wi-Fi 和蜂窝网络互切（Pixel 没插 SIM 卡），目前只测了断开 Wi-Fi。
