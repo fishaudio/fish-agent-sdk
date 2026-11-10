@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { applyAudioOutput, startCallAudio, stopCallAudio, type AudioOutputRoute } from "./audio.js";
 import { startCallService, stopCallService, type CallNotification } from "./callService.js";
 import { requestMicrophonePermission } from "./permissions.js";
+import { hasWebRTCGlobals, setupFishAgent } from "./setup.js";
 
 export interface MobileConversationOptions {
   /** Initial audio route. Default `auto`: headsets first, else the loudspeaker. */
@@ -60,6 +61,10 @@ export function useConversation(
 
   const startSession = useCallback(
     async (overrides: Partial<AgentSessionOptions> = {}): Promise<string> => {
+      // Without the globals the connect fails with a bare connection_failed.
+      if (!hasWebRTCGlobals()) {
+        setupFishAgent();
+      }
       const microphone = { ...defaultsRef.current, ...overrides }.microphone !== false;
       if (microphone) {
         await requestMicrophonePermission();

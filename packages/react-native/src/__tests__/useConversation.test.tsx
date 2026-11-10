@@ -51,7 +51,13 @@ vi.mock("react-native", () => ({
   },
 }));
 vi.mock("expo", () => ({ requireOptionalNativeModule: () => nativeModule }));
-vi.mock("@livekit/react-native", () => ({ AudioSession: audioSession, registerGlobals: () => {} }));
+vi.mock("@livekit/react-native", () => ({
+  AudioSession: audioSession,
+  registerGlobals: () => {
+    calls.push("registerGlobals");
+    (globalThis as { RTCPeerConnection?: unknown }).RTCPeerConnection = class {};
+  },
+}));
 vi.mock("@fishaudio/agent-react", async () => {
   const React = await import("react");
   return {
@@ -68,6 +74,8 @@ import { applyAudioOutput } from "../audio.js";
 
 beforeEach(() => {
   calls.length = 0;
+  // Most tests start as if the entry file already installed the globals.
+  (globalThis as { RTCPeerConnection?: unknown }).RTCPeerConnection = class {};
   platform.OS = "android";
   web.status = "idle";
   web.startError = undefined;
@@ -170,6 +178,27 @@ describe("useConversation (React Native)", () => {
       await result.current.setAudioOutput("speaker");
     });
     expect(calls).toEqual(["audio.select:speaker"]);
+  });
+});
+
+describe("WebRTC globals", () => {
+  it("installs them on start when the entry file did not", async () => {
+    delete (globalThis as { RTCPeerConnection?: unknown }).RTCPeerConnection;
+    permissions.checked = true;
+    const { result } = renderHook(() => useConversation({}, { callNotification: false }));
+    await act(async () => {
+      await result.current.startSession();
+    });
+    expect(calls).toEqual(["registerGlobals", "audio.start", "web.start"]);
+  });
+
+  it("leaves them alone when they are already there", async () => {
+    permissions.checked = true;
+    const { result } = renderHook(() => useConversation({}, { callNotification: false }));
+    await act(async () => {
+      await result.current.startSession();
+    });
+    expect(calls).not.toContain("registerGlobals");
   });
 });
 

@@ -19,7 +19,7 @@ Framework-agnostic JavaScript/TypeScript SDK.
 
 ## `@fishaudio/agent-react-native`
 
-React Native SDK: the `useConversation` hook plus the microphone permission, audio routing, and background calls. See the [package README](../packages/react-native/README.md).
+- [React Native SDK](react-native.md) covers installation, the entry file, session tokens from a mobile app, `useConversation` additions, background calls, limitations, and troubleshooting.
 
 ## Building your own client
 

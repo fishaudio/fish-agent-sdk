@@ -17,6 +17,7 @@
     "url": "git+https://github.com/fishaudio/fish-agent-sdk-web.git",
     "directory": "packages/react-native"
   },
+  "homepage": "https://docs.fish.audio/agents/deploy/react-native",
   "bugs": "https://github.com/fishaudio/fish-agent-sdk-web/issues",
   "type": "module",
   "sideEffects": false,
@@ -65,11 +66,11 @@
   },
   "peerDependencies": {
     "@livekit/react-native": ">=3.1.0",
-    "@livekit/react-native-webrtc": ">=137.0.0",
-    "expo": ">=52",
+    "@livekit/react-native-webrtc": ">=150.1.1",
+    "expo": ">=58",
     "livekit-client": "^2.20.0",
-    "react": ">=18",
-    "react-native": ">=0.76"
+    "react": ">=19",
+    "react-native": ">=0.88"
   },
   "devDependencies": {
     "@livekit/react-native": "^3.1.0",
