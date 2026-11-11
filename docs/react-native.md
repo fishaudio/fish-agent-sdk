@@ -13,7 +13,7 @@ It works in Expo apps and in bare React Native apps; Expo is not required.
 
 - **A native build.** WebRTC is a native module. In Expo, build with `npx expo run:ios` / `run:android` or EAS Build; Expo Go cannot run it (`expo-dev-client` is optional). Bare React Native apps build as usual, see [Bare React Native](#bare-react-native).
 - **A physical device** for anything involving the microphone.
-- **Your own backend** to create session tokens (see [Session tokens](#session-tokens)). Do not ship an API key inside an app.
+- **Your own backend** to create session tokens, or a public agent (see [Starting a session](#starting-a-session)). Do not ship an API key inside an app.
 - **Tested with** Expo SDK 58 and bare React Native 0.88, `@livekit/react-native` 3.1, `@livekit/react-native-webrtc` 150.1 and `livekit-client` 2.20–2.23, on iOS 26 and Android 17. Other versions may work but are untested.
 
 ## Install (Expo)
@@ -109,7 +109,11 @@ import App from "./App";
 registerRootComponent(App);
 ```
 
-## Session tokens
+## Starting a session
+
+An app starts a call in one of two ways, the same two the web SDK offers.
+
+### From your backend (recommended)
 
 The app asks your backend for a session token when the user starts a call. The backend calls `POST /v1/agent/sessions` with your API key and returns the response as is. [Authenticated sessions](authentication.md) has backend examples in Node and Python. The same endpoint serves web and mobile.
 
@@ -118,7 +122,23 @@ On a phone, two things differ from the browser:
 - **`localhost` is the phone, not your computer.** During development, use your computer's LAN address, or on Android forward the port with `adb reverse tcp:3001 tcp:3001`.
 - **iOS blocks plain `http://`** outside development builds. Serve the token endpoint over HTTPS.
 
-Public agents (keyless sessions) are meant for websites: the server checks the browser's `Origin` header against an allowlist, and native apps do not send one. Use your own backend for apps.
+### Public agent
+
+An agent with public access enabled takes sessions without a key or a backend. The server checks the request's `Origin` against the agent's allowlist. A browser sends its page's origin by itself; a native app sends none, so pass one that is on the allowlist:
+
+```ts
+await conversation.startSession({ agentId: "your-agent-id", origin: "https://www.example.com" });
+```
+
+Without `origin` the request fails with `origin_forbidden`.
+
+Know what this means before shipping it:
+
+- **Anyone with the agent ID can start sessions, billed to the agent's owner.** This is the same exposure as a public agent on a website: the allowlist stops other websites from embedding the agent, but no script, on the web or in an app, is stopped by it. Platform rate limits (per agent and per IP) are the backstop, and per-session customization (`overrides`) only works for fields the agent allows.
+- **The docs site describes public agents for browsers only.** Using one from an app works, but it is outside what the docs cover; check with Fish Audio before relying on it in production.
+- **Use an origin you own.** List it on the agent; it does not need to serve anything.
+
+For a production app, especially one with signed-in users, prefer your backend: it decides who gets a token and can pass `end_user_id`.
 
 ## Quick start
 
@@ -212,6 +232,7 @@ Everything else (`status`, `mode`, `micMuted` / `setMicMuted`, `sendUserMessage`
 | `startSession` rejects with `connection_failed` ("Could not establish the realtime session") | Check that the token endpoint returned a token from `POST /v1/agent/sessions`, that it was used right away (tokens are short-lived), and that the device has network. If you call LiveKit or WebRTC APIs directly before the first call, call `setupFishAgent()` in the entry file first. |
 | A plugin change has no effect (missing microphone text, no background audio) | Native settings only change on a rebuild: run `npx expo prebuild` (or `run:ios` / `run:android`) again. In bare React Native, check `Info.plist` and rebuild. |
 | iOS `pod install` cannot find `LiveKitWebRTC` | The LiveKit pod sources are missing from the top of the `Podfile`, see [Bare React Native](#bare-react-native). |
+| A public agent fails with `origin_forbidden` | Pass `origin` to `startSession`, matching an entry on the agent's allowlist exactly (scheme, host and port). |
 | `fetch` to your token endpoint fails on the phone | `localhost` points at the phone. Use your computer's LAN address or `adb reverse`, and HTTPS on iOS. |
 | Android: the agent stops hearing the user when the app is in the background | `callNotification` is `false`, or the app was not rebuilt after installing the package, so the foreground service is missing. |
 | A permission prompt about local networks or nearby devices at first launch | Debug builds look for the development server on the local network. It does not come from the call. |

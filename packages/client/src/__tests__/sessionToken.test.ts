@@ -22,6 +22,29 @@ afterEach(() => {
 });
 
 describe("public session request", () => {
+  it("presents the given origin outside a browser and leaves it out otherwise", async () => {
+    const fetchMock = stubFetch(201, SESSION_TOKEN);
+    await resolveSessionToken({ agentId: "agent-1", origin: "https://www.example.com" });
+    await resolveSessionToken({ agentId: "agent-1" });
+    const headers = fetchMock.mock.calls.map(
+      (call) => (call as unknown as [string, RequestInit])[1].headers as Record<string, string>,
+    );
+    expect(headers[0]?.Origin).toBe("https://www.example.com");
+    expect(headers[1]).not.toHaveProperty("Origin");
+  });
+
+  it("tells a native caller to pass origin when the allowlist refuses it", async () => {
+    stubFetch(403, { message: "Origin not allowed" });
+    await expect(resolveSessionToken({ agentId: "a" })).rejects.toMatchObject({
+      code: "origin_forbidden",
+      message: expect.stringContaining("pass `origin`"),
+    });
+    stubFetch(403, { message: "Origin not allowed" });
+    await expect(
+      resolveSessionToken({ agentId: "a", origin: "https://wrong.example" }),
+    ).rejects.toMatchObject({ code: "origin_forbidden", message: "Origin not allowed" });
+  });
+
   it("posts the full create body with the SDK version header", async () => {
     const fetchMock = stubFetch(201, SESSION_TOKEN);
     const sessionToken = await resolveSessionToken({

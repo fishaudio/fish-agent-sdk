@@ -18,7 +18,7 @@ try {
 |---|---|
 | `session_request_failed` | The session endpoint rejected the request or was unreachable. |
 | `agent_not_public` | Keyless session request against an agent without public access. |
-| `origin_forbidden` | Page origin is not on the agent's allowlist. |
+| `origin_forbidden` | Page origin is not on the agent's allowlist. Outside a browser, pass `origin` (one on the allowlist) when starting with `agentId`. |
 | `insufficient_credit` | Keyless session request, but the agent owner's account has no Agent credit left (HTTP 402). The owner needs to top up. |
 | `unsupported_transport` | The session uses a transport this SDK version doesn't know. Upgrade the package. |
 | `mic_permission_denied` | The user declined microphone access. |

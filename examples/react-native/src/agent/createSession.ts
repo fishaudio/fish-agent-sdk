@@ -1,24 +1,29 @@
-import type {
-  AgentSessionCreateRequest,
-  SessionLanguage,
-  SessionToken,
-} from '@fishaudio/agent-protocol';
+import type { SessionLanguage, SessionToken } from '@fishaudio/agent-protocol';
 import { SESSION_TRANSPORT_LIVEKIT } from '@fishaudio/agent-protocol';
 
-export const FISH_API_URL = 'https://api.fish.audio';
-
-export type SessionSource =
-  /** Dev only: the API key is bundled into the app. Production apps get the token from their backend. */
-  | { kind: 'apiKey'; apiKey: string; agentId: string }
-  /** A token minted elsewhere (e.g. `curl` on a laptop) and pasted in. */
-  | { kind: 'token'; token: SessionToken }
-  /** Keyless public agent. The server requires an allow-listed Origin header, which a native app has to fake. */
-  | { kind: 'public'; agentId: string; origin?: string };
-
-export interface CreateSessionOptions {
+/**
+ * How a production app starts a call: it asks its own backend for a session
+ * token. The backend holds the API key, picks the agent and calls
+ * POST /v1/agent/sessions (see server/index.mjs); the app never sees the key.
+ */
+export interface SessionRequest {
+  /** The backend's token endpoint, e.g. https://api.example.com/agent-session. */
+  tokenUrl: string;
+  /** Reply language the backend may pass on as an override. */
   language?: SessionLanguage;
-  endUserId?: string;
 }
+
+/**
+ * The two supported ways for an app to start a call:
+ * - `backend` (recommended): the app's own backend creates the session with
+ *   the API key and returns the token.
+ * - `public`: a public agent, keyless. The SDK creates the session itself and
+ *   presents `origin` to the agent's allowlist, since a native app sends no
+ *   Origin of its own. Anyone with the agent ID can do the same, as on the web.
+ */
+export type CallSource =
+  | { kind: 'backend'; tokenUrl: string }
+  | { kind: 'public'; agentId: string; origin: string };
 
 export class SessionRequestError extends Error {
   constructor(
@@ -37,41 +42,19 @@ function clientTimezone(): string | undefined {
   }
 }
 
-export async function createSession(
-  source: SessionSource,
-  options: CreateSessionOptions = {},
-): Promise<SessionToken> {
-  if (source.kind === 'token') {
-    return validate(source.token);
-  }
-
-  const timezone = clientTimezone();
-  const request: AgentSessionCreateRequest = {
-    agent_id: source.agentId,
-    ...(timezone ? { client_timezone: timezone } : {}),
-    ...(options.language ? { overrides: { language: options.language } } : {}),
-    ...(options.endUserId ? { end_user_id: options.endUserId } : {}),
-  };
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'X-Fish-SDK': 'agent-rn-demo/0.0.0',
-  };
-  if (source.kind === 'apiKey') {
-    headers.Authorization = `Bearer ${source.apiKey}`;
-  } else if (source.origin) {
-    // Browsers forbid setting Origin; React Native's fetch does not.
-    headers.Origin = source.origin;
-  }
-
+export async function requestSessionToken({ tokenUrl, language }: SessionRequest): Promise<SessionToken> {
   let response: Response;
   try {
-    response = await fetch(`${FISH_API_URL}/v1/agent/sessions`, {
+    response = await fetch(tokenUrl, {
       method: 'POST',
-      headers,
-      body: JSON.stringify(request),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ language, timezone: clientTimezone() }),
     });
   } catch (cause) {
-    throw new SessionRequestError(`Could not reach the session endpoint: ${String(cause)}`);
+    throw new SessionRequestError(
+      `Could not reach the token endpoint ${tokenUrl}: ${String(cause)}. ` +
+        'On a phone, localhost is the phone itself: use the computer\'s LAN address, or `adb reverse` on Android.',
+    );
   }
   const body = await response.text();
   if (!response.ok) {

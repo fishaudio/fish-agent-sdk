@@ -7,7 +7,7 @@ Voice calls with [Fish Audio](https://fish.audio) agents in React Native apps. I
 ## Requirements
 
 - Expo (built natively with `npx expo run:ios` / `run:android` or EAS Build; Expo Go cannot run WebRTC) or bare React Native.
-- A backend that creates session tokens with your API key. Never ship the API key in the app.
+- A backend that creates session tokens with your API key (recommended), or a public agent: `startSession({ agentId, origin })` with an origin on its allowlist. Never ship the API key in the app.
 - Tested with Expo SDK 58 and bare React Native 0.88, `@livekit/react-native` 3.1, `@livekit/react-native-webrtc` 150.1 and `livekit-client` 2.20–2.23, on iOS 26 and Android 17.
 
 ## Install

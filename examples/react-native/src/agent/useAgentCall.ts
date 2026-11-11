@@ -1,4 +1,4 @@
-import { AGENT_EVENT_TOPIC, AGENT_READY_ATTRIBUTE, type SessionLanguage } from '@fishaudio/agent-protocol';
+import { AGENT_EVENT_TOPIC, AGENT_READY_ATTRIBUTE, type SessionLanguage, type SessionToken } from '@fishaudio/agent-protocol';
 import {
   useConversation,
   type AgentMode,
@@ -11,7 +11,7 @@ import * as Network from 'expo-network';
 import { RoomEvent, Track, type RemoteParticipant } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
-import { createSession, type SessionSource } from './createSession';
+import { requestSessionToken, type CallSource } from './createSession';
 
 const ORDER_CARD_TIMEOUT_MS = 24_000;
 /** Above the order card's own timeout, for runtimes that do not send `timeoutMs` yet. */
@@ -160,7 +160,7 @@ export function useAgentCall() {
 
   const { startSession } = conversation;
   const start = useCallback(
-    async (source: SessionSource, language?: SessionLanguage) => {
+    async (source: CallSource, language?: SessionLanguage) => {
       setPhase('starting');
       setStartError(undefined);
       setTranscript([]);
@@ -171,14 +171,22 @@ export function useAgentCall() {
       startedAt.current = Date.now();
       setMetrics({ startedAt: startedAt.current });
       try {
-        pushLog('sys', 'requesting session token');
-        const sessionToken = await createSession(source, { language });
-        pushLog(
-          'sys',
-          `token ok: ${sessionToken.session_id} (${Date.now() - startedAt.current} ms), expires ${sessionToken.expires_at}`,
-        );
+        let auth: { sessionToken: SessionToken } | { agentId: string; origin: string; language?: SessionLanguage };
+        if (source.kind === 'backend') {
+          pushLog('sys', `requesting session token from ${source.tokenUrl}`);
+          const sessionToken = await requestSessionToken({ tokenUrl: source.tokenUrl, language });
+          pushLog(
+            'sys',
+            `token ok: ${sessionToken.session_id} (${Date.now() - startedAt.current} ms), expires ${sessionToken.expires_at}`,
+          );
+          auth = { sessionToken };
+        } else {
+          // The SDK creates the session itself (keyless) and sends `origin` to the allowlist.
+          pushLog('sys', `public agent ${source.agentId} as ${source.origin}`);
+          auth = { agentId: source.agentId, origin: source.origin, ...(language ? { language } : {}) };
+        }
         await startSession({
-          sessionToken,
+          ...auth,
           clientToolTimeoutMs: CLIENT_TOOL_TIMEOUT_MS,
           clientTools: {
             show_order_card: (params, { callId }) =>

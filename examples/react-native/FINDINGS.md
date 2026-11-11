@@ -148,7 +148,7 @@ Wi-Fi 断开 8 秒触发的是信令恢复：
 **依据：源码已确认 + 实测（2026-11-09）。** 订正：之前写成"P0：公开 agent 在原生 app 上没有鉴权"，说法夸大了。这是公开模式设计上接受的取舍，不是移动端特有的漏洞。
 
 现状：
-- 不带 key 调 `POST /v1/agent/sessions` 时，后端只检查 `Origin` 是否在 `allowed_origins` 白名单里（`platform-api/apps/agents/sessions/service.py` 的 `_authorize_public`）。字段说明写明它是"给浏览器 SDK 免 key 用的"（`apps/agents/public/schemas.py:180`）。
+- 不带 key 调 `POST /v1/agent/sessions` 时，后端只检查 `Origin` 是否在 `allowed_origins` 白名单里（`platform-api/apps/agents/sessions/service.py` 的 `_authorize_public`）。字段说明写明它是"给浏览器 SDK 免 key 用的"（`apps/agents/public/schemas.py`，`public_enabled` 字段的说明）。
 - 浏览器不允许网页修改 Origin，所以白名单能阻止别的网站嵌入你的 agent。curl 或原生 app 可以随便写 Origin。实测：不带 Origin 返回 403，Origin 不在白名单里返回 403，伪造成白名单里的值返回 201。
 - 已有的兜底：限流（每个 agent 每分钟 60 个 session，每个 IP 每分钟 20 个，见 `service.py:145-147`）；公开 session 不能用 overrides，也不能自定义名称；每通电话受 `max_duration_seconds` 限制。
 - 后端有 Firebase App Check（`apps/app_check.py`），但只用于自家 app 的验证码，没有接到 agent session。
@@ -159,8 +159,10 @@ Wi-Fi 断开 8 秒触发的是信令恢复：
 - **扣费（网页端和移动端一样）**：agent ID 写在网页源码里，任何人都能写脚本，用主人的余额开通话。上限是每个 agent 每分钟 60 个 session，每个最长 `max_duration_seconds`。
 - **挤占**：限流按 agent 计数，刷满之后正常用户也会收到 429。
 
+**进展（2026-11-11）**：网页的白名单本来也挡不住脚本，App 自己填 `Origin` 并不比网页更不安全。所以 SDK 新增了 `origin` 选项（`startSession({ agentId, origin })`），文档写明了代价，demo 也同时展示"你的后端"和"公开 agent"两种接法。白名单字段的说明（`apps/agents/public/schemas.py`，`public_enabled` 字段）写的是"browser SDK"，官网 Public Agents 页也只讲浏览器，所以仍需后端确认 App 可以这样用。
+
 **建议**：
-- 先在文档里写明：原生 app 应该由自己的后端签发 token，公开模式只适用于浏览器。`docs/protocol.md` 已经这么写了。
+- 请后端确认：App 用公开 agent 时自带 `Origin`，是否是认可的用法；以后会不会对非浏览器请求收紧。
 - 后端决定要不要支持原生 app 免 key：按 bundle ID / package name 做白名单，再加 App Attest / Play Integrity 校验（可以考虑复用现有的 App Check）。
 - 评估按 agent 计数的限流会不会挤掉正常用户。
 

@@ -16,13 +16,15 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import type { SessionSource } from './src/agent/createSession';
+import type { CallSource } from './src/agent/createSession';
 import { useAgentCall, type AgentMode, type CallMetrics, type CallStatus } from './src/agent/useAgentCall';
 
-const ENV_API_KEY = process.env.EXPO_PUBLIC_FISH_API_KEY ?? '';
-const ENV_AGENT_ID = process.env.EXPO_PUBLIC_FISH_AGENT_ID ?? '';
-
-type SourceKind = SessionSource['kind'];
+// Recommended: your backend's token endpoint (server/index.mjs in this folder).
+// The API key stays on that server; the app only receives a short-lived token.
+const ENV_TOKEN_URL = process.env.EXPO_PUBLIC_TOKEN_URL ?? '';
+// Public agent: its ID and an origin on its allowlist (no key, no backend).
+const ENV_AGENT_ID = process.env.EXPO_PUBLIC_AGENT_ID ?? '';
+const ENV_ORIGIN = process.env.EXPO_PUBLIC_AGENT_ORIGIN ?? '';
 const LANGUAGES: { code: SessionLanguage | undefined; label: string }[] = [
   { code: undefined, label: '默认' },
   { code: 'zh', label: '中文' },
@@ -53,25 +55,23 @@ type Call = ReturnType<typeof useAgentCall>;
 // ---------------------------------------------------------------- home
 
 function HomeScreen({ call }: { call: Call }) {
-  const [kind, setKind] = useState<SourceKind>(ENV_API_KEY ? 'apiKey' : 'public');
+  const [kind, setKind] = useState<CallSource['kind']>(ENV_TOKEN_URL || !ENV_AGENT_ID ? 'backend' : 'public');
+  const [tokenUrl, setTokenUrl] = useState(ENV_TOKEN_URL);
   const [agentId, setAgentId] = useState(ENV_AGENT_ID);
-  const [tokenJson, setTokenJson] = useState('');
-  const [origin, setOrigin] = useState('https://example.com');
+  const [origin, setOrigin] = useState(ENV_ORIGIN);
   const [language, setLanguage] = useState<SessionLanguage | undefined>('zh');
   const starting = call.phase === 'starting';
 
+  const source: CallSource | undefined =
+    kind === 'backend'
+      ? tokenUrl.trim()
+        ? { kind, tokenUrl: tokenUrl.trim() }
+        : undefined
+      : agentId.trim() && origin.trim()
+        ? { kind, agentId: agentId.trim(), origin: origin.trim() }
+        : undefined;
   const onStart = () => {
-    let source: SessionSource;
-    if (kind === 'apiKey') source = { kind, apiKey: ENV_API_KEY, agentId: agentId.trim() };
-    else if (kind === 'public') source = { kind, agentId: agentId.trim(), origin: origin.trim() || undefined };
-    else {
-      try {
-        source = { kind, token: JSON.parse(tokenJson) };
-      } catch {
-        return;
-      }
-    }
-    void call.start(source, language);
+    if (source) void call.start(source, language);
   };
 
   return (
@@ -85,38 +85,42 @@ function HomeScreen({ call }: { call: Call }) {
         value={kind}
         onChange={setKind}
         options={[
-          { value: 'apiKey', label: 'API key（开发）' },
-          { value: 'token', label: '粘贴 token' },
+          { value: 'backend', label: '你的后端（推荐）' },
           { value: 'public', label: '公开 agent' },
         ]}
       />
-      {kind === 'apiKey' && !ENV_API_KEY && (
-        <Text style={styles.warn}>未设置 EXPO_PUBLIC_FISH_API_KEY（.env.local）</Text>
-      )}
 
-      {kind !== 'token' && (
+      {kind === 'backend' ? (
+        <>
+          <Text style={styles.label}>后端 token 接口</Text>
+          <TextInput
+            style={styles.input}
+            value={tokenUrl}
+            onChangeText={setTokenUrl}
+            placeholder="http://192.168.1.20:3001/agent-session"
+            placeholderTextColor="#5b6478"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+          />
+          <Text style={styles.fieldHint}>App 向你自己的后端要 session token，API key 只在后端。示例后端见 server/index.mjs。</Text>
+        </>
+      ) : (
         <>
           <Text style={styles.label}>Agent ID</Text>
           <TextInput style={styles.input} value={agentId} onChangeText={setAgentId} autoCapitalize="none" autoCorrect={false} />
-        </>
-      )}
-      {kind === 'public' && (
-        <>
-          <Text style={styles.label}>Origin 头（服务端白名单要求，原生 app 只能伪造）</Text>
-          <TextInput style={styles.input} value={origin} onChangeText={setOrigin} autoCapitalize="none" autoCorrect={false} />
-        </>
-      )}
-      {kind === 'token' && (
-        <>
-          <Text style={styles.label}>POST /v1/agent/sessions 的响应 JSON</Text>
+          <Text style={styles.label}>域名（agent 白名单里的 origin）</Text>
           <TextInput
-            style={[styles.input, styles.tokenInput]}
-            value={tokenJson}
-            onChangeText={setTokenJson}
-            multiline
+            style={styles.input}
+            value={origin}
+            onChangeText={setOrigin}
+            placeholder="https://www.example.com"
+            placeholderTextColor="#5b6478"
             autoCapitalize="none"
             autoCorrect={false}
+            keyboardType="url"
           />
+          <Text style={styles.fieldHint}>不需要 key 和后端。agent 要在后台开启公开访问；拿到 ID 的人都能用它通话，费用记在 agent 主人账上。</Text>
         </>
       )}
 
@@ -129,7 +133,11 @@ function HomeScreen({ call }: { call: Call }) {
 
       {call.startError && <Text style={styles.error}>{call.startError}</Text>}
 
-      <Pressable style={[styles.primary, starting && styles.disabled]} onPress={onStart} disabled={starting}>
+      <Pressable
+        style={[styles.primary, (starting || !source) && styles.disabled]}
+        onPress={onStart}
+        disabled={starting || !source}
+      >
         {starting ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>开始通话</Text>}
       </Pressable>
       <Text style={styles.hint}>试试说：“帮我查一下订单”、“app 老是卡”、“再见”。</Text>
@@ -402,13 +410,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   inputCompact: { paddingVertical: 8 },
-  tokenInput: { minHeight: 120, textAlignVertical: 'top', fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }), fontSize: 11 },
   segmented: { flexDirection: 'row', backgroundColor: '#111a2e', borderRadius: 10, padding: 3, gap: 3 },
   segment: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
   segmentOn: { backgroundColor: '#1d4ed8' },
   segmentText: { color: '#94a3b8', fontSize: 12 },
   segmentTextOn: { color: '#fff', fontWeight: '600' },
-  warn: { color: '#fbbf24', fontSize: 12 },
+  fieldHint: { color: '#64748b', fontSize: 12, marginTop: 6 },
   error: { color: '#f87171', fontSize: 13, marginTop: 12 },
   primary: { marginTop: 24, backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   primaryText: { color: '#fff', fontSize: 16, fontWeight: '600' },

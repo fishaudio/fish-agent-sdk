@@ -21,6 +21,14 @@ export interface SessionContextOptions {
 export interface SessionRequestOptions {
   /** Public agent: the SDK creates the session directly against the Fish API. */
   agentId?: string;
+  /**
+   * Public agent outside a browser (React Native, Node): the origin to present
+   * to the agent's allowlist, e.g. `"https://www.example.com"`. Browsers send
+   * their page's origin themselves and ignore this. Native apps send none, so
+   * without it a public agent answers 403 `origin_forbidden`. Use an origin you
+   * own that is on the agent's allowlist. Ignored with `sessionToken`.
+   */
+  origin?: string;
   /** Session token created by the host backend, passed through verbatim. */
   sessionToken?: SessionToken;
   serverUrl?: string;
@@ -132,6 +140,8 @@ async function createPublicSession(options: SessionRequestOptions): Promise<Sess
       headers: {
         "Content-Type": "application/json",
         "X-Fish-SDK": `agent-client/${SDK_VERSION}`,
+        // Browsers set Origin themselves and drop this; native fetch sends it.
+        ...(options.origin ? { Origin: options.origin } : {}),
       },
       body: JSON.stringify(request),
     });
@@ -142,7 +152,13 @@ async function createPublicSession(options: SessionRequestOptions): Promise<Sess
   }
 
   if (!response.ok) {
-    throw await createSessionError(response);
+    const error = await createSessionError(response);
+    if (error.code === "origin_forbidden" && !options.origin && typeof document === "undefined") {
+      // Outside a browser no Origin goes out at all unless the caller sets one.
+      error.message +=
+        "; outside a browser (React Native) pass `origin` with an origin on the agent's allowlist";
+    }
+    throw error;
   }
   return (await response.json()) as SessionToken;
 }

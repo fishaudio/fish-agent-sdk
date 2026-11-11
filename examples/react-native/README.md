@@ -6,7 +6,9 @@ It is built on `@fishaudio/agent-react-native` (`packages/react-native`): the ca
 
 ## What it covers
 
-- Session creation three ways: API key (dev only), a pasted session token, or a keyless public agent with a faked `Origin` header
+- Both supported ways to start a call:
+  - **Your backend (recommended):** the app asks `server/index.mjs` for a session token; the server holds the API key and picks the agent, and the app never sees the key.
+  - **Public agent:** keyless, with the agent ID and an origin on the agent's allowlist (`startSession({ agentId, origin })`). Anyone with the ID can do the same; see FINDINGS.md P1-6.
 - Voice call over LiveKit WebRTC, with the `fish.client.audio_ready` handshake
 - Live transcripts for both sides (`lk.transcription`)
 - Agent mode (listening / thinking / speaking), call status, reconnects
@@ -26,19 +28,33 @@ You need Xcode (iOS) or the Android SDK (Android), and a physical device for any
 pnpm install
 pnpm build                   # the example imports the SDK packages from their dist/
 cd examples/react-native
-cp .env.example .env.local   # then fill it in
-npx expo prebuild
-npx expo run:ios --device     # or: npx expo run:android --device
 ```
 
-`.env.local`:
+1. Start the token backend. It is the only place with the API key:
 
-```sh
-EXPO_PUBLIC_FISH_API_KEY=sk-...       # from fish.audio/app/agents/api-keys
-EXPO_PUBLIC_FISH_AGENT_ID=...         # a published agent
-```
+   ```sh
+   cp server/.env.example server/.env.local   # FISH_API_KEY and FISH_AGENT_ID
+   pnpm server                                # POST http://<this computer>:3001/agent-session
+   ```
 
-The API key ends up inside the app bundle. That is fine for a local demo and never fine for a shipped app: a real app asks its own backend for the session token.
+2. Point the app at it. On a phone, `localhost` is the phone itself:
+
+   ```sh
+   cp .env.example .env.local
+   # Android: adb reverse tcp:3001 tcp:3001, then EXPO_PUBLIC_TOKEN_URL=http://localhost:3001/agent-session
+   # iOS:     EXPO_PUBLIC_TOKEN_URL=http://<your computer's LAN address>:3001/agent-session
+   ```
+
+   The address can also be changed on the app's home screen.
+
+3. Build and run:
+
+   ```sh
+   npx expo prebuild
+   npx expo run:ios --device     # or: npx expo run:android --device
+   ```
+
+`server/index.mjs` is a minimal stand-in for your backend. A real one would also check who the user is and rate-limit them before handing out a token, and pass that identity as `end_user_id`. The [authentication guide](../../docs/authentication.md) has Node and Python versions.
 
 The agent should have two client tools, `show_order_card` (arguments `order_id`, `status`, `item`) and `get_device_info` (no arguments), and a prompt that tells it when to call them.
 
