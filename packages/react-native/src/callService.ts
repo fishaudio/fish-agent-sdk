@@ -1,9 +1,8 @@
-import { Platform } from "react-native";
-import { requireOptionalNativeModule } from "expo";
+import { NativeModules, Platform } from "react-native";
 
 interface FishAgentNativeModule {
-  /** False when RECORD_AUDIO is not granted (nothing started). */
-  startCallService(title: string, text: string): boolean;
+  /** Resolves false when RECORD_AUDIO is not granted (nothing started). */
+  startCallService(title: string, text: string): Promise<boolean>;
   stopCallService(): void;
 }
 
@@ -19,7 +18,7 @@ function nativeModule(): FishAgentNativeModule | null {
   if (native === undefined) {
     native =
       Platform.OS === "android"
-        ? requireOptionalNativeModule<FishAgentNativeModule>("FishAgentReactNative")
+        ? ((NativeModules.FishAgentReactNative as FishAgentNativeModule | undefined) ?? null)
         : null;
   }
   return native;
@@ -31,7 +30,7 @@ let warned = false;
  * Android only: a microphone foreground service with an ongoing notification,
  * without which Android 14+ silences capture once the app is backgrounded.
  * No-op elsewhere, and a warning (not a failure) when the native module is
- * missing, e.g. in Expo Go or before a rebuild.
+ * missing, e.g. in Expo Go or before the app was rebuilt.
  */
 export function startCallService(notification: CallNotification = {}): void {
   const module = nativeModule();
@@ -40,15 +39,19 @@ export function startCallService(notification: CallNotification = {}): void {
       warned = true;
       console.warn(
         "[fish-agent] Native module missing: background calls will lose the microphone. " +
-          "Rebuild the app (expo prebuild / run:android) after installing the package.",
+          "Rebuild the native app (npx expo run:android, or npx react-native run-android) after installing the package.",
       );
     }
     return;
   }
+  const warn = (error: unknown) => console.warn("[fish-agent] Could not start the call service", error);
   try {
-    module.startCallService(notification.title ?? "Call in progress", notification.text ?? "");
+    // Not awaited: the call does not wait on the notification.
+    void Promise.resolve(
+      module.startCallService(notification.title ?? "Call in progress", notification.text ?? ""),
+    ).catch(warn);
   } catch (error) {
-    console.warn("[fish-agent] Could not start the call service", error);
+    warn(error);
   }
 }
 

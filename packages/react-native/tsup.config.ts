@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  external: ["react", "react-native", "expo", "@livekit/react-native", "livekit-client"],
+  external: ["react", "react-native", "@livekit/react-native", "livekit-client"],
 });

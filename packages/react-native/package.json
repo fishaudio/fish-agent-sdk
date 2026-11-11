@@ -44,7 +44,6 @@
     "android/src",
     "plugin",
     "app.plugin.js",
-    "expo-module.config.json",
     "LICENSE"
   ],
   "engines": {
@@ -72,12 +71,16 @@
     "react": ">=19",
     "react-native": ">=0.88"
   },
+  "peerDependenciesMeta": {
+    "expo": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@livekit/react-native": "^3.1.0",
     "@livekit/react-native-webrtc": "^150.1.1",
     "@testing-library/react": "^16.3.0",
     "@types/react": "^19.1.0",
-    "expo": "~58.0.23",
     "jsdom": "^26.1.0",
     "livekit-client": "^2.20.0",
     "react": "19.3.0",

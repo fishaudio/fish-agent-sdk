@@ -162,6 +162,9 @@ importers:
       '@fishaudio/agent-react':
         specifier: workspace:^
         version: link:../react
+      expo:
+        specifier: '>=58'
+        version: 58.0.23(@babel/core@7.29.13)(@expo/dom-webview@58.0.2)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@5.9.3)
     devDependencies:
       '@livekit/react-native':
         specifier: ^3.1.0
@@ -175,9 +178,6 @@ importers:
       '@types/react':
         specifier: ^19.1.0
         version: 19.3.0
-      expo:
-        specifier: ~58.0.23
-        version: 58.0.23(@babel/core@7.29.13)(@expo/dom-webview@58.0.2)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@5.9.3)
       jsdom:
         specifier: ^26.1.0
         version: 26.1.0

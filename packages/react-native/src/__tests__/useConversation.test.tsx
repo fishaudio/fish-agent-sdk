@@ -28,7 +28,7 @@ const { calls, platform, web, audioSession, nativeModule, permissions } = vi.hoi
       void calls.push(`audio.apple:${config.audioMode}`),
   };
   const nativeModule = {
-    startCallService: (title: string) => {
+    startCallService: async (title: string) => {
       calls.push(`service.start:${title}`);
       return true;
     },
@@ -40,6 +40,7 @@ const { calls, platform, web, audioSession, nativeModule, permissions } = vi.hoi
 
 vi.mock("react-native", () => ({
   Platform: platform,
+  NativeModules: { FishAgentReactNative: nativeModule },
   PermissionsAndroid: {
     PERMISSIONS: { RECORD_AUDIO: "android.permission.RECORD_AUDIO" },
     RESULTS: { GRANTED: "granted", DENIED: "denied" },
@@ -50,7 +51,6 @@ vi.mock("react-native", () => ({
     },
   },
 }));
-vi.mock("expo", () => ({ requireOptionalNativeModule: () => nativeModule }));
 vi.mock("@livekit/react-native", () => ({
   AudioSession: audioSession,
   registerGlobals: () => {

@@ -7,14 +7,16 @@
 - background calls: an Android foreground service and iOS background audio,
 - an Expo config plugin for the native settings.
 
+It works in Expo apps and in bare React Native apps; Expo is not required.
+
 ## Requirements
 
-- **Expo with a native build.** WebRTC is a native module, so the app must be built with `npx expo run:ios` / `run:android` or EAS Build. Expo Go cannot run it. `expo-dev-client` is optional.
+- **A native build.** WebRTC is a native module. In Expo, build with `npx expo run:ios` / `run:android` or EAS Build; Expo Go cannot run it (`expo-dev-client` is optional). Bare React Native apps build as usual, see [Bare React Native](#bare-react-native).
 - **A physical device** for anything involving the microphone.
 - **Your own backend** to create session tokens (see [Session tokens](#session-tokens)). Do not ship an API key inside an app.
-- **Tested with** Expo SDK 58, React Native 0.88, `@livekit/react-native` 3.1, `@livekit/react-native-webrtc` 150.1 and `livekit-client` 2.20–2.23, on iOS 26 and Android 17. Other versions may work but are untested.
+- **Tested with** Expo SDK 58 and bare React Native 0.88, `@livekit/react-native` 3.1, `@livekit/react-native-webrtc` 150.1 and `livekit-client` 2.20–2.23, on iOS 26 and Android 17. Other versions may work but are untested.
 
-## Install
+## Install (Expo)
 
 ```sh
 npx expo install @fishaudio/agent-react-native @livekit/react-native @livekit/react-native-webrtc \
@@ -45,6 +47,39 @@ Plugin options:
 | `backgroundAudio` | `true` | Adds the iOS `audio` background mode, so calls continue in the background and with the screen locked. |
 
 On Android nothing needs configuring: the package's manifest adds the microphone, audio and foreground-service permissions and the service itself when the app is built.
+
+## Bare React Native
+
+Without Expo, install the packages without the config plugins and set the native options yourself:
+
+```sh
+npm install @fishaudio/agent-react-native @livekit/react-native @livekit/react-native-webrtc livekit-client
+```
+
+- **LiveKit setup:** follow the [LiveKit React Native installation](https://github.com/livekit/client-sdk-react-native#installation) for its native setup. That replaces the two LiveKit/WebRTC config plugins. In short:
+  - Android `MainApplication.kt`: `LiveKitReactNative.setup(this, AudioType.CommunicationAudioType())` in `onCreate`.
+  - iOS `AppDelegate.swift`: `import livekit_react_native`, then `LivekitReactNative.setup()` in `didFinishLaunchingWithOptions`.
+  - iOS `Podfile`: LiveKit's WebRTC pod comes from LiveKit's own spec repo, so add both sources at the top, then run `cd ios && pod install --repo-update`. Without them `pod install` fails with `None of your spec sources contain a spec satisfying the dependency: LiveKitWebRTC`.
+
+    ```ruby
+    source 'https://github.com/livekit/podspecs.git'
+    source 'https://cdn.cocoapods.org/'
+    ```
+
+- **iOS `Info.plist`:** add the microphone text, and the `audio` background mode so calls continue in the background:
+
+  ```xml
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Talk to our assistant by voice.</string>
+  <key>UIBackgroundModes</key>
+  <array>
+    <string>audio</string>
+  </array>
+  ```
+
+- **Android:** nothing to add. Autolinking registers the package's module, and its manifest brings the permissions and the foreground service.
+
+Then build with `npx react-native run-ios` / `run-android`. The entry file is the same as [without expo-router](#set-up-the-entry-file), with `AppRegistry.registerComponent` in place of `registerRootComponent`.
 
 ## Set up the entry file
 
@@ -164,8 +199,9 @@ Everything else (`status`, `mode`, `micMuted` / `setMicMuted`, `sendUserMessage`
 | Symptom | Cause and fix |
 |---|---|
 | Errors about a missing native module when running in Expo Go | Expo Go cannot load WebRTC. Build the app with `npx expo run:ios` / `run:android`. |
+| Warning `Native module missing: background calls will lose the microphone` | The app was not rebuilt after installing the package. Rebuild the native app (`npx expo run:android` or `npx react-native run-android`). |
 | `startSession` rejects with `connection_failed` ("Could not establish the realtime session") | Check that the token endpoint returned a token from `POST /v1/agent/sessions`, that it was used right away (tokens are short-lived), and that the device has network. If you call LiveKit or WebRTC APIs directly before the first call, call `setupFishAgent()` in the entry file first. |
-| A plugin change has no effect (missing microphone text, no background audio) | Native settings only change on a rebuild: run `npx expo prebuild` (or `run:ios` / `run:android`) again. |
+| A plugin change has no effect (missing microphone text, no background audio) | Native settings only change on a rebuild: run `npx expo prebuild` (or `run:ios` / `run:android`) again. In bare React Native, check `Info.plist` and rebuild. |
 | `fetch` to your token endpoint fails on the phone | `localhost` points at the phone. Use your computer's LAN address or `adb reverse`, and HTTPS on iOS. |
 | Android: the agent stops hearing the user when the app is in the background | `callNotification` is `false`, or the app was not rebuilt after installing the package, so the foreground service is missing. |
 | A permission prompt about local networks or nearby devices at first launch | Debug builds look for the development server on the local network. It does not come from the call. |

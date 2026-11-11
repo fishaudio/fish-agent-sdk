@@ -1,15 +1,36 @@
-plugins {
-  id 'com.android.library'
-  id 'expo-module-gradle-plugin'
+// A plain React Native library, picked up by autolinking in bare React Native
+// and Expo projects alike. The app's root buildscript provides AGP and Kotlin.
+apply plugin: 'com.android.library'
+// AGP 9 with built-in Kotlin registers the `kotlin` extension itself and fails
+// if the Kotlin plugin is applied on top; apply it only when that is not the case.
+if (project.extensions.findByName('kotlin') == null) {
+  apply plugin: 'org.jetbrains.kotlin.android'
+}
+
+def safeExtGet(name, fallback) {
+  rootProject.ext.has(name) ? rootProject.ext.get(name) : fallback
 }
 
 group = 'com.fishaudio.agent'
 version = '1.0.0'
 
 android {
-  namespace "com.fishaudio.agent.reactnative"
+  namespace 'com.fishaudio.agent.reactnative'
+  compileSdk safeExtGet('compileSdkVersion', 36)
+
   defaultConfig {
-    versionCode 1
-    versionName '1.0.0'
+    minSdk safeExtGet('minSdkVersion', 24)
+    targetSdk safeExtGet('targetSdkVersion', 36)
   }
+  // Java/Kotlin JVM targets are set for every library by the React Native Gradle plugin.
+}
+
+repositories {
+  google()
+  mavenCentral()
+}
+
+dependencies {
+  // The version comes from the app's React Native Gradle plugin.
+  implementation 'com.facebook.react:react-android'
 }

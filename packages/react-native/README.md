@@ -2,13 +2,13 @@
 
 Voice calls with [Fish Audio](https://fish.audio) agents in React Native apps. It runs the same session code as the web SDK and adds what phones need: the microphone permission, the audio session and routing (loudspeaker, earpiece, headsets), and background calls on iOS and Android.
 
-**Full documentation:** [React Native SDK](https://github.com/fishaudio/fish-agent-sdk-web/blob/main/docs/react-native.md), covering the entry-file setup for expo-router, session tokens, the API, background calls, limitations and troubleshooting.
+**Full documentation:** [React Native SDK](https://github.com/fishaudio/fish-agent-sdk-web/blob/main/docs/react-native.md), covering Expo and bare React Native setup, the entry file for expo-router, session tokens, the API, background calls, limitations and troubleshooting.
 
 ## Requirements
 
-- Expo, built natively with `npx expo run:ios` / `run:android` or EAS Build. Expo Go cannot run WebRTC.
+- Expo (built natively with `npx expo run:ios` / `run:android` or EAS Build; Expo Go cannot run WebRTC) or bare React Native.
 - A backend that creates session tokens with your API key. Never ship the API key in the app.
-- Tested with Expo SDK 58, React Native 0.88, `@livekit/react-native` 3.1, `@livekit/react-native-webrtc` 150.1 and `livekit-client` 2.20–2.23, on iOS 26 and Android 17.
+- Tested with Expo SDK 58 and bare React Native 0.88, `@livekit/react-native` 3.1, `@livekit/react-native-webrtc` 150.1 and `livekit-client` 2.20–2.23, on iOS 26 and Android 17.
 
 ## Install
 
@@ -24,6 +24,8 @@ npx expo install @fishaudio/agent-react-native @livekit/react-native @livekit/re
 ```
 
 Then build: `npx expo run:ios --device` or `npx expo run:android --device`.
+
+Bare React Native: install the same packages without the two plugin packages, follow LiveKit's native setup, and add `NSMicrophoneUsageDescription` and the `audio` background mode to `Info.plist`. Details in the [full documentation](https://github.com/fishaudio/fish-agent-sdk-web/blob/main/docs/react-native.md#bare-react-native).
 
 ## Use
 
