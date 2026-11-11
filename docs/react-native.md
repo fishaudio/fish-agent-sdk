@@ -203,6 +203,8 @@ The second argument, `MobileConversationOptions`:
 
 Everything else (`status`, `mode`, `micMuted` / `setMicMuted`, `sendUserMessage`, `interrupt`, `session`, client tools, callbacks, errors) is described in the [React SDK](react/useConversation.md), [Events](events.md), [Client tools](client-tools.md) and [Errors](errors.md) pages. `useAgentMessages` and `AgentSessionProvider` are re-exported from the React SDK and work the same way.
 
+Not on React Native: the browser-only members of the React hook (`startAudio`, `setOutputVolume`, `setInputDevice`, `setOutputDevice`) are left out of the return value, and `useAudioLevels` and `AgentAudioVisualizer` are not exported (see [Limitations](#limitations)). `AgentSession` is exported as a type only, for `conversation.session`: start calls through `useConversation`, which also handles the permission, audio session and call service.
+
 ## Background calls
 
 - **iOS:** with the `audio` background mode (on by default in the plugin), a call continues when the app goes to the background or the screen locks: the user can keep talking and hear the agent.
@@ -219,7 +221,7 @@ Everything else (`status`, `mode`, `micMuted` / `setMicMuted`, `sendUserMessage`
 
 ## Limitations
 
-- **No audio levels.** React Native has no Web Audio API, so `useAudioLevels` and `session.getInputVolume()` / `getOutputVolume()` stay at 0, and `AgentAudioVisualizer` is not exported. Use `mode` to animate a speaking indicator.
+- **No audio levels.** React Native has no Web Audio API, so `session.getInputVolume()` / `getOutputVolume()` stay at 0, and `useAudioLevels` and `AgentAudioVisualizer` are not exported. Use `mode` to animate a speaking indicator.
 - **`audioOutput` is the requested route,** not a report of the current device. Plugging in a headset in `auto` mode moves audio to it, but `audioOutput` still reads `auto`, and there is no route-change event.
 - **`mode` and Chinese replies.** `speaking` follows the agent's transcript, which for Chinese replies currently arrives in one piece instead of following playback. In Chinese conversations `speaking` shows only briefly.
 - **Not yet tested:** incoming phone calls interrupting a call, Bluetooth headsets, Wi-Fi/cellular handover, and reconnecting after a network drop on iOS.

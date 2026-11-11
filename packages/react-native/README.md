@@ -57,7 +57,7 @@ function SupportCall() {
 
 ## Limitations
 
-- No audio levels on React Native: `useAudioLevels` stays at 0 and `AgentAudioVisualizer` is not exported.
+- No audio levels on React Native: `useAudioLevels` and `AgentAudioVisualizer` are not exported.
 - `audioOutput` is the route you asked for, not the device currently playing; there is no route-change event.
 - In Chinese conversations `mode` shows `speaking` only briefly, because the agent's text arrives in one piece.
 - Not yet tested: incoming phone calls, Bluetooth headsets, network handover, reconnecting after a drop on iOS.

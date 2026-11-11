@@ -27,7 +27,13 @@ export interface MobileConversationOptions {
   callNotification?: CallNotification | false;
 }
 
-export interface UseConversationReturn extends WebConversationReturn {
+/**
+ * Browser-only members of the web hook: autoplay unlocking and device IDs or
+ * an output volume on media elements, none of which exist in React Native.
+ */
+type BrowserOnly = "startAudio" | "setOutputVolume" | "setInputDevice" | "setOutputDevice";
+
+export interface UseConversationReturn extends Omit<WebConversationReturn, BrowserOnly> {
   audioOutput: AudioOutputRoute;
   setAudioOutput: (route: AudioOutputRoute) => Promise<void>;
 }
@@ -159,5 +165,12 @@ export function useConversation(
     }
   }, []);
 
-  return { ...web, startSession, endSession, audioOutput, setAudioOutput };
+  const {
+    startAudio: _startAudio,
+    setOutputVolume: _setOutputVolume,
+    setInputDevice: _setInputDevice,
+    setOutputDevice: _setOutputDevice,
+    ...shared
+  } = web;
+  return { ...shared, startSession, endSession, audioOutput, setAudioOutput };
 }
