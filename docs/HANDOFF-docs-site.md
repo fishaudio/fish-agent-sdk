@@ -5,6 +5,7 @@ For whoever maintains docs.fish.audio. The pages in this folder are the source; 
 ## 1. New page: React Native SDK
 
 - **Source:** [`docs/react-native.md`](react-native.md)
+- **Chinese version:** [`docs/react-native.zh-CN.md`](react-native.zh-CN.md), kept section-for-section in sync with the English page; use it if the site has a Chinese locale.
 - **Suggested URL:** `https://docs.fish.audio/agents/deploy/react-native`, next to `web-sdk` and `react-sdk` in the Deploy section.
 - The package's `homepage` in `packages/react-native/package.json` already points at that URL, so npm links there once the page is live.
 - The page links to the React SDK, Authentication, Events, Client tools and Errors pages by relative path; map them to their site URLs (`/agents/deploy/react-sdk`, `/agents/deploy/authentication`, and so on).

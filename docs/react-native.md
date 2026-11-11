@@ -1,5 +1,7 @@
 # React Native SDK
 
+English | [中文](react-native.zh-CN.md)
+
 `@fishaudio/agent-react-native` adds voice calls with a Fish Audio agent to a React Native app. The call itself runs on the same code as the [Web SDK](README.md), so connection handling, transcripts, client tools and end reasons behave the same. On top of that the package handles what phones need:
 
 - the microphone permission on Android,
@@ -202,8 +204,10 @@ Everything else (`status`, `mode`, `micMuted` / `setMicMuted`, `sendUserMessage`
 | Warning `Native module missing: background calls will lose the microphone` | The app was not rebuilt after installing the package. Rebuild the native app (`npx expo run:android` or `npx react-native run-android`). |
 | `startSession` rejects with `connection_failed` ("Could not establish the realtime session") | Check that the token endpoint returned a token from `POST /v1/agent/sessions`, that it was used right away (tokens are short-lived), and that the device has network. If you call LiveKit or WebRTC APIs directly before the first call, call `setupFishAgent()` in the entry file first. |
 | A plugin change has no effect (missing microphone text, no background audio) | Native settings only change on a rebuild: run `npx expo prebuild` (or `run:ios` / `run:android`) again. In bare React Native, check `Info.plist` and rebuild. |
+| iOS `pod install` cannot find `LiveKitWebRTC` | The LiveKit pod sources are missing from the top of the `Podfile`, see [Bare React Native](#bare-react-native). |
 | `fetch` to your token endpoint fails on the phone | `localhost` points at the phone. Use your computer's LAN address or `adb reverse`, and HTTPS on iOS. |
 | Android: the agent stops hearing the user when the app is in the background | `callNotification` is `false`, or the app was not rebuilt after installing the package, so the foreground service is missing. |
 | A permission prompt about local networks or nearby devices at first launch | Debug builds look for the development server on the local network. It does not come from the call. |
+| On iPhones sold in mainland China, an "Allow to use wireless data" prompt at first network use | The system asks for every new app. Choose WLAN & Cellular. |
 | `ping timeout triggered` or `not found in senderGetStats()` warnings after hanging up | Harmless messages from LiveKit's teardown. To quiet LiveKit's logging: `import { setLogLevel } from "livekit-client"; setLogLevel("warn");` |
 | In a monorepo, odd failures after installing | Make sure only one copy of `@livekit/react-native` and `livekit-client` is installed (`npm ls @livekit/react-native livekit-client`). |
