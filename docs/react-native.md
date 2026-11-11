@@ -1,7 +1,5 @@
 # React Native SDK
 
-English | [中文](react-native.zh-CN.md)
-
 `@fishaudio/agent-react-native` adds voice calls with a Fish Audio agent to a React Native app. The call itself runs on the same code as the [Web SDK](README.md), so connection handling, transcripts, client tools and end reasons behave the same. On top of that the package handles what phones need:
 
 - the microphone permission on Android,

@@ -19,7 +19,7 @@ Framework-agnostic JavaScript/TypeScript SDK.
 
 ## `@fishaudio/agent-react-native`
 
-- [React Native SDK](react-native.md) ([中文](react-native.zh-CN.md)) covers installation in Expo and bare React Native, the entry file, session tokens from a mobile app, `useConversation` additions, background calls, limitations, and troubleshooting.
+- [React Native SDK](react-native.md) covers installation in Expo and bare React Native, the entry file, session tokens from a mobile app, `useConversation` additions, background calls, limitations, and troubleshooting.
 
 ## Building your own client
 
