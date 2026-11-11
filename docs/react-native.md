@@ -185,7 +185,16 @@ Everything else (`status`, `mode`, `micMuted` / `setMicMuted`, `sendUserMessage`
 ## Background calls
 
 - **iOS:** with the `audio` background mode (on by default in the plugin), a call continues when the app goes to the background or the screen locks: the user can keep talking and hear the agent.
-- **Android:** during a call the SDK runs a microphone foreground service with an ongoing notification. Android 14 and later silence an app's microphone as soon as it leaves the foreground unless such a service runs, while the agent keeps talking. On Android 13 and later, users who denied notifications still get the service; the notification is only hidden.
+- **Android:** during a call the SDK runs a microphone foreground service with an ongoing notification. Android 14 and later silence an app's microphone as soon as it leaves the foreground unless such a service runs, while the agent keeps talking.
+- **Android 13+ notification permission:** the notification only shows if the app holds `POST_NOTIFICATIONS`, which Android 13 and later grant at runtime. The SDK declares it but does not ask for it, so the prompt stays under your control. Without it the service still runs and background capture still works; only the notification is hidden. To show it, ask before the first call:
+
+  ```ts
+  import { PermissionsAndroid, Platform } from "react-native";
+
+  if (Platform.OS === "android" && Platform.Version >= 33) {
+    await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+  }
+  ```
 
 ## Limitations
 

@@ -1046,6 +1046,32 @@ describe("client tools", () => {
     }
   });
 
+  it("times out just before the agent's own deadline so the agent hears the failure", async () => {
+    vi.useFakeTimers();
+    try {
+      const { session, transport } = await start({
+        clientTools: { lookup: () => new Promise<string>(() => {}) },
+      });
+      const errors: FishAgentError[] = [];
+      session.on("error", (error) => errors.push(error));
+      transport.agent({ ...call(), timeoutMs: 30_000 });
+      await vi.advanceTimersByTimeAsync(28_999);
+      expect(errors).toEqual([]);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(errors[0]).toMatchObject({ code: "tool_timeout" });
+      expect(transport.sent[0]).toMatchObject({ isError: true });
+
+      // Short waits keep 90 % rather than losing a whole second.
+      transport.agent({ ...call(), callId: "call-2", timeoutMs: 2_000 });
+      await vi.advanceTimersByTimeAsync(1_799);
+      expect(errors).toHaveLength(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(errors).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("supports late registration via registerClientTool", async () => {
     const { session, transport } = await start();
     session.registerClientTool("lookup", () => "ok");

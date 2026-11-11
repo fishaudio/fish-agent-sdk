@@ -26,7 +26,7 @@ try {
 | `connection_failed` | The realtime connection could not be (re)established, a send to the agent failed, the agent never joined the session (15 s), or the microphone could not be toggled. |
 | `session_expired` | The session token's join deadline passed before connecting. |
 | `tool_failed` | A client tool threw, was not registered, or its result could not be delivered. See [Client tools](client-tools.md). |
-| `tool_timeout` | A client tool exceeded the agent's wait for it, or `clientToolTimeoutMs` (default 15 s) against runtimes that do not send one. |
+| `tool_timeout` | A client tool ran into the agent's wait for it (less a margin of up to 1 s, so the agent hears the error in time), or `clientToolTimeoutMs` (default 15 s) against runtimes that do not send one. |
 | `provider_error` | An upstream model or speech provider failed during the session. Delivered as an `error` event, with `stage` and `recovered` when the runtime reports them. The session may recover. |
 | `internal_error` | The agent runtime hit an internal error. Delivered as an `error` event, with `stage` and `recovered` when the runtime reports them. The session may recover. |
 

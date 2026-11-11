@@ -32,4 +32,4 @@ The live page covers the channels and messages but not the behavior a working cl
 ## 3. Existing pages: Web SDK, React SDK
 
 - Add a line pointing React Native developers to the new page.
-- `clientToolTimeoutMs`: the SDK now uses the agent's own wait when the runtime sends `timeoutMs`, and falls back to `clientToolTimeoutMs` (default 15 s) otherwise. The source wording is in [`client-tools.md`](client-tools.md) and [`errors.md`](errors.md).
+- `clientToolTimeoutMs`: the SDK now uses the agent's own wait, less a margin of up to 1 s, when the runtime sends `timeoutMs`, and falls back to `clientToolTimeoutMs` (default 15 s) otherwise. The source wording is in [`client-tools.md`](client-tools.md) and [`errors.md`](errors.md).

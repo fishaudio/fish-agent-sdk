@@ -33,18 +33,41 @@ class FishAgentModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
       } else {
         context.startService(intent)
       }
+      serviceStarted = true
       promise.resolve(true)
     } catch (error: Exception) {
       promise.reject("call_service_failed", error.message, error)
     }
   }
 
+  // Sent as an intent rather than stopService: intents are delivered in order,
+  // so the service has entered the foreground before it stops (stopping a
+  // startForegroundService service earlier crashes the app).
   @ReactMethod
   fun stopCallService() {
-    reactApplicationContext.stopService(Intent(reactApplicationContext, FishCallService::class.java))
+    // Never started: sending the stop intent would only create the service.
+    if (!serviceStarted) {
+      return
+    }
+    serviceStarted = false
+    val context = reactApplicationContext
+    try {
+      context.startService(Intent(context, FishCallService::class.java).setAction(FishCallService.ACTION_STOP))
+    } catch (error: Exception) {
+      // Not running and the app is in the background, where startService is
+      // refused: nothing to stop beyond a plain stopService.
+      try {
+        context.stopService(Intent(context, FishCallService::class.java))
+      } catch (_: Exception) {
+      }
+    }
   }
 
   companion object {
     const val NAME = "FishAgentReactNative"
+
+    // Process-wide: the service outlives a JS reload, the module instance does not.
+    @Volatile
+    private var serviceStarted = false
   }
 }

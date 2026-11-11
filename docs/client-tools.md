@@ -24,7 +24,7 @@ session.registerClientTool("get_cart", async () => ({ items: await loadCart() })
 
 ## Failure semantics
 
-- A handler that throws or times out reports an error result to the agent and emits an `error` event (`tool_failed` / `tool_timeout`). The timeout is the agent's own wait for this call when the runtime sends it (the tool's configured timeout), and otherwise `clientToolTimeoutMs` (default 15 s).
+- A handler that throws or times out reports an error result to the agent and emits an `error` event (`tool_failed` / `tool_timeout`). The timeout is the agent's own wait for this call when the runtime sends it (the tool's configured timeout), shortened by a margin (the smaller of 1 s and 10 %) so the error result reaches the agent before it gives up. Against runtimes that do not send it, the timeout is `clientToolTimeoutMs` (default 15 s).
 - A call to a tool with no registered handler gets an error result. The conversation continues.
 - The serialized result must fit in one realtime message: about 60 KB (`MAX_CLIENT_TOOL_RESULT_BYTES`). A larger or non-JSON-serializable return value is replaced by an error result telling the agent why, and a `tool_failed` error is emitted. Return a summary or a reference (an id, a URL) instead of a large payload.
 - If a result cannot be sent at all (transport error), the SDK sends a short error result in its place so the agent does not wait out its server-side tool timeout.

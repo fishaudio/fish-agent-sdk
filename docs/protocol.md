@@ -59,7 +59,7 @@ Agent → client on topic `agent-event` (`AgentSessionMessage`):
 
 | `type` | What to do |
 |---|---|
-| `client_tool.call` | Run the named tool with `params`. If `expectsResponse` is true, reply with `client_tool.result` carrying the same `callId`. Time out after `timeoutMs` when it is present; older runtimes omit it, and the SDK then uses 15 s. |
+| `client_tool.call` | Run the named tool with `params`. If `expectsResponse` is true, reply with `client_tool.result` carrying the same `callId`. Time out after `timeoutMs` when it is present (the SDK answers slightly earlier, so its error result arrives before the agent gives up); older runtimes omit it, and the SDK then uses 15 s. |
 | `tool.started` / `tool.completed` / `tool.failed` | Show tool activity. One start and one end per `callId`. End messages repeat the name and source, so you can render them even if you missed the start. `nodeId` is always present (it can be an empty string). Sent only when the session was created with `tool_events` (the default is true). |
 | `session.ended` | The runtime is about to close the call. Keep `reason`; it is the authoritative end reason (see section 7). |
 | `error` | A pipeline stage failed. `recovered: true` means the runtime will still answer this turn, so a light "retrying" hint is enough. It never means the session ended. |

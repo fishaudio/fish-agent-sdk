@@ -1,6 +1,9 @@
 import type { AgentSessionMessage, ClientSessionMessage } from "@fishaudio/agent-protocol";
 import { FishAgentError } from "../errors.js";
 
+/** How much earlier than the agent's own deadline a client tool times out. */
+const TOOL_TIMEOUT_MARGIN_MS = 1_000;
+
 export type ClientToolHandler = (
   params: Record<string, unknown>,
   context: { callId: string; toolName: string },
@@ -139,11 +142,17 @@ export class ClientToolDispatcher {
   }
 
   /** The agent's own wait when the runtime sends it, else the configured fallback. */
+  /**
+   * The agent's own wait when the runtime sends one, minus a margin (the
+   * smaller of 1 s and 10 %) so the client's tool_timeout reply reaches the
+   * agent before it gives up; otherwise the configured fallback.
+   */
   private static timeoutFor(call: ClientToolCall, fallbackMs: number): number {
     const fromAgent = call.timeoutMs;
-    return typeof fromAgent === "number" && Number.isFinite(fromAgent) && fromAgent > 0
-      ? fromAgent
-      : fallbackMs;
+    if (typeof fromAgent !== "number" || !Number.isFinite(fromAgent) || fromAgent <= 0) {
+      return fallbackMs;
+    }
+    return Math.max(fromAgent - TOOL_TIMEOUT_MARGIN_MS, fromAgent * 0.9);
   }
 
   private withTimeout<T>(promise: Promise<T>, toolName: string, timeoutMs: number): Promise<T> {

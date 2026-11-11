@@ -9,6 +9,13 @@ import { startCallService, stopCallService, type CallNotification } from "./call
 import { requestMicrophonePermission } from "./permissions.js";
 import { hasWebRTCGlobals, setupFishAgent } from "./setup.js";
 
+function startCancelledError(): Error {
+  // Same error as @fishaudio/agent-react's hook throws for a start cut short by endSession.
+  const error = new Error("Conversation start was cancelled by endSession");
+  error.name = "AbortError";
+  return error;
+}
+
 export interface MobileConversationOptions {
   /** Initial audio route. Default `auto`: headsets first, else the loudspeaker. */
   audioOutput?: AudioOutputRoute;
@@ -45,14 +52,20 @@ export function useConversation(
     options.audioOutput ?? "auto",
   );
   const routeRef = useRef(audioOutput);
-  /** The audio session and call service are up for the current call. */
-  const platformActiveRef = useRef(false);
+  /** Bumped by endSession and unmount: a start begun under an older value is cancelled. */
+  const generationRef = useRef(0);
+  /**
+   * The generation whose start holds the audio session and call service, or
+   * null when nothing is held. Tracking the owner, not just a flag, keeps a
+   * cancelled start from releasing what the next call has already claimed.
+   */
+  const platformOwnerRef = useRef<number | null>(null);
 
   const releasePlatform = useCallback(async () => {
-    if (!platformActiveRef.current) {
+    if (platformOwnerRef.current === null) {
       return;
     }
-    platformActiveRef.current = false;
+    platformOwnerRef.current = null;
     stopCallService();
     await stopCallAudio().catch(() => undefined);
   }, []);
@@ -61,6 +74,8 @@ export function useConversation(
 
   const startSession = useCallback(
     async (overrides: Partial<AgentSessionOptions> = {}): Promise<string> => {
+      const generation = generationRef.current;
+      const cancelled = () => generation !== generationRef.current;
       // Without the globals the connect fails with a bare connection_failed.
       if (!hasWebRTCGlobals()) {
         setupFishAgent();
@@ -68,15 +83,30 @@ export function useConversation(
       const microphone = { ...defaultsRef.current, ...overrides }.microphone !== false;
       if (microphone) {
         await requestMicrophonePermission();
+        if (cancelled()) {
+          throw startCancelledError();
+        }
       }
-      if (!platformActiveRef.current) {
+      if (platformOwnerRef.current === null) {
         // Claimed before the await so a double tap starts the platform once.
-        platformActiveRef.current = true;
+        platformOwnerRef.current = generation;
         try {
           await startCallAudio(routeRef.current);
         } catch (error) {
-          platformActiveRef.current = false;
+          if (platformOwnerRef.current === generation) {
+            platformOwnerRef.current = null;
+          }
           throw error;
+        }
+        if (cancelled()) {
+          // endSession ran during the await and released what it saw; the audio
+          // session may have come up after that. Undo it unless a newer call
+          // has claimed the platform since.
+          if (platformOwnerRef.current === generation || platformOwnerRef.current === null) {
+            platformOwnerRef.current = null;
+            await stopCallAudio().catch(() => undefined);
+          }
+          throw startCancelledError();
         }
         const notification = optionsRef.current.callNotification;
         if (microphone && notification !== false) {
@@ -86,7 +116,11 @@ export function useConversation(
       try {
         return await webStart(overrides);
       } catch (error) {
-        await releasePlatform();
+        // Only what this start still holds: after a hangup and a quick redial
+        // the platform may already belong to the next call.
+        if (platformOwnerRef.current === generation) {
+          await releasePlatform();
+        }
         throw error;
       }
     },
@@ -94,6 +128,7 @@ export function useConversation(
   );
 
   const endSession = useCallback(async () => {
+    generationRef.current += 1;
     try {
       await webEnd();
     } finally {
@@ -110,6 +145,7 @@ export function useConversation(
 
   useEffect(
     () => () => {
+      generationRef.current += 1;
       void releasePlatform();
     },
     [releasePlatform],
@@ -118,7 +154,7 @@ export function useConversation(
   const setAudioOutput = useCallback(async (route: AudioOutputRoute) => {
     routeRef.current = route;
     setAudioOutputState(route);
-    if (platformActiveRef.current) {
+    if (platformOwnerRef.current !== null) {
       await applyAudioOutput(route);
     }
   }, []);

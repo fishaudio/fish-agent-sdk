@@ -19,7 +19,33 @@ import android.os.IBinder
 class FishCallService : Service() {
   override fun onBind(intent: Intent?): IBinder? = null
 
+  /** startForeground has run (or was refused) for this service instance. */
+  private var foregroundHandled = false
+
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    // Intents arrive in order, so a stop sent right after the start is handled
+    // after the start has entered the foreground. (Android crashes the app when
+    // a service begun with startForegroundService stops before startForeground.)
+    if (intent?.action == ACTION_STOP) {
+      if (foregroundHandled) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+          stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+          @Suppress("DEPRECATION")
+          stopForeground(true)
+        }
+      }
+      stopSelf()
+      return START_NOT_STICKY
+    }
+    if (!foregroundHandled) {
+      foregroundHandled = true
+      enterForeground(intent)
+    }
+    return START_NOT_STICKY
+  }
+
+  private fun enterForeground(intent: Intent?) {
     val title = intent?.getStringExtra(EXTRA_TITLE) ?: "Call in progress"
     val text = intent?.getStringExtra(EXTRA_TEXT) ?: ""
     val notification = buildNotification(title, text)
@@ -34,7 +60,6 @@ class FishCallService : Service() {
       // without background capture. Never take the app down for it.
       stopSelf()
     }
-    return START_NOT_STICKY
   }
 
   // Swiping the app away ends the call; the service must not outlive it.
@@ -72,6 +97,7 @@ class FishCallService : Service() {
   }
 
   companion object {
+    const val ACTION_STOP = "com.fishaudio.agent.reactnative.STOP"
     const val EXTRA_TITLE = "title"
     const val EXTRA_TEXT = "text"
     private const val CHANNEL_ID = "fish_agent_call"

@@ -28,10 +28,23 @@ export async function startCallAudio(route: AudioOutputRoute): Promise<void> {
   await applyAudioOutput(route, { initial: true });
 }
 
+/**
+ * Releases the call's audio session. iOS: WebRTC deactivates the session when
+ * capture stops but leaves the call category (playAndRecord, voice/video chat
+ * mode) behind, which would make other audio in the app quieter and ignore the
+ * silent switch. Only the category goes back to the system default here; the
+ * activation stays WebRTC's (see startCallAudio).
+ */
 export async function stopCallAudio(): Promise<void> {
-  if (Platform.OS !== "ios") {
-    await AudioSession.stopAudioSession();
+  if (Platform.OS === "ios") {
+    await AudioSession.setAppleAudioConfiguration({
+      audioCategory: "soloAmbient",
+      audioCategoryOptions: [],
+      audioMode: "default",
+    });
+    return;
   }
+  await AudioSession.stopAudioSession();
 }
 
 /**

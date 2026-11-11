@@ -20,7 +20,14 @@ const { calls, platform, web, audioSession, nativeModule, permissions } = vi.hoi
   };
   const audioSession = {
     outputs: ["speaker", "earpiece"] as string[],
-    startAudioSession: async () => void calls.push("audio.start"),
+    /** When set, each startAudioSession waits for the next gate to open. */
+    gates: undefined as Array<() => void> | undefined,
+    startAudioSession: async () => {
+      if (audioSession.gates) {
+        await new Promise<void>((open) => audioSession.gates!.push(open));
+      }
+      calls.push("audio.start");
+    },
     stopAudioSession: async () => void calls.push("audio.stop"),
     selectAudioOutput: async (id: string) => void calls.push(`audio.select:${id}`),
     getAudioOutputs: async () => audioSession.outputs,
@@ -70,6 +77,11 @@ vi.mock("@fishaudio/agent-react", async () => {
 });
 
 import { useConversation } from "../useConversation.js";
+
+/** Waits until an audio-session start is parked at its gate. */
+async function untilGated(count = 1): Promise<void> {
+  await vi.waitFor(() => expect(audioSession.gates?.length).toBe(count));
+}
 import { applyAudioOutput } from "../audio.js";
 
 beforeEach(() => {
@@ -82,6 +94,7 @@ beforeEach(() => {
   permissions.granted = true;
   permissions.checked = false;
   audioSession.outputs = ["speaker", "earpiece"];
+  audioSession.gates = undefined;
 });
 
 describe("useConversation (React Native)", () => {
@@ -161,6 +174,58 @@ describe("useConversation (React Native)", () => {
     expect(calls).toEqual(["service.stop", "audio.stop", "web.end"]);
   });
 
+  it("cancels a start that a hangup overtakes while the audio session comes up", async () => {
+    permissions.checked = true;
+    audioSession.gates = [];
+    const { result } = renderHook(() => useConversation());
+    let start!: Promise<string>;
+    act(() => {
+      start = result.current.startSession();
+    });
+    const rejected = expect(start).rejects.toMatchObject({ name: "AbortError" });
+    await untilGated();
+    await act(async () => {
+      await result.current.endSession();
+    });
+    await act(async () => {
+      audioSession.gates!.shift()!();
+      await rejected;
+    });
+    // The audio session came up after the hangup released it, so it is undone;
+    // the call service and the session were never started.
+    expect(calls).toEqual(["web.end", "service.stop", "audio.stop", "audio.start", "audio.stop"]);
+  });
+
+  it("does not release a redial's platform when the cancelled start finishes late", async () => {
+    permissions.checked = true;
+    audioSession.gates = [];
+    const { result } = renderHook(() => useConversation());
+    let first!: Promise<string>;
+    let second!: Promise<string>;
+    act(() => {
+      first = result.current.startSession();
+    });
+    const firstRejected = expect(first).rejects.toMatchObject({ name: "AbortError" });
+    await untilGated();
+    await act(async () => {
+      await result.current.endSession();
+    });
+    act(() => {
+      second = result.current.startSession();
+    });
+    await untilGated(2);
+    await act(async () => {
+      audioSession.gates!.shift()!();
+      await firstRejected;
+    });
+    await act(async () => {
+      audioSession.gates!.shift()!();
+      await second;
+    });
+    expect(calls.filter((c) => c === "audio.stop")).toHaveLength(1);
+    expect(calls.slice(-3)).toEqual(["audio.start", "service.start:Call in progress", "web.start"]);
+  });
+
   it("routes audio live during a call and only records the choice otherwise", async () => {
     permissions.checked = true;
     const { result } = renderHook(() => useConversation());
@@ -214,6 +279,19 @@ describe("iOS audio session", () => {
     expect(calls).not.toContain("audio.stop");
     expect(calls).toContain("audio.apple:videoChat");
     expect(calls).toContain("web.start");
+  });
+
+  it("puts the category back to the system default when the call ends", async () => {
+    platform.OS = "ios";
+    const { result } = renderHook(() => useConversation());
+    await act(async () => {
+      await result.current.startSession();
+    });
+    calls.length = 0;
+    await act(async () => {
+      await result.current.endSession();
+    });
+    expect(calls.filter((c) => c.startsWith("audio."))).toEqual(["audio.apple:default"]);
   });
 });
 

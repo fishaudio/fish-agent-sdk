@@ -49,7 +49,16 @@ export function startCallService(notification: CallNotification = {}): void {
     // Not awaited: the call does not wait on the notification.
     void Promise.resolve(
       module.startCallService(notification.title ?? "Call in progress", notification.text ?? ""),
-    ).catch(warn);
+    )
+      .then((started) => {
+        if (started === false) {
+          console.warn(
+            "[fish-agent] Call service not started: RECORD_AUDIO is not granted, " +
+              "so the microphone will be silenced while the app is in the background.",
+          );
+        }
+      })
+      .catch(warn);
   } catch (error) {
     warn(error);
   }
