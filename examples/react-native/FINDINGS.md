@@ -159,7 +159,7 @@ Wi-Fi 断开 8 秒触发的是信令恢复：
 - **扣费（网页端和移动端一样）**：agent ID 写在网页源码里，任何人都能写脚本，用主人的余额开通话。上限是每个 agent 每分钟 60 个 session，每个最长 `max_duration_seconds`。
 - **挤占**：限流按 agent 计数，刷满之后正常用户也会收到 429。
 
-**进展（2026-11-11）**：网页的白名单本来也挡不住脚本，App 自己填 `Origin` 并不比网页更不安全。所以 SDK 新增了 `origin` 选项（`startSession({ agentId, origin })`），文档写明了代价，demo 也同时展示"你的后端"和"公开 agent"两种接法。白名单字段的说明（`apps/agents/public/schemas.py`，`public_enabled` 字段）写的是"browser SDK"，官网 Public Agents 页也只讲浏览器，所以仍需后端确认 App 可以这样用。
+**进展（2026-11-11）**：网页的白名单本来也挡不住脚本，App 自己填 `Origin` 并不比网页更不安全。所以 SDK 新增了 `origin` 选项（`startSession({ agentId, origin })`，**标为实验性**，后续可能被"App 独立标识"的方案取代），文档写明了代价，demo 也同时展示"你的后端"和"公开 agent"两种接法。白名单字段的说明（`apps/agents/public/schemas.py`，`public_enabled` 字段）写的是"browser SDK"，官网 Public Agents 页也只讲浏览器，所以仍需后端确认 App 可以这样用。
 
 **建议**：
 - 请后端确认：App 用公开 agent 时自带 `Origin`，是否是认可的用法；以后会不会对非浏览器请求收紧。

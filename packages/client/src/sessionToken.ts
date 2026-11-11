@@ -27,6 +27,11 @@ export interface SessionRequestOptions {
    * their page's origin themselves and ignore this. Native apps send none, so
    * without it a public agent answers 403 `origin_forbidden`. Use an origin you
    * own that is on the agent's allowlist. Ignored with `sessionToken`.
+   *
+   * @experimental The platform documents public agents for browsers only, and a
+   * dedicated way for apps to identify themselves may replace this. It may
+   * change or be removed in a minor release. For production apps, prefer a
+   * session token from your backend.
    */
   origin?: string;
   /** Session token created by the host backend, passed through verbatim. */

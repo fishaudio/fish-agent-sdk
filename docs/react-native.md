@@ -122,7 +122,9 @@ On a phone, two things differ from the browser:
 - **`localhost` is the phone, not your computer.** During development, use your computer's LAN address, or on Android forward the port with `adb reverse tcp:3001 tcp:3001`.
 - **iOS blocks plain `http://`** outside development builds. Serve the token endpoint over HTTPS.
 
-### Public agent
+### Public agent (experimental)
+
+> **Experimental.** The `origin` option may change or be removed in a minor release: the platform documents public agents for browsers only, and a dedicated way for apps to identify themselves may replace it. Use your backend for production apps.
 
 An agent with public access enabled takes sessions without a key or a backend. The server checks the request's `Origin` against the agent's allowlist. A browser sends its page's origin by itself; a native app sends none, so pass one that is on the allowlist:
 
@@ -135,7 +137,6 @@ Without `origin` the request fails with `origin_forbidden`.
 Know what this means before shipping it:
 
 - **Anyone with the agent ID can start sessions, billed to the agent's owner.** This is the same exposure as a public agent on a website: the allowlist stops other websites from embedding the agent, but no script, on the web or in an app, is stopped by it. Platform rate limits (per agent and per IP) are the backstop, and per-session customization (`overrides`) only works for fields the agent allows.
-- **The docs site describes public agents for browsers only.** Using one from an app works, but it is outside what the docs cover; check with Fish Audio before relying on it in production.
 - **Use an origin you own.** List it on the agent; it does not need to serve anything.
 
 For a production app, especially one with signed-in users, prefer your backend: it decides who gets a token and can pass `end_user_id`.

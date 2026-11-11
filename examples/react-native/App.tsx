@@ -86,7 +86,7 @@ function HomeScreen({ call }: { call: Call }) {
         onChange={setKind}
         options={[
           { value: 'backend', label: '你的后端（推荐）' },
-          { value: 'public', label: '公开 agent' },
+          { value: 'public', label: '公开 agent（实验性）' },
         ]}
       />
 
@@ -120,7 +120,7 @@ function HomeScreen({ call }: { call: Call }) {
             autoCorrect={false}
             keyboardType="url"
           />
-          <Text style={styles.fieldHint}>不需要 key 和后端。agent 要在后台开启公开访问；拿到 ID 的人都能用它通话，费用记在 agent 主人账上。</Text>
+          <Text style={styles.fieldHint}>实验性接口，后续版本可能调整。不需要 key 和后端；拿到 ID 的人都能用它通话，费用记在 agent 主人账上。</Text>
         </>
       )}
 

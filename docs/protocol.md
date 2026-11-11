@@ -11,7 +11,7 @@ The transport today is LiveKit (WebRTC). Media goes over audio tracks, control m
 `POST /v1/agent/sessions` returns a `SessionToken`. Check `transport` first: if it is not a value you support, fail with an explicit "please upgrade" error. Never try to guess.
 
 - **Mobile and desktop apps:** get the token from your own backend, which calls the endpoint with your API key. Do not ship an API key in an app.
-- **Public agents** (keyless) are meant for browsers. The server checks the request's `Origin` header against the agent's allowlist. A browser sets that header and pages cannot change it. Other clients can send any value, so the check limits which websites can embed the agent. It does not authenticate the caller. A non-browser client has to send an allowlisted `Origin` itself (the SDKs take an `origin` option for this); a public agent is then as open to it as to anyone else with the agent ID.
+- **Public agents** (keyless) are meant for browsers. The server checks the request's `Origin` header against the agent's allowlist. A browser sets that header and pages cannot change it. Other clients can send any value, so the check limits which websites can embed the agent. It does not authenticate the caller. A non-browser client has to send an allowlisted `Origin` itself (the SDKs take an experimental `origin` option for this); a public agent is then as open to it as to anyone else with the agent ID.
 
 `expires_at` is the deadline to join, not the length of the call. `max_duration_seconds` caps the call itself. The runtime ends the call when it reaches the cap.
 

@@ -8,7 +8,7 @@ It is built on `@fishaudio/agent-react-native` (`packages/react-native`): the ca
 
 - Both supported ways to start a call:
   - **Your backend (recommended):** the app asks `server/index.mjs` for a session token; the server holds the API key and picks the agent, and the app never sees the key.
-  - **Public agent:** keyless, with the agent ID and an origin on the agent's allowlist (`startSession({ agentId, origin })`). Anyone with the ID can do the same; see FINDINGS.md P1-6.
+  - **Public agent (experimental):** keyless, with the agent ID and an origin on the agent's allowlist (`startSession({ agentId, origin })`). Anyone with the ID can do the same; see FINDINGS.md P1-6.
 - Voice call over LiveKit WebRTC, with the `fish.client.audio_ready` handshake
 - Live transcripts for both sides (`lk.transcription`)
 - Agent mode (listening / thinking / speaking), call status, reconnects

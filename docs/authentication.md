@@ -73,6 +73,6 @@ For agents with public access enabled in the dashboard (with an Origin allowlist
 const session = await AgentSession.start({ agentId: "your-agent-id" });
 ```
 
-Outside a browser (React Native, Node) no `Origin` goes out on its own; pass `origin` with an origin on the allowlist, for example `AgentSession.start({ agentId, origin: "https://www.example.com" })`. Browsers ignore it. The allowlist keeps other websites from embedding the agent; it does not stop scripts, which can send any `Origin`, so a public agent is open to anyone with its ID, on the web and in apps alike.
+Outside a browser (React Native, Node) no `Origin` goes out on its own; pass `origin` (experimental: it may change or be removed in a minor release) with an origin on the allowlist, for example `AgentSession.start({ agentId, origin: "https://www.example.com" })`. Browsers ignore it. The allowlist keeps other websites from embedding the agent; it does not stop scripts, which can send any `Origin`, so a public agent is open to anyone with its ID, on the web and in apps alike.
 
 A keyless request against an agent without public access fails with [`agent_not_public`](errors.md); a page origin missing from the allowlist fails with [`origin_forbidden`](errors.md). When the agent owner's account has no Agent credit left, the request fails with [`insufficient_credit`](errors.md) (HTTP 402), so a page that suddenly stops working after a run of calls is a top-up problem, not a public-access one.
