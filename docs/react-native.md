@@ -209,6 +209,7 @@ Not on React Native: the browser-only members of the React hook (`startAudio`, `
 
 - **iOS:** with the `audio` background mode (on by default in the plugin), a call continues when the app goes to the background or the screen locks: the user can keep talking and hear the agent.
 - **Android:** during a call the SDK runs a microphone foreground service with an ongoing notification. Android 14 and later silence an app's microphone as soon as it leaves the foreground unless such a service runs, while the agent keeps talking.
+- **Google Play:** the package adds a microphone-type foreground service and its permissions to your app. Before publishing on Google Play, declare its use in Play Console as Google Play requires.
 - **Android 13+ notification permission:** the notification only shows if the app holds `POST_NOTIFICATIONS`, which Android 13 and later grant at runtime. The SDK declares it but does not ask for it, so the prompt stays under your control. Without it the service still runs and background capture still works; only the notification is hidden. To show it, ask before the first call:
 
   ```ts

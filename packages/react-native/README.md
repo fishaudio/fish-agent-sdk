@@ -25,6 +25,8 @@ npx expo install @fishaudio/agent-react-native @livekit/react-native @livekit/re
 
 Then build: `npx expo run:ios --device` or `npx expo run:android --device`.
 
+On Android the package adds a microphone-type foreground service (for background calls) and its permissions to your app. Before publishing on Google Play, declare its use in Play Console as Google Play requires.
+
 Bare React Native: install the same packages without the two plugin packages, follow LiveKit's native setup, and add `NSMicrophoneUsageDescription` and the `audio` background mode to `Info.plist`. Details in the [full documentation](https://github.com/fishaudio/fish-agent-sdk-web/blob/main/docs/react-native.md#bare-react-native).
 
 ## Use
