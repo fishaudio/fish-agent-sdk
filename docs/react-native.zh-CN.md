@@ -115,7 +115,7 @@ registerRootComponent(App);
 
 ## Session token
 
-用户发起通话时，App 向你的后端请求 session token。后端带上 API key 调用 `POST /v1/agent/sessions`，把返回结果原样交给 App。[Authentication](authentication.md) 里有 Node 和 Python 的后端示例。网页和手机用的是同一个接口。
+用户发起通话时，App 向你的后端请求 session token。后端带上 API key 调用 `POST /v1/agent/sessions`，把返回结果原样交给 App。[Authenticated sessions（鉴权会话）](authentication.md) 里有 Node 和 Python 的后端示例。网页和手机用的是同一个接口。
 
 在手机上有两点和浏览器不同：
 

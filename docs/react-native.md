@@ -113,7 +113,7 @@ registerRootComponent(App);
 
 ## Session tokens
 
-The app asks your backend for a session token when the user starts a call. The backend calls `POST /v1/agent/sessions` with your API key and returns the response as is. [Authentication](authentication.md) has backend examples in Node and Python. The same endpoint serves web and mobile.
+The app asks your backend for a session token when the user starts a call. The backend calls `POST /v1/agent/sessions` with your API key and returns the response as is. [Authenticated sessions](authentication.md) has backend examples in Node and Python. The same endpoint serves web and mobile.
 
 On a phone, two things differ from the browser:
 
