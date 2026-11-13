@@ -205,6 +205,10 @@ Everything else (`status`, `mode`, `micMuted` / `setMicMuted`, `sendUserMessage`
 
 Not on React Native: the browser-only members of the React hook (`startAudio`, `setOutputVolume`, `setInputDevice`, `setOutputDevice`) are left out of the return value, and `useAudioLevels` and `AgentAudioVisualizer` are not exported (see [Limitations](#limitations)). `AgentSession` is exported as a type only, for `conversation.session`: start calls through `useConversation`, which also handles the permission, audio session and call service.
 
+## Ready-made widget
+
+For a call UI without building one, `@fishaudio/agent-widget-react-native` renders a floating button and a call panel with transcript, text input, mute and consent, like the web `<fish-agent>` widget. See [React Native widget](react-native-widget.md).
+
 ## Background calls
 
 - **iOS:** with the `audio` background mode (on by default in the plugin), a call continues when the app goes to the background or the screen locks: the user can keep talking and hear the agent.

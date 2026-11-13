@@ -9,7 +9,8 @@
       "@fishaudio/agent-react",
       "@fishaudio/agent-react-native",
       "@fishaudio/agent-widget",
-      "@fishaudio/agent-widget-embed"
+      "@fishaudio/agent-widget-embed",
+      "@fishaudio/agent-widget-react-native"
     ]
   ],
   "access": "public",

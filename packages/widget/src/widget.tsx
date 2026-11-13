@@ -13,8 +13,11 @@ import {
   type WidgetAttributes,
   type WidgetSettings,
 } from "./config.js";
-import { TranscriptStore } from "./messages.js";
-import { fetchRemoteConfig } from "./remoteConfig.js";
+import {
+  errorText as sharedErrorText,
+  fetchRemoteConfig,
+  TranscriptStore,
+} from "@fishaudio/agent-widget-shared";
 import {
   CallView,
   ConsentView,
@@ -166,19 +169,7 @@ export function FishAgentWidget({ host, attributes }: FishAgentWidgetProps) {
     );
   };
 
-  const errorText = (code: string | undefined): string => {
-    switch (code) {
-      case "mic_permission_denied":
-        return texts.errorMicDenied;
-      case "origin_forbidden":
-      case "agent_not_public":
-        return texts.errorOrigin;
-      case "insufficient_credit":
-        return texts.errorUnavailable;
-      default:
-        return texts.errorConnection;
-    }
-  };
+  const errorText = (code: string | undefined): string => sharedErrorText(texts, code);
 
   const needsConsent = (): boolean => {
     if (!settings.consent || consentAcceptedRef.current) {

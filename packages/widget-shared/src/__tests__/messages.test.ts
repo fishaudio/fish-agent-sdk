@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { TranscriptStore } from "../messages.js";
+import { TranscriptStore } from "../index.js";
 
 type Handler = (payload: never) => void;
 

@@ -1,5 +1,5 @@
 import { DEFAULT_SERVER_URL } from "@fishaudio/agent-client";
-import type { RemoteWidgetConfig } from "./config.js";
+import type { RemoteWidgetConfig } from "./settings.js";
 
 /**
  * Pull the operator-managed widget config for a public agent. Best
