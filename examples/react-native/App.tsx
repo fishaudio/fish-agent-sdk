@@ -18,6 +18,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import type { CallSource } from './src/agent/createSession';
 import { useAgentCall, type AgentMode, type CallMetrics, type CallStatus } from './src/agent/useAgentCall';
+import { WidgetDemo } from './src/WidgetDemo';
 
 // Recommended: your backend's token endpoint (server/index.mjs in this folder).
 // The API key stays on that server; the app only receives a short-lived token.
@@ -32,8 +33,19 @@ const LANGUAGES: { code: SessionLanguage | undefined; label: string }[] = [
   { code: 'ja', label: '日本語' },
 ];
 
+type WidgetTarget = { source: CallSource; language?: SessionLanguage };
+
 export default function App() {
   const call = useAgentCall();
+  const [widget, setWidget] = useState<WidgetTarget | null>(null);
+  if (widget) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        <WidgetDemo source={widget.source} language={widget.language} onBack={() => setWidget(null)} />
+      </SafeAreaProvider>
+    );
+  }
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
@@ -43,7 +55,7 @@ export default function App() {
         ) : call.phase === 'ended' ? (
           <EndedScreen call={call} />
         ) : (
-          <HomeScreen call={call} />
+          <HomeScreen call={call} onOpenWidget={setWidget} />
         )}
       </SafeAreaView>
     </SafeAreaProvider>
@@ -54,7 +66,7 @@ type Call = ReturnType<typeof useAgentCall>;
 
 // ---------------------------------------------------------------- home
 
-function HomeScreen({ call }: { call: Call }) {
+function HomeScreen({ call, onOpenWidget }: { call: Call; onOpenWidget: (target: WidgetTarget) => void }) {
   const [kind, setKind] = useState<CallSource['kind']>(ENV_TOKEN_URL || !ENV_AGENT_ID ? 'backend' : 'public');
   const [tokenUrl, setTokenUrl] = useState(ENV_TOKEN_URL);
   const [agentId, setAgentId] = useState(ENV_AGENT_ID);
@@ -139,6 +151,13 @@ function HomeScreen({ call }: { call: Call }) {
         disabled={starting || !source}
       >
         {starting ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>开始通话</Text>}
+      </Pressable>
+      <Pressable
+        style={[styles.secondary, (starting || !source) && styles.disabled]}
+        onPress={() => source && onOpenWidget({ source, language })}
+        disabled={starting || !source}
+      >
+        <Text style={styles.secondaryText}>挂件演示（FishAgentWidget）</Text>
       </Pressable>
       <Text style={styles.hint}>试试说：“帮我查一下订单”、“app 老是卡”、“再见”。</Text>
     </ScrollView>
@@ -419,6 +438,8 @@ const styles = StyleSheet.create({
   error: { color: '#f87171', fontSize: 13, marginTop: 12 },
   primary: { marginTop: 24, backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   primaryText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  secondary: { marginTop: 12, borderColor: '#2563eb', borderWidth: 1, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
+  secondaryText: { color: '#93b4ff', fontSize: 15, fontWeight: '500' },
   disabled: { opacity: 0.6 },
   hint: { color: '#64748b', fontSize: 12, textAlign: 'center', marginTop: 12 },
 

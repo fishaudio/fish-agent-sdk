@@ -11,14 +11,10 @@ import {
   IconPhoneOff,
   IconX,
 } from "./icons.js";
-import type { TranscriptEntry } from "./messages.js";
+import { formatTimer, type TranscriptEntry } from "@fishaudio/agent-widget-shared";
 import { Composer, Orb, Transcript, Waveform } from "./parts.js";
 
-export function formatTimer(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const rest = seconds % 60;
-  return `${minutes}:${rest.toString().padStart(2, "0")}`;
-}
+export { formatTimer };
 
 interface FabViewProps {
   settings: WidgetSettings;

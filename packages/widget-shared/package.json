@@ -1,0 +1,27 @@
+{
+  "name": "@fishaudio/agent-widget-shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Internal: settings, transcript store and helpers shared by the web and React Native widgets. Bundled into each widget, never published.",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@fishaudio/agent-client": "workspace:^",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.5"
+  }
+}
