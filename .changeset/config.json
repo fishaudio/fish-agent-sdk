@@ -7,6 +7,7 @@
       "@fishaudio/agent-protocol",
       "@fishaudio/agent-client",
       "@fishaudio/agent-react",
+      "@fishaudio/agent-react-native",
       "@fishaudio/agent-widget",
       "@fishaudio/agent-widget-embed"
     ]

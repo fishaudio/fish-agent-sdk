@@ -63,6 +63,12 @@ export interface AgentSessionOptions extends SessionRequestOptions {
  * session gives up — normal joins land within a couple of seconds. */
 const AGENT_JOIN_TIMEOUT_MS = 15_000;
 
+/** The framework's agent state is published seconds before the runtime's ready
+ * signal (1.7–3.7 s measured), so a state alone only proves the agent joined.
+ * Queued messages wait this long for the ready signal before treating the
+ * agent as an older runtime that never sends one. */
+const AGENT_READY_FALLBACK_MS = 8_000;
+
 /** The runtime tears the room down right after announcing `session.ended`;
  * if that teardown signal never lands, end locally with the announced reason. */
 const SESSION_ENDED_GRACE_MS = 10_000;
@@ -168,10 +174,13 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
   // Data frames reach only participants already in the room — and the worker
   // registers its handlers while starting up — so typed messages wait here
   // until the agent announces itself: its ready signal, or for older runtimes
-  // its first pipeline state.
+  // its first pipeline state followed by AGENT_READY_FALLBACK_MS without one.
   #agentPresent = false;
+  /** The agent participant is in the room (any state seen), ready or not. */
+  #agentJoined = false;
   #pendingMessages: ClientSessionMessage[] = [];
   #joinTimer?: ReturnType<typeof setTimeout>;
+  #readyFallbackTimer?: ReturnType<typeof setTimeout>;
 
   private constructor(sessionToken: SessionToken) {
     super();
@@ -440,10 +449,9 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
           // state supplies the thinking edge; speaking follows the playout-synced
           // transcription segments (open = audible, closed = back to listening).
           onAgentState: (state) => {
-            // Presence fallback for runtimes without the ready signal: any
-            // published agent state proves the worker's pipeline is up and its
-            // event handlers are registered, the gate for queued messages.
-            session.#handleAgentPresent();
+            // A state proves the agent joined, not that its handlers are up:
+            // newer runtimes publish it well before the ready signal.
+            session.#handleAgentJoined();
             if (state === "thinking") {
               session.#setMode("thinking");
             }
@@ -475,7 +483,7 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
     if (session.#status !== "ended" && options.wakeLock !== false) {
       session.#wakeLock.acquire();
     }
-    if (!session.#agentPresent && session.#status === "connected") {
+    if (!session.#agentJoined && session.#status === "connected") {
       session.#joinTimer = setTimeout(() => session.#abandonAgentWait(), AGENT_JOIN_TIMEOUT_MS);
     }
     return session;
@@ -557,10 +565,8 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
       return;
     }
     this.#agentPresent = true;
-    if (this.#joinTimer) {
-      clearTimeout(this.#joinTimer);
-      this.#joinTimer = undefined;
-    }
+    this.#agentJoined = true;
+    this.#clearAgentTimers();
     const pending = this.#pendingMessages;
     this.#pendingMessages = [];
     for (const message of pending) {
@@ -568,8 +574,38 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
     }
   }
 
+  #handleAgentJoined(): void {
+    if (this.#agentJoined) {
+      return;
+    }
+    this.#agentJoined = true;
+    if (this.#joinTimer) {
+      clearTimeout(this.#joinTimer);
+      this.#joinTimer = undefined;
+    }
+    if (!this.#agentPresent && this.#status !== "ended") {
+      this.#readyFallbackTimer = setTimeout(() => {
+        this.#readyFallbackTimer = undefined;
+        if (this.#status !== "ended") {
+          this.#handleAgentPresent();
+        }
+      }, AGENT_READY_FALLBACK_MS);
+    }
+  }
+
+  #clearAgentTimers(): void {
+    if (this.#joinTimer) {
+      clearTimeout(this.#joinTimer);
+      this.#joinTimer = undefined;
+    }
+    if (this.#readyFallbackTimer) {
+      clearTimeout(this.#readyFallbackTimer);
+      this.#readyFallbackTimer = undefined;
+    }
+  }
+
   #abandonAgentWait(): void {
-    if (this.#status === "ended" || this.#agentPresent) {
+    if (this.#status === "ended" || this.#agentPresent || this.#agentJoined) {
       return;
     }
     this.emit(
@@ -613,10 +649,7 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
     if (this.#status === "ended") {
       return;
     }
-    if (this.#joinTimer) {
-      clearTimeout(this.#joinTimer);
-      this.#joinTimer = undefined;
-    }
+    this.#clearAgentTimers();
     if (this.#endedGraceTimer) {
       clearTimeout(this.#endedGraceTimer);
       this.#endedGraceTimer = undefined;

@@ -13,10 +13,19 @@ export const CLIENT_EVENT_TOPIC = "client-event";
 /**
  * Participant attribute the agent sets once its pipeline is live and the opener
  * is queued. Sticky, so a late or reconnecting client reads it on connect.
- * Value: epoch milliseconds. Gate the "connected" UI on this attribute and fall
- * back to `lk.agent.state` for older runtimes that never set it.
+ * Value: epoch milliseconds. Gate the "connected" UI on this attribute. Fall
+ * back to `AGENT_STATE_ATTRIBUTE` only after a bounded wait (about 8 s) without
+ * it, for older runtimes that never set it.
  */
 export const AGENT_READY_ATTRIBUTE = "fish.agent.ready";
+
+/**
+ * Participant attribute the agent framework publishes with its pipeline state
+ * (`initializing`, `listening`, `thinking`, `speaking`). It is set before
+ * `AGENT_READY_ATTRIBUTE`, so its presence alone does not mean the agent is
+ * ready: wait a bounded time for the ready attribute before falling back to it.
+ */
+export const AGENT_STATE_ATTRIBUTE = "lk.agent.state";
 
 /**
  * Participant attribute the client sets to report audio readiness. Set it to
@@ -121,6 +130,11 @@ export type AgentSessionMessage =
       toolName: string;
       params: Record<string, unknown>;
       expectsResponse: boolean;
+      /**
+       * How long the agent waits for the result, in ms. Clients should time out
+       * the handler at this value. Absent from runtimes that predate it.
+       */
+      timeoutMs?: number;
     }
   | ToolCallEventMessage
   // Sent once, before the agent leaves or the room is deleted, on every close

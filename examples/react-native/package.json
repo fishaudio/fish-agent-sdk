@@ -1,0 +1,37 @@
+{
+  "name": "example-react-native",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@config-plugins/react-native-webrtc": "^15.0.2",
+    "@fishaudio/agent-client": "workspace:^",
+    "@fishaudio/agent-protocol": "workspace:^",
+    "@fishaudio/agent-react-native": "workspace:^",
+    "@livekit/react-native": "^3.1.0",
+    "@livekit/react-native-expo-plugin": "^1.1.0",
+    "@livekit/react-native-webrtc": "^150.1.1",
+    "expo": "~58.0.23",
+    "expo-battery": "~58.0.3",
+    "expo-constants": "~58.0.15",
+    "expo-dev-client": "~58.0.18",
+    "expo-device": "~58.0.5",
+    "expo-network": "~58.0.4",
+    "expo-status-bar": "~58.0.4",
+    "livekit-client": "^2.20.0",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.11.1"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start --dev-client",
+    "ios": "expo run:ios --device",
+    "android": "expo run:android --device",
+    "typecheck": "tsc --noEmit",
+    "server": "node --env-file=server/.env.local server/index.mjs"
+  },
+  "private": true
+}

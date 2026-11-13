@@ -18,7 +18,7 @@ try {
 |---|---|
 | `session_request_failed` | The session endpoint rejected the request or was unreachable. |
 | `agent_not_public` | Keyless session request against an agent without public access. |
-| `origin_forbidden` | Page origin is not on the agent's allowlist. |
+| `origin_forbidden` | Page origin is not on the agent's allowlist. Outside a browser, pass `origin` (experimental; one on the allowlist) when starting with `agentId`. |
 | `insufficient_credit` | Keyless session request, but the agent owner's account has no Agent credit left (HTTP 402). The owner needs to top up. |
 | `unsupported_transport` | The session uses a transport this SDK version doesn't know. Upgrade the package. |
 | `mic_permission_denied` | The user declined microphone access. |
@@ -26,7 +26,7 @@ try {
 | `connection_failed` | The realtime connection could not be (re)established, a send to the agent failed, the agent never joined the session (15 s), or the microphone could not be toggled. |
 | `session_expired` | The session token's join deadline passed before connecting. |
 | `tool_failed` | A client tool threw, was not registered, or its result could not be delivered. See [Client tools](client-tools.md). |
-| `tool_timeout` | A client tool exceeded `clientToolTimeoutMs` (default 15 s). |
+| `tool_timeout` | A client tool ran into the agent's wait for it (less a margin of up to 1 s, so the agent hears the error in time), or `clientToolTimeoutMs` (default 15 s) against runtimes that do not send one. |
 | `provider_error` | An upstream model or speech provider failed during the session. Delivered as an `error` event, with `stage` and `recovered` when the runtime reports them. The session may recover. |
 | `internal_error` | The agent runtime hit an internal error. Delivered as an `error` event, with `stage` and `recovered` when the runtime reports them. The session may recover. |
 

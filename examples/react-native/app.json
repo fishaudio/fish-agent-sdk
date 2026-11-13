@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "Fish Agent Demo",
+    "slug": "fish-agent-rn-demo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.fishaudio.agentdemo",
+      "appleTeamId": "QPS58227AS",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.fishaudio.agentdemo",
+      "permissions": ["android.permission.ACCESS_NETWORK_STATE"],
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "@livekit/react-native-expo-plugin",
+      "@config-plugins/react-native-webrtc",
+      ["@fishaudio/agent-react-native", { "microphonePermission": "用于和语音客服通话" }],
+      "expo-dev-client"
+    ]
+  }
+}

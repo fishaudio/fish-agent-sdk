@@ -1,6 +1,9 @@
 import type { AgentSessionMessage, ClientSessionMessage } from "@fishaudio/agent-protocol";
 import { FishAgentError } from "../errors.js";
 
+/** How much earlier than the agent's own deadline a client tool times out. */
+const TOOL_TIMEOUT_MARGIN_MS = 1_000;
+
 export type ClientToolHandler = (
   params: Record<string, unknown>,
   context: { callId: string; toolName: string },
@@ -54,6 +57,7 @@ export class ClientToolDispatcher {
       const result = await this.withTimeout(
         Promise.resolve(handler(call.params, { callId: call.callId, toolName: call.toolName })),
         call.toolName,
+        ClientToolDispatcher.timeoutFor(call, this.timeoutMs),
       );
       if (call.expectsResponse) {
         await this.reply(call.callId, result === undefined ? {} : { result });
@@ -137,16 +141,30 @@ export class ClientToolDispatcher {
     }
   }
 
-  private withTimeout<T>(promise: Promise<T>, toolName: string): Promise<T> {
+  /** The agent's own wait when the runtime sends it, else the configured fallback. */
+  /**
+   * The agent's own wait when the runtime sends one, minus a margin (the
+   * smaller of 1 s and 10 %) so the client's tool_timeout reply reaches the
+   * agent before it gives up; otherwise the configured fallback.
+   */
+  private static timeoutFor(call: ClientToolCall, fallbackMs: number): number {
+    const fromAgent = call.timeoutMs;
+    if (typeof fromAgent !== "number" || !Number.isFinite(fromAgent) || fromAgent <= 0) {
+      return fallbackMs;
+    }
+    return Math.max(fromAgent - TOOL_TIMEOUT_MARGIN_MS, fromAgent * 0.9);
+  }
+
+  private withTimeout<T>(promise: Promise<T>, toolName: string, timeoutMs: number): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
         reject(
           new FishAgentError(
             "tool_timeout",
-            `Client tool "${toolName}" timed out after ${this.timeoutMs}ms`,
+            `Client tool "${toolName}" timed out after ${timeoutMs}ms`,
           ),
         );
-      }, this.timeoutMs);
+      }, timeoutMs);
       promise.then(
         (value) => {
           clearTimeout(timer);

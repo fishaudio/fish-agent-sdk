@@ -1,0 +1,17 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Merged into the app: a call needs the microphone, audio routing, and a
+       microphone-type foreground service so capture keeps running when the app
+       leaves the foreground (Android 14+ silences it otherwise). -->
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+  <application>
+    <service
+      android:name="com.fishaudio.agent.reactnative.FishCallService"
+      android:exported="false"
+      android:foregroundServiceType="microphone" />
+  </application>
+</manifest>

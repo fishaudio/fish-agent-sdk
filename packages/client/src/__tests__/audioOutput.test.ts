@@ -145,6 +145,15 @@ describe("AudioOutput with several agent tracks", () => {
 });
 
 describe("AudioOutput playback signal", () => {
+  it("reports the speech track as playing where there is no DOM (React Native)", () => {
+    const onPlaybackStarted = vi.fn();
+    const output = new AudioOutput({ onPlaybackStarted });
+    output.setStream("TR_ambience", {} as MediaStream);
+    expect(onPlaybackStarted).not.toHaveBeenCalled();
+    output.setStream("TR_voice", {} as MediaStream, true);
+    expect(onPlaybackStarted).toHaveBeenCalledTimes(1);
+  });
+
   it("fires once play() resolves on the attached speech stream", async () => {
     stubDom();
     const onPlaybackStarted = vi.fn();
