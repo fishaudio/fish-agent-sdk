@@ -35,6 +35,7 @@ export interface WidgetTextContents {
   thinking: string;
   speaking: string;
   errorMicDenied: string;
+  errorMicUnavailable: string;
   errorOrigin: string;
   errorUnavailable: string;
   errorConnection: string;
@@ -76,6 +77,7 @@ export const DEFAULT_TEXTS: WidgetTextContents = {
   thinking: "Thinking",
   speaking: "Speaking",
   errorMicDenied: "Microphone access was denied — check your browser settings.",
+  errorMicUnavailable: "No microphone available — check your device and try again.",
   errorOrigin: "This site isn't allowed to talk to this agent.",
   errorUnavailable: "This agent is temporarily unavailable.",
   errorConnection: "Connection failed — please try again.",

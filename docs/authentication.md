@@ -59,11 +59,20 @@ def create_voice_session(end_user_id: str) -> dict:
 // browser: request the token when the user starts the call, then start with it
 import { AgentSession } from "@fishaudio/agent-client";
 
-const sessionToken = await fetch("/api/voice-session", { method: "POST" }).then((r) => r.json());
+const response = await fetch("/api/voice-session", { method: "POST" });
+if (!response.ok) throw new Error(`Session request failed: ${response.status}`);
+const sessionToken = await response.json();
 const session = await AgentSession.start({ sessionToken });
 ```
 
-The session token is a discriminated union on `transport`. Forward it to the browser verbatim. The SDK validates it and connects. The token is short-lived, so fetch it in the same click handler that calls `start()`, not at page load. To force-end a session from your backend, call `POST /v1/agent/sessions/{session_id}/end` with your API key.
+The session token is a discriminated union on `transport`. Forward it to the browser verbatim. The SDK validates it and connects.
+
+- Pass the whole JSON object as `sessionToken`, with its keys unchanged. A string, a renamed or wrapped object, or an error body is rejected with [`invalid_session_token`](errors.md), and the message says what was received.
+- Check the response status before using the body, as above. When session creation fails, the body is an error, not a token.
+- The token must be used to join within about 5 minutes (`expires_at`). Fetch it in the same click handler that calls `start()`, not at page load.
+- A token starts one call. Create a new session for the next one.
+
+To force-end a session from your backend, call `POST /v1/agent/sessions/{session_id}/end` with your API key.
 
 ## 2. Public agent (keyless)
 

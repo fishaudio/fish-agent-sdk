@@ -170,10 +170,17 @@ export function FishAgentWidget({ host, attributes }: FishAgentWidgetProps) {
     switch (code) {
       case "mic_permission_denied":
         return texts.errorMicDenied;
+      case "mic_unavailable":
+        return texts.errorMicUnavailable;
       case "origin_forbidden":
       case "agent_not_public":
         return texts.errorOrigin;
       case "insufficient_credit":
+        return texts.errorUnavailable;
+      // Integration problems: retrying does not help the visitor, and the
+      // reason goes to the console for whoever embedded the widget.
+      case "insecure_context":
+      case "invalid_session_token":
         return texts.errorUnavailable;
       default:
         return texts.errorConnection;
@@ -292,6 +299,9 @@ export function FishAgentWidget({ host, attributes }: FishAgentWidgetProps) {
         return;
       }
       const code = (startError as { code?: string }).code;
+      if (code === "insecure_context" || code === "invalid_session_token") {
+        console.error(`[fish-agent] ${(startError as Error).message}`);
+      }
       setError(errorText(code));
       setPendingText(null);
       setPhase(restingPhase());

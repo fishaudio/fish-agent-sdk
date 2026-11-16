@@ -226,11 +226,201 @@ describe("start", () => {
     await expect(startAgentSession({}, () => new MockTransport())).rejects.toThrow(TypeError);
   });
 
-  it("begins microphone capture at start and releases it when the token exchange fails", async () => {
+  it("with agentId, begins microphone capture before creating the session and releases it when that fails", async () => {
+    const order: string[] = [];
     const transport = new MockTransport();
-    await expect(startAgentSession({}, () => transport)).rejects.toThrow(TypeError);
+    const prepare = transport.prepareMicrophone.bind(transport);
+    transport.prepareMicrophone = (options) => {
+      order.push("microphone");
+      prepare(options);
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        order.push("session request");
+        throw new TypeError("network down");
+      }),
+    );
+    try {
+      await expect(startAgentSession({ agentId: "a1" }, () => transport)).rejects.toMatchObject({
+        code: "session_request_failed",
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(order).toEqual(["microphone", "session request"]);
     expect(transport.micPrepares).toHaveLength(1);
     expect(transport.disconnectCalls).toBe(1);
+  });
+
+  it("starts from agentId when sessionToken is left undefined", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(SESSION_TOKEN), { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const session = await startAgentSession(
+        { agentId: "a1", sessionToken: undefined },
+        () => new MockTransport(),
+      );
+      expect(session.sessionId).toBe("sess-1");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("rejects a call naming neither or both auth modes before touching the microphone", async () => {
+    const createTransport = vi.fn(() => new MockTransport());
+    await expect(startAgentSession({}, createTransport)).rejects.toThrow(TypeError);
+    await expect(
+      startAgentSession({ sessionToken: SESSION_TOKEN, agentId: "a1" }, createTransport),
+    ).rejects.toThrow(TypeError);
+    expect(createTransport).not.toHaveBeenCalled();
+  });
+
+  describe("a sessionToken that is not the session-creation response", () => {
+    const SECRET = "secret-participant-token";
+    const camelCase = {
+      transport: "livekit",
+      sessionId: "sess-1",
+      expiresAt: SESSION_TOKEN.expires_at,
+      maxDurationSeconds: 600,
+      livekitUrl: "wss://example.livekit.cloud",
+      token: SECRET,
+    };
+    const cases: Array<[name: string, value: unknown, message: RegExp]> = [
+      ["null", null, /is null/],
+      ["an empty string", "", /is an empty string/],
+      ["the token string alone", SECRET, /is a string\. .*JSON object.*not only its `token` field/],
+      [
+        "unparsed JSON text",
+        JSON.stringify({ ...SESSION_TOKEN, token: SECRET }),
+        /is a string of JSON text\. Parse it first/,
+      ],
+      [
+        "a backend error body",
+        { detail: "Invalid API key", status: 401 },
+        /looks like an error response \(keys: `detail`, `status`\).*response\.ok/,
+      ],
+      [
+        "the response wrapped in another object",
+        { sessionToken: { ...SESSION_TOKEN, token: SECRET } },
+        /nested under `sessionToken`\. Pass that inner object/,
+      ],
+      [
+        "the response under a data key",
+        { data: { ...SESSION_TOKEN, token: SECRET }, error: null },
+        /nested under `data`/,
+      ],
+      [
+        "keys renamed to camelCase",
+        camelCase,
+        /camelCase keys \(`sessionId`, `expiresAt`, `maxDurationSeconds`, `livekitUrl`\).*`session_id`.*without renaming/,
+      ],
+      [
+        "missing fields",
+        { transport: "livekit", session_id: "sess-1", token: SECRET },
+        /is missing `expires_at`, `livekit_url`\./,
+      ],
+      [
+        "a field of the wrong type",
+        { ...SESSION_TOKEN, token: { value: SECRET } },
+        /unusable `token` \(expected a string, got object\)/,
+      ],
+    ];
+
+    it.each(cases)("rejects %s before the microphone prompt and without a request", async (_name, value, message) => {
+      const createTransport = vi.fn(() => new MockTransport());
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      let error: unknown;
+      try {
+        await startAgentSession({ sessionToken: value as SessionToken }, createTransport);
+      } catch (caught) {
+        error = caught;
+      } finally {
+        vi.unstubAllGlobals();
+      }
+      expect(error).toBeInstanceOf(FishAgentError);
+      expect(error).toMatchObject({ code: "invalid_session_token" });
+      expect((error as Error).message).toMatch(message);
+      expect((error as Error).message).not.toContain(SECRET);
+      // No transport means no microphone capture was started.
+      expect(createTransport).not.toHaveBeenCalled();
+      // null and "" used to fall through to creating a public session.
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  it("rejects an unsupported or expired sessionToken before the microphone prompt", async () => {
+    const createTransport = vi.fn(() => new MockTransport());
+    await expect(
+      startAgentSession(
+        { sessionToken: { ...SESSION_TOKEN, transport: "carrier-pigeon" } as unknown as SessionToken },
+        createTransport,
+      ),
+    ).rejects.toMatchObject({ code: "unsupported_transport" });
+    await expect(
+      startAgentSession(
+        { sessionToken: { ...SESSION_TOKEN, expires_at: "2020-01-01T00:00:00Z" } },
+        createTransport,
+      ),
+    ).rejects.toMatchObject({ code: "session_expired" });
+    expect(createTransport).not.toHaveBeenCalled();
+  });
+
+  it("fails before creating a session when the page cannot reach a microphone", async () => {
+    const transport = new MockTransport();
+    const insecure = new FishAgentError("insecure_context", "not a secure context");
+    transport.prepareMicrophone = () => {
+      throw insecure;
+    };
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      await expect(startAgentSession({ agentId: "a1" }, () => transport)).rejects.toBe(insecure);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(transport.connected).toBe(false);
+  });
+
+  it.each(["NotFoundError", "NotReadableError", "OverconstrainedError", "AbortError"])(
+    "reports a %s from the start-time capture as mic_unavailable",
+    async (name) => {
+      const transport = new MockTransport();
+      const cause = new Error("capture failed");
+      cause.name = name;
+      transport.connectError = cause;
+      await expect(
+        startAgentSession({ sessionToken: SESSION_TOKEN }, () => transport),
+      ).rejects.toMatchObject({ code: "mic_unavailable", cause });
+      expect(transport.disconnectCalls).toBe(1);
+    },
+  );
+
+  it("words each microphone failure differently and keeps other start failures as connection_failed", async () => {
+    const messageFor = async (name: string): Promise<{ code: string; message: string }> => {
+      const transport = new MockTransport();
+      const cause = new Error("failed");
+      cause.name = name;
+      transport.connectError = cause;
+      const error = await startAgentSession({ sessionToken: SESSION_TOKEN }, () => transport).then(
+        () => undefined,
+        (caught: FishAgentError) => caught,
+      );
+      return { code: error!.code, message: error!.message };
+    };
+    expect((await messageFor("NotFoundError")).message).toMatch(/No microphone was found/);
+    expect((await messageFor("NotReadableError")).message).toMatch(/could not be opened/);
+    expect((await messageFor("OverconstrainedError")).message).toMatch(/audio\.inputDeviceId/);
+    expect(await messageFor("NotAllowedError")).toMatchObject({ code: "mic_permission_denied" });
+    // An error name that happens to be an Object.prototype member is not a microphone failure.
+    expect(await messageFor("toString")).toMatchObject({ code: "connection_failed" });
+    expect(await messageFor("NetworkError")).toMatchObject({
+      code: "connection_failed",
+      message: "Could not establish the realtime session",
+    });
   });
 
   it("forwards the configured input device to the gesture-time capture", async () => {

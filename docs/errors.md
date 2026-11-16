@@ -20,8 +20,11 @@ try {
 | `agent_not_public` | Keyless session request against an agent without public access. |
 | `origin_forbidden` | Page origin is not on the agent's allowlist. Outside a browser, pass `origin` (experimental; one on the allowlist) when starting with `agentId`. |
 | `insufficient_credit` | Keyless session request, but the agent owner's account has no Agent credit left (HTTP 402). The owner needs to top up. |
-| `unsupported_transport` | The session uses a transport this SDK version doesn't know. Upgrade the package. |
+| `invalid_session_token` | The `sessionToken` option is not the session-creation response: it is `null`, a string, an error body from your backend, wrapped in another object, has renamed (camelCase) keys, or lacks fields. The message says which and how to fix it. Checked before the microphone prompt. See [Authentication](authentication.md). |
+| `unsupported_transport` | The session token is well-formed but uses a transport this SDK version doesn't know. Upgrade the package. |
+| `insecure_context` | The page is not served over https or from `localhost`, so the browser gives it no microphone. Reported before a session is created. A `microphone: false` start is not affected. |
 | `mic_permission_denied` | The user declined microphone access. |
+| `mic_unavailable` | No microphone could be captured at start: none was found, it could not be opened (another application may be using it), or the browser has no capture API. |
 | `device_change_failed` | A requested audio device could not be activated, or the browser does not support output selection (`setSinkId`, common on mobile browsers). Output stays on the previous device; a failed mic switch switches back to the previous microphone (best effort). |
 | `connection_failed` | The realtime connection could not be (re)established, a send to the agent failed, the agent never joined the session (15 s), or the microphone could not be toggled. |
 | `session_expired` | The session token's join deadline passed before connecting. |

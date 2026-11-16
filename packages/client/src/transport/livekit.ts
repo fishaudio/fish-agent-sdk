@@ -21,6 +21,7 @@ import {
   type ClientSessionMessage,
   type SessionToken,
 } from "@fishaudio/agent-protocol";
+import { assertMicrophoneReachable } from "../audio/microphone.js";
 import { FishAgentError } from "../errors.js";
 import type { Transport, TransportCallbacks, TransportConnectOptions } from "./types.js";
 
@@ -51,6 +52,7 @@ export class LiveKitTransport implements Transport {
   private audioReadyStamp?: string;
 
   prepareMicrophone(options: { inputDeviceId?: string }): void {
+    assertMicrophoneReachable();
     const pending = captureMicrophone(options.inputDeviceId);
     // A denial surfaces where connect() awaits the track, never as an
     // unhandled rejection here.

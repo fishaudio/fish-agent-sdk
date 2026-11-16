@@ -218,6 +218,48 @@ describe("<fish-agent>", () => {
     expect(startMock.mock.calls[0]![0]).not.toHaveProperty("agentId");
   });
 
+  it("words a failed start by its cause instead of calling everything a connection failure", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const element = await mount({ "agent-id": "agent_1" });
+    const details: Array<{ code: string; message: string }> = [];
+    element.addEventListener("fish-agent:error", (event) => {
+      details.push((event as CustomEvent).detail);
+    });
+    await openPanel(element);
+    const failWith = async (code: string, message: string) => {
+      startMock.mockImplementationOnce(async () => {
+        throw Object.assign(new Error(message), { code });
+      });
+      click($(element, ".fa-cta"));
+      await tick();
+      return $(element, ".fa-error").textContent;
+    };
+
+    expect(await failWith("mic_unavailable", "No microphone was found.")).toBe(
+      "No microphone available — check your device and try again.",
+    );
+    expect(consoleError).not.toHaveBeenCalled();
+
+    // Nothing the visitor can retry: the page owner gets the reason in the console.
+    expect(await failWith("insecure_context", "This page is not a secure context")).toBe(
+      "This agent is temporarily unavailable.",
+    );
+    expect(consoleError).toHaveBeenLastCalledWith("[fish-agent] This page is not a secure context");
+    expect(await failWith("invalid_session_token", "`sessionToken` is a string")).toBe(
+      "This agent is temporarily unavailable.",
+    );
+    expect(consoleError).toHaveBeenLastCalledWith("[fish-agent] `sessionToken` is a string");
+
+    expect(await failWith("connection_failed", "nope")).toBe("Connection failed — please try again.");
+    expect(details.map((detail) => detail.code)).toEqual([
+      "mic_unavailable",
+      "insecure_context",
+      "invalid_session_token",
+      "connection_failed",
+    ]);
+    consoleError.mockRestore();
+  });
+
   it("lets the host inject start options via fish-agent:call", async () => {
     const element = await mount({ "agent-id": "agent_1" });
     const lookup = () => "ok";

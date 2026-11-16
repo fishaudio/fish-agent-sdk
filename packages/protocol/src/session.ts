@@ -13,6 +13,12 @@ export interface LiveKitSessionToken {
   max_duration_seconds: number;
   livekit_url: string;
   token: string;
+  /**
+   * A link that joins this session when opened in a browser. It carries the
+   * same credential as `token`: valid until `expires_at`, good for one join.
+   * The SDK does not use it.
+   */
+  join_url?: string;
 }
 
 /** Future transports extend this union; `session_id`/`expires_at` semantics stay per-arm. */

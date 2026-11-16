@@ -6,8 +6,19 @@ export type FishAgentErrorCode =
   | "origin_forbidden"
   /** The session request was refused for lack of credit (HTTP 402): the agent owner's account has no Agent credit left. */
   | "insufficient_credit"
+  /**
+   * The `sessionToken` option is not the session-creation response: it is
+   * null, a string, an error body, wrapped in another object, has renamed
+   * keys, or lacks fields. The message says which.
+   */
+  | "invalid_session_token"
+  /** The session token is well-formed but names a transport this SDK version does not know. */
   | "unsupported_transport"
+  /** The page is not a secure context (https or localhost), so the browser gives it no microphone. */
+  | "insecure_context"
   | "mic_permission_denied"
+  /** No microphone could be captured at start: none found, or it could not be opened. */
+  | "mic_unavailable"
   /** A requested audio device could not be activated, or the browser does not support selecting it. */
   | "device_change_failed"
   | "connection_failed"
