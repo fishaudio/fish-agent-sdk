@@ -639,7 +639,7 @@ describe("LiveKitTransport microphone preconditions", () => {
     stubPage({ secure: false, mediaDevices: false });
     expect(prepareError()).toMatchObject({
       code: "insecure_context",
-      message: expect.stringMatching(/not a secure context.*https.*localhost/),
+      message: expect.stringMatching(/not a secure context.*https.*localhost.*frame of an http page/),
     });
     expect(createLocalAudioTrack).not.toHaveBeenCalled();
   });
@@ -668,7 +668,10 @@ describe("LiveKitTransport microphone preconditions", () => {
     const cause = captureFailsForLackOfApi();
     expect(await connectError()).toMatchObject({
       code: "mic_unavailable",
-      message: expect.stringContaining("no microphone capture API"),
+      // True of every way to get here: no browser page, an insecure page, an in-app browser.
+      message: expect.stringMatching(
+        /No microphone capture API is available here.*outside a browser page.*https or localhost.*in-app browsers/,
+      ),
       cause,
     });
     // The same through a session start, where the session must not relabel it.
@@ -676,6 +679,42 @@ describe("LiveKitTransport microphone preconditions", () => {
       startAgentSession({ sessionToken: SESSION_TOKEN, wakeLock: false }, () => new LiveKitTransport()),
     ).rejects.toMatchObject({ code: "mic_unavailable" });
     expect(FakeRoom.lastInstance?.state).not.toBe("connected");
+  });
+
+  it.each([
+    ["NotFoundError", /No microphone was found/],
+    ["NotReadableError", /could not be opened/],
+    ["OverconstrainedError", /meets the capture settings/],
+    ["AbortError", /could not be started/],
+  ])("reports a capture that failed with %s as mic_unavailable", async (name, message) => {
+    stubPage({ secure: true, mediaDevices: true });
+    const cause = Object.assign(new Error("capture failed"), { name });
+    createLocalAudioTrack.mockRejectedValue(cause);
+    expect(await connectError()).toMatchObject({
+      code: "mic_unavailable",
+      message: expect.stringMatching(message),
+      cause,
+    });
+    await expect(
+      startAgentSession({ sessionToken: SESSION_TOKEN, wakeLock: false }, () => new LiveKitTransport()),
+    ).rejects.toMatchObject({ code: "mic_unavailable", cause });
+    // The capture is awaited before joining: no room was connected for it.
+    expect(FakeRoom.lastInstance?.state).not.toBe("connected");
+  });
+
+  it("does not take an AbortError from after the capture for a microphone problem", async () => {
+    stubPage({ secure: true, mediaDevices: true });
+    const aborted = Object.assign(new Error("The operation was aborted"), { name: "AbortError" });
+    FakeRoom.onConnect = () => {
+      FakeRoom.lastInstance!.localParticipant.publishTrack = async () => {
+        throw aborted;
+      };
+    };
+    const transport = new LiveKitTransport();
+    await expect(
+      startAgentSession({ sessionToken: SESSION_TOKEN, wakeLock: false }, () => transport),
+    ).rejects.toMatchObject({ code: "connection_failed", cause: aborted });
+    expect(createLocalAudioTrack).toHaveBeenCalledTimes(1);
   });
 
   it("leaves other capture failures as they came", async () => {

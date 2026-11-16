@@ -172,7 +172,7 @@ export function FishAgentWidget({ host, attributes }: FishAgentWidgetProps) {
       case "mic_permission_denied":
         return texts.errorMicDenied;
       case "mic_unavailable":
-        return texts.errorMicUnavailable;
+        return texts.errorMicUnavailable ?? texts.errorConnection;
       case "origin_forbidden":
       case "agent_not_public":
         return texts.errorOrigin;

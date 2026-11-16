@@ -367,6 +367,19 @@ describe("start", () => {
     expect(transport.connected).toBe(true);
   });
 
+  it.each([
+    ["keys an error body also has", { status: "created", message: "ok", error: null }],
+    ["camelCase duplicates of its keys", { sessionId: "sess-1", livekitUrl: "wss://example.livekit.cloud" }],
+    ["a copy of itself under data", { data: { ...SESSION_TOKEN } }],
+    ["a copy of itself under sessionToken", { sessionToken: { ...SESSION_TOKEN } }],
+  ])("still connects with a complete token that also carries %s", async (_name, extra) => {
+    const sessionToken = { ...SESSION_TOKEN, ...extra } as SessionToken;
+    const { session, transport } = await start({ sessionToken });
+    expect(session.status).toBe("connected");
+    expect(session.sessionId).toBe("sess-1");
+    expect(transport.connected).toBe(true);
+  });
+
   it("rejects an unsupported or expired sessionToken before the microphone prompt", async () => {
     const createTransport = vi.fn(() => new MockTransport());
     await expect(
@@ -401,43 +414,35 @@ describe("start", () => {
     expect(transport.connected).toBe(false);
   });
 
-  it.each(["NotFoundError", "NotReadableError", "OverconstrainedError", "AbortError"])(
-    "reports a %s from the start-time capture as mic_unavailable",
-    async (name) => {
-      const transport = new MockTransport();
-      const cause = new Error("capture failed");
-      cause.name = name;
-      transport.connectError = cause;
-      await expect(
-        startAgentSession({ sessionToken: SESSION_TOKEN }, () => transport),
-      ).rejects.toMatchObject({ code: "mic_unavailable", cause });
-      expect(transport.disconnectCalls).toBe(1);
-    },
-  );
+  it("passes on the transport's verdict on a failed capture and tears the start down", async () => {
+    const transport = new MockTransport();
+    const verdict = new FishAgentError("mic_unavailable", "No microphone was found.");
+    transport.connectError = verdict;
+    await expect(startAgentSession({ sessionToken: SESSION_TOKEN }, () => transport)).rejects.toBe(
+      verdict,
+    );
+    expect(transport.disconnectCalls).toBe(1);
+  });
 
-  it("words each microphone failure differently and keeps other start failures as connection_failed", async () => {
-    const messageFor = async (name: string): Promise<{ code: string; message: string }> => {
+  it.each(["AbortError", "NotFoundError", "NotReadableError", "OverconstrainedError", "toString"])(
+    "does not take a %s from elsewhere in the start for a microphone problem",
+    async (name) => {
+      // Only the transport knows whether an error came from the capture. One
+      // that reaches the session unlabelled (an aborted connection, a failed
+      // publish) is a connection failure, whatever its name.
       const transport = new MockTransport();
       const cause = new Error("failed");
       cause.name = name;
       transport.connectError = cause;
-      const error = await startAgentSession({ sessionToken: SESSION_TOKEN }, () => transport).then(
-        () => undefined,
-        (caught: FishAgentError) => caught,
-      );
-      return { code: error!.code, message: error!.message };
-    };
-    expect((await messageFor("NotFoundError")).message).toMatch(/No microphone was found/);
-    expect((await messageFor("NotReadableError")).message).toMatch(/could not be opened/);
-    expect((await messageFor("OverconstrainedError")).message).toMatch(/audio\.inputDeviceId/);
-    expect(await messageFor("NotAllowedError")).toMatchObject({ code: "mic_permission_denied" });
-    // An error name that happens to be an Object.prototype member is not a microphone failure.
-    expect(await messageFor("toString")).toMatchObject({ code: "connection_failed" });
-    expect(await messageFor("NetworkError")).toMatchObject({
-      code: "connection_failed",
-      message: "Could not establish the realtime session",
-    });
-  });
+      await expect(
+        startAgentSession({ sessionToken: SESSION_TOKEN }, () => transport),
+      ).rejects.toMatchObject({
+        code: "connection_failed",
+        message: "Could not establish the realtime session",
+        cause,
+      });
+    },
+  );
 
   it("forwards the configured input device to the gesture-time capture", async () => {
     const { transport } = await start({ audio: { inputDeviceId: "mic-7" } });

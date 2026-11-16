@@ -254,6 +254,52 @@ describe("session token validation", () => {
     }
   });
 
+  it("accepts a complete token whatever else the object carries", () => {
+    // Each of these connected before. The hints for unusable values (error
+    // body, renamed keys, wrapped token) must not fire on a usable one.
+    const accepted: Array<[name: string, token: Record<string, unknown>]> = [
+      [
+        "keys an error body also has",
+        { ...SESSION_TOKEN, status: "created", message: "ok", error: null, code: 0, detail: "" },
+      ],
+      [
+        "camelCase duplicates of its keys",
+        {
+          ...SESSION_TOKEN,
+          sessionId: SESSION_TOKEN.session_id,
+          expiresAt: SESSION_TOKEN.expires_at,
+          livekitUrl: SESSION_TOKEN.livekit_url,
+          maxDurationSeconds: SESSION_TOKEN.max_duration_seconds,
+        },
+      ],
+      ["a copy of itself under data", { ...SESSION_TOKEN, data: { ...SESSION_TOKEN } }],
+      ["a copy of itself under sessionToken", { ...SESSION_TOKEN, sessionToken: { ...SESSION_TOKEN } }],
+      // Only a callable `then` makes a Promise.
+      ["a then field that is not a function", { ...SESSION_TOKEN, then: "later" }],
+      // Passed on as it is: trimming, or refusing, is not this check's call.
+      ["whitespace around livekit_url", { ...SESSION_TOKEN, livekit_url: " wss://x\n" }],
+    ];
+    for (const [name, token] of accepted) {
+      expect(validateSessionToken(token), name).toBe(token);
+    }
+  });
+
+  it("calls an object an error response only when it has no token keys at all", () => {
+    // Token keys present: the missing field is the useful thing to say, even
+    // next to keys an error body would have.
+    const partial = invalid({ transport: "livekit", token: "t", status: "created", message: "ok" });
+    expect(partial.message).toMatch(/is missing `livekit_url`\./);
+    expect(partial.message).not.toMatch(/error response/);
+    // Renamed keys next to such keys are still a renaming problem.
+    const renamed = invalid({ transport: "livekit", livekitUrl: "wss://x", token: "t", status: "created" });
+    expect(renamed.message).toMatch(/camelCase keys \(`livekitUrl`\)/);
+    expect(renamed.message).not.toMatch(/error response/);
+    // No token key anywhere: an error body.
+    expect(invalid({ status: 401, message: "Unauthorized" }).message).toMatch(
+      /looks like an error response \(keys: `status`, `message`\)/,
+    );
+  });
+
   it("accepts a session endpoint answer without session_id and expires_at", async () => {
     stubFetch(201, { transport: "livekit", livekit_url: "wss://x", token: "t" });
     await expect(resolveSessionToken({ agentId: "a" })).resolves.toEqual({

@@ -16,12 +16,12 @@ try {
 
 | Code | Meaning |
 |---|---|
-| `session_request_failed` | The session endpoint rejected the request or was unreachable. |
+| `session_request_failed` | The session endpoint rejected the request, was unreachable, or (when starting with `agentId`) answered with a body the SDK cannot use as a session token. |
 | `agent_not_public` | Keyless session request against an agent without public access. |
 | `origin_forbidden` | Page origin is not on the agent's allowlist. Outside a browser, pass `origin` (experimental; one on the allowlist) when starting with `agentId`. |
 | `insufficient_credit` | Keyless session request, but the agent owner's account has no Agent credit left (HTTP 402). The owner needs to top up. |
-| `invalid_session_token` | The `sessionToken` option is not the session-creation response: it is `null`, a string, an error body from your backend, wrapped in another object, has renamed (camelCase) keys, or lacks `transport`, `livekit_url` or `token`. The message says which and how to fix it. The widget also reports it when `sessionTokenProvider` returns nothing. Checked before the microphone prompt. See [Authentication](authentication.md). |
-| `unsupported_transport` | The session token is well-formed but uses a transport this SDK version doesn't know. Upgrade the package. |
+| `invalid_session_token` | The `sessionToken` option is not the session-creation response: it is `null`, a string, an error body from your backend, wrapped in another object, has renamed (camelCase) keys, or lacks `transport`, `livekit_url` or `token`. The message says which and how to fix it. The widget also reports it when `sessionTokenProvider` returns nothing. In a browser it is checked before the microphone prompt. See [Authentication](authentication.md). |
+| `unsupported_transport` | The session token's `transport` is a value this SDK version doesn't know. Upgrade the package. |
 | `insecure_context` | The browser reports the page as not a secure context (not https, not `localhost`) and gives it no microphone. Reported before a session is created. A `microphone: false` start is not affected. |
 | `mic_permission_denied` | The user declined microphone access. |
 | `mic_unavailable` | No microphone could be captured at start: none was found, it could not be opened (another application may be using it), or the environment has no capture API (`navigator.mediaDevices.getUserMedia`). |

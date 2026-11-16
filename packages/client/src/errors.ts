@@ -12,7 +12,7 @@ export type FishAgentErrorCode =
    * keys, or lacks fields. The message says which.
    */
   | "invalid_session_token"
-  /** The session token is well-formed but names a transport this SDK version does not know. */
+  /** The session token's `transport` is a value this SDK version does not know, whatever else the token carries. */
   | "unsupported_transport"
   /** The page is not a secure context (https or localhost), so the browser gives it no microphone. */
   | "insecure_context"

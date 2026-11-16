@@ -8,7 +8,6 @@ import type {
 } from "@fishaudio/agent-protocol";
 import { assertOutputSelectionSupported, AudioOutput } from "../audio/output.js";
 import { AudioStreamAnalyser } from "../audio/analysis.js";
-import { MIC_UNAVAILABLE_MESSAGES } from "../audio/microphone.js";
 import { FishAgentError } from "../errors.js";
 import {
   AGENT_SESSION_EVENT_NAMES,
@@ -508,11 +507,6 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
       return new FishAgentError("mic_permission_denied", "Microphone permission was denied", {
         cause: error,
       });
-    }
-    const micUnavailable =
-      error instanceof Error ? MIC_UNAVAILABLE_MESSAGES.get(error.name) : undefined;
-    if (micUnavailable !== undefined) {
-      return new FishAgentError("mic_unavailable", micUnavailable, { cause: error });
     }
     return new FishAgentError("connection_failed", "Could not establish the realtime session", {
       cause: error,

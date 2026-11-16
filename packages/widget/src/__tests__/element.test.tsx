@@ -265,6 +265,20 @@ describe("<fish-agent>", () => {
     }
   });
 
+  it("shows a translated page its own connection text for a missing microphone", async () => {
+    const element = await mount({
+      "agent-id": "agent_1",
+      "text-contents": JSON.stringify({ errorConnection: "接続に失敗しました。" }),
+    });
+    await openPanel(element);
+    startMock.mockImplementationOnce(async () => {
+      throw Object.assign(new Error("No microphone was found."), { code: "mic_unavailable" });
+    });
+    click($(element, ".fa-cta"));
+    await tick();
+    expect($(element, ".fa-error").textContent).toBe("接続に失敗しました。");
+  });
+
   it("words a failed start by its cause instead of calling everything a connection failure", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     const element = await mount({ "agent-id": "agent_1" });

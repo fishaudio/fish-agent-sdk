@@ -61,7 +61,7 @@ for pages that use the CDN script and install the package only for its types.
 | `language` | Pin the session language (gated by the agent's override allowlist). |
 | `dynamic-variables` | JSON string of `{{name}}` template values. |
 | `user-id` | Your end-user identifier, stored on the session. |
-| `text-contents` | JSON overriding any UI string (keys in `DEFAULT_TEXTS` of `@fishaudio/agent-widget`). |
+| `text-contents` | JSON overriding any UI string (keys in `DEFAULT_TEXTS` of `@fishaudio/agent-widget`). `errorMicUnavailable` (no microphone could be captured) falls back to your `errorConnection` when you override texts without setting it. |
 
 Attributes win over the agent's server-side widget config (`GET /v1/agent/agents/{id}/widget`, fetched anonymously on load); built-in defaults fill the rest. The endpoint being unreachable never breaks the widget.
 
