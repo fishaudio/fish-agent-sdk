@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConnectionState, RoomEvent } from "livekit-client";
 import {
   AGENT_READY_ATTRIBUTE,
@@ -7,6 +7,7 @@ import {
   CLIENT_EVENT_TOPIC,
   type SessionToken,
 } from "@fishaudio/agent-protocol";
+import { startAgentSession } from "../session/agentSession.js";
 import { LiveKitTransport } from "../transport/livekit.js";
 import type { TransportCallbacks, TransportConnectionState } from "../transport/types.js";
 
@@ -584,5 +585,189 @@ describe("LiveKitTransport agent presence", () => {
     await flush();
     expect(agentReady()).toBe(1);
     expect(states.map((entry) => entry.state)).toEqual(["reconnecting", "connected"]);
+  });
+});
+
+describe("LiveKitTransport microphone preconditions", () => {
+  beforeEach(() => {
+    createLocalAudioTrack.mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    createLocalAudioTrack.mockReset();
+    createLocalAudioTrack.mockImplementation(async () => ({
+      stop: () => {},
+      on: () => {},
+      mediaStreamTrack: undefined,
+    }));
+  });
+
+  /** A web page as the check sees it: a document, a secure-context flag, a navigator. */
+  function stubPage({ secure, mediaDevices }: { secure: boolean | undefined; mediaDevices: boolean }): void {
+    vi.stubGlobal("document", {});
+    vi.stubGlobal("isSecureContext", secure);
+    vi.stubGlobal("navigator", mediaDevices ? { mediaDevices: { getUserMedia: async () => ({}) } } : {});
+  }
+
+  /** What livekit's capture does where `navigator.mediaDevices` is undefined. */
+  function captureFailsForLackOfApi(): TypeError {
+    const error = new TypeError("Cannot read properties of undefined (reading 'getUserMedia')");
+    createLocalAudioTrack.mockRejectedValue(error);
+    return error;
+  }
+
+  const prepareError = (): { code: string; message: string } | undefined => {
+    try {
+      new LiveKitTransport().prepareMicrophone({});
+    } catch (error) {
+      return error as { code: string; message: string };
+    }
+    return undefined;
+  };
+
+  const connectError = async (): Promise<unknown> => {
+    const transport = new LiveKitTransport();
+    transport.prepareMicrophone({});
+    return transport
+      .connect(SESSION_TOKEN, { callbacks: {} as TransportCallbacks })
+      .then(() => undefined, (error: unknown) => error);
+  };
+
+  it("refuses a page the browser calls insecure, with the fix, without attempting a capture", () => {
+    // What browsers do on http://192.168.x.x: no secure context, no mediaDevices.
+    stubPage({ secure: false, mediaDevices: false });
+    expect(prepareError()).toMatchObject({
+      code: "insecure_context",
+      message: expect.stringMatching(/not a secure context.*https.*localhost.*frame of an http page/),
+    });
+    expect(createLocalAudioTrack).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["no secure-context flag and no capture API (jsdom and the like)", undefined, false],
+    ["a secure page without a capture API", true, false],
+    ["an insecure flag but a capture API that is there anyway", false, true],
+    ["a secure page", true, true],
+  ])("does not refuse up front with %s", (_name, secure, mediaDevices) => {
+    stubPage({ secure, mediaDevices });
+    expect(prepareError()).toBeUndefined();
+    expect(createLocalAudioTrack).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not apply the page rule outside a browser page", () => {
+    // React Native and Node: no document. Capture goes through the runtime's own globals.
+    vi.stubGlobal("isSecureContext", false);
+    vi.stubGlobal("navigator", {});
+    expect(prepareError()).toBeUndefined();
+    expect(createLocalAudioTrack).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a capture that failed for lack of a capture API as mic_unavailable", async () => {
+    stubPage({ secure: true, mediaDevices: false });
+    const cause = captureFailsForLackOfApi();
+    expect(await connectError()).toMatchObject({
+      code: "mic_unavailable",
+      // True of every way to get here: no browser page, an insecure page, an in-app browser.
+      message: expect.stringMatching(
+        /No microphone capture API is available here.*outside a browser page.*https or localhost.*in-app browsers/,
+      ),
+      cause,
+    });
+    // The same through a session start, where the session must not relabel it.
+    await expect(
+      startAgentSession({ sessionToken: SESSION_TOKEN, wakeLock: false }, () => new LiveKitTransport()),
+    ).rejects.toMatchObject({ code: "mic_unavailable" });
+    expect(FakeRoom.lastInstance?.state).not.toBe("connected");
+  });
+
+  it.each([
+    ["NotFoundError", /No microphone was found/],
+    ["NotReadableError", /could not be opened/],
+    ["OverconstrainedError", /meets the capture settings/],
+    ["AbortError", /could not be started/],
+  ])("reports a capture that failed with %s as mic_unavailable", async (name, message) => {
+    stubPage({ secure: true, mediaDevices: true });
+    const cause = Object.assign(new Error("capture failed"), { name });
+    createLocalAudioTrack.mockRejectedValue(cause);
+    expect(await connectError()).toMatchObject({
+      code: "mic_unavailable",
+      message: expect.stringMatching(message),
+      cause,
+    });
+    await expect(
+      startAgentSession({ sessionToken: SESSION_TOKEN, wakeLock: false }, () => new LiveKitTransport()),
+    ).rejects.toMatchObject({ code: "mic_unavailable", cause });
+    // The capture is awaited before joining: no room was connected for it.
+    expect(FakeRoom.lastInstance?.state).not.toBe("connected");
+  });
+
+  it("does not take an AbortError from after the capture for a microphone problem", async () => {
+    stubPage({ secure: true, mediaDevices: true });
+    const aborted = Object.assign(new Error("The operation was aborted"), { name: "AbortError" });
+    FakeRoom.onConnect = () => {
+      FakeRoom.lastInstance!.localParticipant.publishTrack = async () => {
+        throw aborted;
+      };
+    };
+    const transport = new LiveKitTransport();
+    await expect(
+      startAgentSession({ sessionToken: SESSION_TOKEN, wakeLock: false }, () => transport),
+    ).rejects.toMatchObject({ code: "connection_failed", cause: aborted });
+    expect(createLocalAudioTrack).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves other capture failures as they came", async () => {
+    // A TypeError while the capture API exists is not about a missing API.
+    stubPage({ secure: true, mediaDevices: true });
+    const typeError = new TypeError("something else");
+    createLocalAudioTrack.mockRejectedValue(typeError);
+    expect(await connectError()).toBe(typeError);
+
+    // A denial stays a denial even where no capture API is visible (mocked capture).
+    stubPage({ secure: true, mediaDevices: false });
+    const denied = Object.assign(new Error("denied"), { name: "NotAllowedError" });
+    createLocalAudioTrack.mockRejectedValue(denied);
+    expect(await connectError()).toBe(denied);
+    await expect(
+      startAgentSession({ sessionToken: SESSION_TOKEN, wakeLock: false }, () => new LiveKitTransport()),
+    ).rejects.toMatchObject({ code: "mic_permission_denied" });
+  });
+
+  it("lets a start with a mocked capture through where no capture API is visible", async () => {
+    // jsdom-style test setups: a document, no secure-context flag, no mediaDevices.
+    stubPage({ secure: undefined, mediaDevices: false });
+    const session = await startAgentSession(
+      { sessionToken: SESSION_TOKEN, wakeLock: false },
+      () => new LiveKitTransport(),
+    );
+    expect(session.status).toBe("connected");
+    expect(createLocalAudioTrack).toHaveBeenCalledTimes(1);
+    await session.end();
+  });
+
+  it("fails a voice start on an insecure page before any session is requested", async () => {
+    stubPage({ secure: false, mediaDevices: false });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(
+      startAgentSession({ agentId: "agent-1", wakeLock: false }, () => new LiveKitTransport()),
+    ).rejects.toMatchObject({ code: "insecure_context" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    await expect(
+      startAgentSession({ sessionToken: SESSION_TOKEN, wakeLock: false }, () => new LiveKitTransport()),
+    ).rejects.toMatchObject({ code: "insecure_context" });
+  });
+
+  it("lets a microphone: false start through on an insecure page", async () => {
+    stubPage({ secure: false, mediaDevices: false });
+    const session = await startAgentSession(
+      { sessionToken: SESSION_TOKEN, microphone: false, wakeLock: false },
+      () => new LiveKitTransport(),
+    );
+    expect(session.status).toBe("connected");
+    expect(session.micMuted).toBe(true);
+    expect(createLocalAudioTrack).not.toHaveBeenCalled();
+    await session.end();
   });
 });

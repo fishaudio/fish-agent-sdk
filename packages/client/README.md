@@ -16,7 +16,9 @@ npm install @fishaudio/agent-client
 import { AgentSession } from "@fishaudio/agent-client";
 
 // Session token from your backend, or { agentId } for a public agent.
-const sessionToken = await fetch("/api/voice-session", { method: "POST" }).then((r) => r.json());
+const response = await fetch("/api/voice-session", { method: "POST" });
+if (!response.ok) throw new Error(`Session request failed: ${response.status}`);
+const sessionToken = await response.json();
 
 const session = await AgentSession.start({
   sessionToken,
@@ -32,7 +34,7 @@ session.sendUserMessage("Can you summarize that?");
 await session.end();
 ```
 
-Starting a session requests microphone access. Call `start()` from a user gesture such as a button click for the best permission and autoplay behavior.
+Starting a session requests microphone access. Call `start()` from a user gesture such as a button click for the best permission and autoplay behavior. The page must be served over https, or from `localhost` during development: browsers give no microphone to other pages.
 
 ## Documentation
 

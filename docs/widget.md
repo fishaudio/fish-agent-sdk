@@ -7,7 +7,7 @@ The fastest way to put a Fish Audio agent on a website. Two static lines, no bui
 <script src="https://unpkg.com/@fishaudio/agent-widget-embed" async type="text/javascript"></script>
 ```
 
-The agent must have public access enabled, and the page origin must be on its Origin allowlist. `localhost` and `127.0.0.1` count as separate origins. See [Authentication](authentication.md).
+The agent must have public access enabled, and the page origin must be on its Origin allowlist. `localhost` and `127.0.0.1` count as separate origins. See [Authentication](authentication.md). Voice needs a secure page: https, or `localhost` during development.
 
 Bundlers can install the element instead: `npm install @fishaudio/agent-widget`, then call `registerWidget()` once. `@fishaudio/agent-widget-embed` is the same widget pre-bundled as one IIFE file that registers on load.
 
@@ -61,7 +61,7 @@ for pages that use the CDN script and install the package only for its types.
 | `language` | Pin the session language (gated by the agent's override allowlist). |
 | `dynamic-variables` | JSON string of `{{name}}` template values. |
 | `user-id` | Your end-user identifier, stored on the session. |
-| `text-contents` | JSON overriding any UI string (keys in `DEFAULT_TEXTS` of `@fishaudio/agent-widget`). |
+| `text-contents` | JSON overriding any UI string (keys in `DEFAULT_TEXTS` of `@fishaudio/agent-widget`). `errorMicUnavailable` (no microphone could be captured) falls back to your `errorConnection` when you override texts without setting it. |
 
 Attributes win over the agent's server-side widget config (`GET /v1/agent/agents/{id}/widget`, fetched anonymously on load); built-in defaults fill the rest. The endpoint being unreachable never breaks the widget.
 
@@ -125,6 +125,7 @@ endpoint are yours.
       method: "POST",
       headers: { Authorization: `Bearer ${appSession.token}` },
     });
+    if (!response.ok) throw new Error(`Session request failed: ${response.status}`);
     return response.json(); // the session-token JSON, verbatim
   };
 </script>
@@ -132,3 +133,6 @@ endpoint are yours.
 
 React apps pass the same function as the `sessionTokenProvider` prop on
 `<FishAgentWidget>`.
+
+A provider that returns nothing (a missing `return`) fails the start with
+[`invalid_session_token`](errors.md), and the reason is logged to the console.

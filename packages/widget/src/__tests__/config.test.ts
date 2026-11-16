@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_TEXTS, parseAttributes, resolveSettings } from "../config.js";
+import {
+  DEFAULT_TEXTS,
+  parseAttributes,
+  resolveSettings,
+  type WidgetTextContents,
+} from "../config.js";
 
 function source(attrs: Record<string, string>) {
   return { getAttribute: (name: string) => attrs[name] ?? null };
@@ -82,5 +87,47 @@ describe("resolveSettings", () => {
     expect(settings.texts.consentBody).toBe("Custom terms");
     expect(settings.texts.poweredBy).toBe("Powered by remote");
     expect(settings.texts.consentTitle).toBe(DEFAULT_TEXTS.consentTitle);
+  });
+});
+
+describe("errorMicUnavailable text", () => {
+  const micText = (
+    attrTexts?: Partial<WidgetTextContents>,
+    remoteTexts?: Partial<WidgetTextContents>,
+  ) =>
+    resolveSettings(
+      { ...parseAttributes(source({})), texts: attrTexts },
+      remoteTexts ? { text_contents: remoteTexts } : null,
+    ).texts.errorMicUnavailable;
+
+  it("uses the English default only on a page that overrides no text", () => {
+    expect(micText()).toBe("No microphone available — check your device and try again.");
+    expect(micText(undefined, {})).toBe("No microphone available — check your device and try again.");
+  });
+
+  it("falls back to the page's own connection error when the page has its own texts", () => {
+    // A translated page written before the key existed keeps its own wording.
+    expect(micText({ errorConnection: "接続に失敗しました。" })).toBe("接続に失敗しました。");
+    expect(micText(undefined, { errorConnection: "Verbindung fehlgeschlagen." })).toBe(
+      "Verbindung fehlgeschlagen.",
+    );
+    // Attributes win over remote config, for the fallback too.
+    expect(micText({ errorConnection: "attr" }, { errorConnection: "remote" })).toBe("attr");
+    // Any override makes it "a page with its own texts", even without a connection text.
+    expect(micText({ startVoice: "話す" })).toBe(DEFAULT_TEXTS.errorConnection);
+  });
+
+  it("uses the page's errorMicUnavailable when it sets one", () => {
+    expect(micText({ errorConnection: "接続に失敗しました。", errorMicUnavailable: "マイクがありません。" })).toBe(
+      "マイクがありません。",
+    );
+    expect(micText({ errorConnection: "attr" }, { errorMicUnavailable: "remote mic" })).toBe("remote mic");
+  });
+
+  it("keeps a complete set of texts without the key assignable to WidgetTextContents", () => {
+    const { errorMicUnavailable: _newKey, ...before } = DEFAULT_TEXTS;
+    // Fails type-checking if the key becomes required.
+    const complete: WidgetTextContents = before;
+    expect(micText(complete)).toBe(DEFAULT_TEXTS.errorConnection);
   });
 });

@@ -1,5 +1,6 @@
 import {
   AgentSession,
+  FishAgentError,
   type AgentMode,
   type AgentSessionOptions,
   type EndReason,
@@ -170,10 +171,17 @@ export function FishAgentWidget({ host, attributes }: FishAgentWidgetProps) {
     switch (code) {
       case "mic_permission_denied":
         return texts.errorMicDenied;
+      case "mic_unavailable":
+        return texts.errorMicUnavailable ?? texts.errorConnection;
       case "origin_forbidden":
       case "agent_not_public":
         return texts.errorOrigin;
       case "insufficient_credit":
+        return texts.errorUnavailable;
+      // Integration problems: retrying does not help the visitor, and the
+      // reason goes to the console for whoever embedded the widget.
+      case "insecure_context":
+      case "invalid_session_token":
         return texts.errorUnavailable;
       default:
         return texts.errorConnection;
@@ -207,8 +215,15 @@ export function FishAgentWidget({ host, attributes }: FishAgentWidgetProps) {
 
     try {
       const options: AgentSessionOptions = { microphone: kind === "voice" };
+      /** Set when the provider handed back nothing, usually a missing `return`. */
+      let providerReturned: "null" | "undefined" | undefined;
       if (host.sessionTokenProvider) {
-        options.sessionToken = await host.sessionTokenProvider();
+        const sessionToken: unknown = await host.sessionTokenProvider();
+        if (sessionToken === undefined || sessionToken === null) {
+          providerReturned = sessionToken === null ? "null" : "undefined";
+        } else {
+          options.sessionToken = sessionToken as AgentSessionOptions["sessionToken"];
+        }
       } else if (settings.agentId) {
         options.agentId = settings.agentId;
         if (settings.serverUrl) {
@@ -233,6 +248,21 @@ export function FishAgentWidget({ host, attributes }: FishAgentWidgetProps) {
       // The host page may mutate `detail.options` (clientTools,
       // overrides, dynamic variables, …) before the session starts.
       emit("call", { options });
+
+      if (
+        providerReturned !== undefined &&
+        (options.sessionToken === undefined || options.sessionToken === null) &&
+        options.agentId === undefined
+      ) {
+        // Checked after the `call` event, which may still supply the auth
+        // itself. Without this the start would be reported as a call that
+        // named no auth mode at all.
+        throw new FishAgentError(
+          "invalid_session_token",
+          `\`sessionTokenProvider\` returned ${providerReturned}, not a session token. ` +
+            "Return the JSON object your backend received from `POST /v1/agent/sessions`, unchanged.",
+        );
+      }
 
       const session = await AgentSession.start(options);
       if (attempt.cancelled) {
@@ -292,6 +322,9 @@ export function FishAgentWidget({ host, attributes }: FishAgentWidgetProps) {
         return;
       }
       const code = (startError as { code?: string }).code;
+      if (code === "insecure_context" || code === "invalid_session_token") {
+        console.error(`[fish-agent] ${(startError as Error).message}`);
+      }
       setError(errorText(code));
       setPendingText(null);
       setPhase(restingPhase());

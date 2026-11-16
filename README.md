@@ -44,12 +44,14 @@ app.post("/api/voice-session", async (req, res) => {
 });
 ```
 
-**2. Browser:** fetch the token from your server when the call starts, then join. The token is short-lived, so don't fetch it at page load. `AgentSession.start` requests microphone access, streams the mic to the agent, and plays the agent's voice through the speakers. Browsers only allow that from a user gesture, so call it from a click handler.
+**2. Browser:** fetch the token from your server when the call starts, then join. The token must be used within about 5 minutes and starts one call, so fetch it when the call starts, not at page load. `AgentSession.start` requests microphone access, streams the mic to the agent, and plays the agent's voice through the speakers. Browsers only allow that from a user gesture, so call it from a click handler. They also give the microphone only to pages served over https, or from `localhost` during development.
 
 ```js
 import { AgentSession } from "@fishaudio/agent-client";
 
-const sessionToken = await fetch("/api/voice-session", { method: "POST" }).then((r) => r.json());
+const response = await fetch("/api/voice-session", { method: "POST" });
+if (!response.ok) throw new Error(`Session request failed: ${response.status}`);
+const sessionToken = await response.json();
 
 const session = await AgentSession.start({
   sessionToken,
@@ -91,7 +93,9 @@ export function CallButton() {
   const conversation = useConversation();
 
   const start = async () => {
-    const sessionToken = await fetch("/api/voice-session", { method: "POST" }).then((r) => r.json());
+    const response = await fetch("/api/voice-session", { method: "POST" });
+    if (!response.ok) throw new Error(`Session request failed: ${response.status}`);
+    const sessionToken = await response.json();
     await conversation.startSession({ sessionToken }); // or { agentId } for a public agent
   };
 

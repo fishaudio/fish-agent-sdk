@@ -28,7 +28,17 @@ registerWidget(); // defines <fish-agent>
 <fish-agent agent-id="your-agent-id"></fish-agent>
 ```
 
-Exactly one of `agent-id` or `token-endpoint` is required. `agent-id` is for a public agent with your origin allowlisted. `token-endpoint` is for a private agent. It is a URL on your backend that returns the session-token JSON. Everything else is attributes: `agent-name`, `greeting`, `proactive-message`, `proactive-delay`, `position`, the `transcript`, `text-input`, `mic-muting`, and `consent` switches, `language`, `user-id`, `dynamic-variables` as JSON, and `text-contents` as JSON overriding any UI string. See the [attribute reference](https://docs.fish.audio/agents/deploy/widget#attributes). Theme it with CSS custom properties such as `--fish-accent` on the element.
+Set `agent-id` for a public agent with your origin allowlisted. For a private agent, leave `agent-id` out and set the element's `sessionTokenProvider` property to a function that fetches a session token from your backend and returns the JSON unchanged:
+
+```js
+document.querySelector("fish-agent").sessionTokenProvider = async () => {
+  const response = await fetch("/api/voice-session", { method: "POST" });
+  if (!response.ok) throw new Error(`Session request failed: ${response.status}`);
+  return response.json();
+};
+```
+
+Everything else is attributes: `agent-name`, `greeting`, `proactive-message`, `proactive-delay`, `position`, the `transcript`, `text-input`, `mic-muting`, and `consent` switches, `language`, `user-id`, `dynamic-variables` as JSON, and `text-contents` as JSON overriding any UI string. See the [attribute reference](https://docs.fish.audio/agents/deploy/widget#attributes). Theme it with CSS custom properties such as `--fish-accent` on the element.
 
 The element emits bubbling, composed `CustomEvent`s. `fish-agent:call` carries mutable `{ options }`, so inject `clientTools` there. `fish-agent:connect` carries `{ sessionId }`, `fish-agent:disconnect` carries `{ reason }`, and `fish-agent:error` carries `{ code, message }`. Dispatch `fish-agent:expand` on the element or `document` to open the panel programmatically.
 

@@ -18,7 +18,11 @@ import {
   type SessionStatus,
   type TranscriptSegment,
 } from "../events.js";
-import { resolveSessionToken, type SessionRequestOptions } from "../sessionToken.js";
+import {
+  checkSessionRequest,
+  createSessionToken,
+  type SessionRequestOptions,
+} from "../sessionToken.js";
 import type {
   TranscriptionSegmentUpdate,
   Transport,
@@ -398,18 +402,24 @@ export class AgentSession extends TypedEmitter<AgentSessionEvents> {
     // is a programming error and must not cost a microphone prompt or a
     // server session to discover.
     const callbackSubscriptions = resolveCallbackSubscriptions(options.callbacks);
+    // Same rule for the auth options: a `sessionToken` that is not the
+    // session-creation response is rejected here, before the microphone prompt.
+    // With `agentId` there is nothing to check yet and the order below stands:
+    // microphone first, so a denied microphone never creates a session.
+    const providedToken = checkSessionRequest(options);
     const transport = createTransport();
     if (options.microphone !== false) {
       // Inside the user gesture that called start(), before the token
       // round-trip pushes getUserMedia out of the gesture's transient
       // activation (see Transport.prepareMicrophone). A denial surfaces in
-      // transport.connect().
+      // transport.connect(). A page that cannot reach a microphone at all
+      // throws right here, before a session is created for it.
       transport.prepareMicrophone?.({ inputDeviceId: options.audio?.inputDeviceId });
     }
     let sessionToken: SessionToken;
     let session: AgentSession;
     try {
-      sessionToken = await resolveSessionToken(options);
+      sessionToken = providedToken ?? (await createSessionToken(options));
       session = new AgentSession(sessionToken);
       if (options.audio?.outputDeviceId !== undefined) {
         // The browser validates the device id here, before anything connects;

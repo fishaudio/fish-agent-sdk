@@ -6,7 +6,9 @@ Owns one session's lifecycle and re-renders on its state changes. `defaults` is 
 const conversation = useConversation({ clientTools, callbacks });
 
 const start = async () => {
-  const sessionToken = await fetch("/api/voice-session", { method: "POST" }).then((r) => r.json());
+  const response = await fetch("/api/voice-session", { method: "POST" });
+  if (!response.ok) throw new Error(`Session request failed: ${response.status}`);
+  const sessionToken = await response.json();
   await conversation.startSession({ sessionToken });
 };
 ```

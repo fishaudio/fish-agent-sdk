@@ -35,6 +35,12 @@ export interface WidgetTextContents {
   thinking: string;
   speaking: string;
   errorMicDenied: string;
+  /**
+   * Shown when no microphone could be captured. Optional, so a complete set
+   * of texts written before this key existed still type-checks. A page that
+   * overrides texts without setting it shows its `errorConnection` instead.
+   */
+  errorMicUnavailable?: string;
   errorOrigin: string;
   errorUnavailable: string;
   errorConnection: string;
@@ -76,6 +82,7 @@ export const DEFAULT_TEXTS: WidgetTextContents = {
   thinking: "Thinking",
   speaking: "Speaking",
   errorMicDenied: "Microphone access was denied — check your browser settings.",
+  errorMicUnavailable: "No microphone available — check your device and try again.",
   errorOrigin: "This site isn't allowed to talk to this agent.",
   errorUnavailable: "This agent is temporarily unavailable.",
   errorConnection: "Connection failed — please try again.",
@@ -243,11 +250,14 @@ export function resolveSettings(
   attrs: WidgetAttributes,
   remote: RemoteWidgetConfig | null,
 ): WidgetSettings {
-  const texts: WidgetTextContents = {
-    ...DEFAULT_TEXTS,
-    ...remote?.text_contents,
-    ...attrs.texts,
-  };
+  const overrides: Partial<WidgetTextContents> = { ...remote?.text_contents, ...attrs.texts };
+  const texts: WidgetTextContents = { ...DEFAULT_TEXTS, ...overrides };
+  if (overrides.errorMicUnavailable === undefined && Object.keys(overrides).length > 0) {
+    // A page with its own texts (a translation, usually) predates this key.
+    // Its connection error is what it showed for this failure before, and is
+    // in its language. The English default is for pages that override nothing.
+    texts.errorMicUnavailable = texts.errorConnection;
+  }
   const greeting = attrs.greeting ?? attrs.texts?.greeting ?? remote?.greeting;
   if (greeting !== undefined) {
     texts.greeting = greeting;

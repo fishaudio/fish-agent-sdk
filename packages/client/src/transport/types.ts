@@ -65,6 +65,9 @@ export interface Transport {
    * activation expires behind the token/connect round-trips. `connect()`
    * consumes the pending capture (denials surface there); `disconnect()`
    * releases a capture that was never published.
+   *
+   * Throws `insecure_context` synchronously, before capturing anything, on a
+   * page that is certain to get no microphone.
    */
   prepareMicrophone?(options: { inputDeviceId?: string }): void;
   connect(sessionToken: SessionToken, options: TransportConnectOptions): Promise<void>;

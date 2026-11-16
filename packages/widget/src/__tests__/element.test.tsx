@@ -218,6 +218,109 @@ describe("<fish-agent>", () => {
     expect(startMock.mock.calls[0]![0]).not.toHaveProperty("agentId");
   });
 
+  it.each([undefined, null])(
+    "reports a sessionTokenProvider that returns %s as an invalid session token",
+    async (returned) => {
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      const { FishAgentElement } = await import("../element.js");
+      const element = (await mount({})) as InstanceType<typeof FishAgentElement>;
+      element.sessionTokenProvider = (async () => returned) as never;
+      const details: Array<{ code: string; message: string }> = [];
+      element.addEventListener("fish-agent:error", (event) => {
+        details.push((event as CustomEvent).detail);
+      });
+      await openPanel(element);
+      click($(element, ".fa-cta"));
+      await tick();
+
+      expect(startMock).not.toHaveBeenCalled();
+      expect(details).toHaveLength(1);
+      expect(details[0]).toMatchObject({
+        code: "invalid_session_token",
+        message: expect.stringContaining(`\`sessionTokenProvider\` returned ${String(returned)}`),
+      });
+      expect($(element, ".fa-error").textContent).toBe("This agent is temporarily unavailable.");
+      expect(consoleError).toHaveBeenCalledWith(`[fish-agent] ${details[0]!.message}`);
+      consoleError.mockRestore();
+    },
+  );
+
+  it("still starts when the provider returns nothing but the call event supplies the auth", async () => {
+    const { FishAgentElement } = await import("../element.js");
+    const token = { transport: "livekit", livekit_url: "wss://livekit.fish.test", token: "jwt" };
+    for (const supplied of [{ agentId: "agent_1" }, { sessionToken: token }]) {
+      const element = (await mount({})) as InstanceType<typeof FishAgentElement>;
+      element.sessionTokenProvider = (async () => undefined) as never;
+      element.addEventListener("fish-agent:call", (event) => {
+        Object.assign((event as CustomEvent).detail.options, supplied);
+      });
+      await openPanel(element);
+      click($(element, ".fa-cta"));
+      await tick();
+      expect(startMock).toHaveBeenCalledTimes(1);
+      expect(startMock.mock.calls[0]![0]).toMatchObject(supplied);
+      expect(query(element, ".fa-error")).toBeNull();
+      element.remove();
+      startMock.mockClear();
+    }
+  });
+
+  it("shows a translated page its own connection text for a missing microphone", async () => {
+    const element = await mount({
+      "agent-id": "agent_1",
+      "text-contents": JSON.stringify({ errorConnection: "接続に失敗しました。" }),
+    });
+    await openPanel(element);
+    startMock.mockImplementationOnce(async () => {
+      throw Object.assign(new Error("No microphone was found."), { code: "mic_unavailable" });
+    });
+    click($(element, ".fa-cta"));
+    await tick();
+    expect($(element, ".fa-error").textContent).toBe("接続に失敗しました。");
+  });
+
+  it("words a failed start by its cause instead of calling everything a connection failure", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const element = await mount({ "agent-id": "agent_1" });
+    const details: Array<{ code: string; message: string }> = [];
+    element.addEventListener("fish-agent:error", (event) => {
+      details.push((event as CustomEvent).detail);
+    });
+    await openPanel(element);
+    const failWith = async (code: string, message: string) => {
+      startMock.mockImplementationOnce(async () => {
+        throw Object.assign(new Error(message), { code });
+      });
+      click($(element, ".fa-cta"));
+      await tick();
+      return $(element, ".fa-error").textContent;
+    };
+
+    expect(await failWith("mic_unavailable", "No microphone was found.")).toBe(
+      "No microphone available — check your device and try again.",
+    );
+    expect(consoleError).not.toHaveBeenCalled();
+
+    // Nothing the visitor can retry: the page owner gets the reason in the console.
+    expect(await failWith("insecure_context", "This page is not a secure context")).toBe(
+      "This agent is temporarily unavailable.",
+    );
+    expect(consoleError).toHaveBeenLastCalledWith("[fish-agent] This page is not a secure context");
+    expect(await failWith("invalid_session_token", "`sessionToken` is a string")).toBe(
+      "This agent is temporarily unavailable.",
+    );
+    expect(consoleError).toHaveBeenLastCalledWith("[fish-agent] `sessionToken` is a string");
+
+    expect(await failWith("connection_failed", "nope")).toBe("Connection failed — please try again.");
+    expect(details.map((detail) => detail.code)).toEqual([
+      "mic_unavailable",
+      "insecure_context",
+      "invalid_session_token",
+      "connection_failed",
+    ]);
+    consoleError.mockRestore();
+  });
+
   it("lets the host inject start options via fish-agent:call", async () => {
     const element = await mount({ "agent-id": "agent_1" });
     const lookup = () => "ok";

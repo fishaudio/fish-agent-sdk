@@ -20,7 +20,20 @@ Then place the element anywhere on the page:
 <fish-agent agent-id="your-agent-id"></fish-agent>
 ```
 
-The agent must have public access enabled with your page's origin on its allowlist. For private agents, use `token-endpoint="/api/voice-session"` instead of `agent-id`. The [widget guide](https://docs.fish.audio/agents/deploy/widget) lists all attributes, theming, and page events.
+The agent must have public access enabled with your page's origin on its allowlist. For private agents, leave `agent-id` out and set the element's `sessionTokenProvider` property to a function that fetches a session token from your backend and returns the JSON unchanged:
+
+```html
+<fish-agent></fish-agent>
+<script>
+  document.querySelector("fish-agent").sessionTokenProvider = async () => {
+    const response = await fetch("/api/voice-session", { method: "POST" });
+    if (!response.ok) throw new Error(`Session request failed: ${response.status}`);
+    return response.json();
+  };
+</script>
+```
+
+The [widget guide](https://docs.fish.audio/agents/deploy/widget) lists all attributes, theming, and page events.
 
 Bundling the widget yourself? Install [`@fishaudio/agent-widget`](https://www.npmjs.com/package/@fishaudio/agent-widget) instead and call `registerWidget()` once. React apps get `<FishAgentWidget>` from `@fishaudio/agent-widget/react`. This package is that widget pre-bundled for `<script src>` installs.
 

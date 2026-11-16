@@ -21,14 +21,14 @@ session.sendUserMessage("Can you summarize that?");
 await session.end();
 ```
 
-Starting a session requests microphone access. Call `start()` from a user gesture such as a button click for the best permission and autoplay behavior. For a text-first UI, pass `microphone: false` to join without the microphone. Then there is no permission prompt at start. The first `setMicMuted(false)` captures the mic instead, so call *that* from a user gesture.
+Starting a session requests microphone access. Call `start()` from a user gesture such as a button click for the best permission and autoplay behavior. Browsers give the microphone only to secure pages: serve the page over https, or use `localhost` during development. Anywhere else `start()` rejects with [`insecure_context`](errors.md). For a text-first UI, pass `microphone: false` to join without the microphone. Then there is no permission prompt at start. The first `setMicMuted(false)` captures the mic instead, so call *that* from a user gesture.
 
 ## `AgentSession.start(options)`
 
 | Option | Type | Description |
 |---|---|---|
 | `agentId` | `string` | Public agent id. Exactly one of `agentId` / `sessionToken` is required. |
-| `sessionToken` | `SessionToken` | Server-created session token, passed through verbatim. |
+| `sessionToken` | `SessionToken` | Server-created session token, passed through verbatim: the whole JSON object from session creation, keys unchanged. Checked before the microphone prompt. Anything else rejects with [`invalid_session_token`](errors.md). |
 | `serverUrl` | `string` | Fish API base for `agentId` mode. Default `https://api.fish.audio`. |
 | `language` | `string` | Shorthand for `overrides.language`. Gated by the same allowlist. `agentId` mode only. |
 | `timezone` | `string` | IANA timezone anchoring the agent's sense of local time. Omit to use the browser's timezone, sent automatically as a hint (`agentId` mode only). |
