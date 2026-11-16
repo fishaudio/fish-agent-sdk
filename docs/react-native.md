@@ -155,8 +155,9 @@ export default function SupportCall() {
   const messages = useAgentMessages(conversation.session);
 
   const start = async () => {
-    const sessionToken = await fetch("https://api.example.com/agent-session", { method: "POST" })
-      .then((r) => r.json());
+    const response = await fetch("https://api.example.com/agent-session", { method: "POST" });
+    if (!response.ok) throw new Error(`Session request failed: ${response.status}`);
+    const sessionToken = await response.json();
     await conversation.startSession({ sessionToken });
   };
 
