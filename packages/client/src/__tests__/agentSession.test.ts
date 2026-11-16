@@ -317,9 +317,9 @@ describe("start", () => {
         /camelCase keys \(`sessionId`, `expiresAt`, `maxDurationSeconds`, `livekitUrl`\).*`session_id`.*without renaming/,
       ],
       [
-        "missing fields",
-        { transport: "livekit", session_id: "sess-1", token: SECRET },
-        /is missing `expires_at`, `livekit_url`\./,
+        "a missing connection field",
+        { transport: "livekit", session_id: "sess-1", expires_at: SESSION_TOKEN.expires_at, token: SECRET },
+        /is missing `livekit_url`\./,
       ],
       [
         "a field of the wrong type",
@@ -349,6 +349,22 @@ describe("start", () => {
       // null and "" used to fall through to creating a public session.
       expect(fetchMock).not.toHaveBeenCalled();
     });
+  });
+
+  it("still connects with a token trimmed to the fields a connection needs", async () => {
+    // A backend that forwards only these three has always worked: no session
+    // id is reported and no join deadline is checked.
+    const trimmed = {
+      transport: "livekit",
+      livekit_url: SESSION_TOKEN.livekit_url,
+      token: SESSION_TOKEN.token,
+    } as unknown as SessionToken;
+    const onConnect = vi.fn();
+    const { session, transport } = await start({ sessionToken: trimmed, callbacks: { onConnect } });
+    expect(session.status).toBe("connected");
+    expect(session.sessionId).toBeUndefined();
+    expect(onConnect).toHaveBeenCalledWith({ sessionId: undefined });
+    expect(transport.connected).toBe(true);
   });
 
   it("rejects an unsupported or expired sessionToken before the microphone prompt", async () => {

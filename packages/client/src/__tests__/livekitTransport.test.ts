@@ -595,6 +595,12 @@ describe("LiveKitTransport microphone preconditions", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    createLocalAudioTrack.mockReset();
+    createLocalAudioTrack.mockImplementation(async () => ({
+      stop: () => {},
+      on: () => {},
+      mediaStreamTrack: undefined,
+    }));
   });
 
   /** A web page as the check sees it: a document, a secure-context flag, a navigator. */
@@ -602,6 +608,13 @@ describe("LiveKitTransport microphone preconditions", () => {
     vi.stubGlobal("document", {});
     vi.stubGlobal("isSecureContext", secure);
     vi.stubGlobal("navigator", mediaDevices ? { mediaDevices: { getUserMedia: async () => ({}) } } : {});
+  }
+
+  /** What livekit's capture does where `navigator.mediaDevices` is undefined. */
+  function captureFailsForLackOfApi(): TypeError {
+    const error = new TypeError("Cannot read properties of undefined (reading 'getUserMedia')");
+    createLocalAudioTrack.mockRejectedValue(error);
+    return error;
   }
 
   const prepareError = (): { code: string; message: string } | undefined => {
@@ -613,7 +626,15 @@ describe("LiveKitTransport microphone preconditions", () => {
     return undefined;
   };
 
-  it("refuses an insecure page with the fix, without attempting a capture", () => {
+  const connectError = async (): Promise<unknown> => {
+    const transport = new LiveKitTransport();
+    transport.prepareMicrophone({});
+    return transport
+      .connect(SESSION_TOKEN, { callbacks: {} as TransportCallbacks })
+      .then(() => undefined, (error: unknown) => error);
+  };
+
+  it("refuses a page the browser calls insecure, with the fix, without attempting a capture", () => {
     // What browsers do on http://192.168.x.x: no secure context, no mediaDevices.
     stubPage({ secure: false, mediaDevices: false });
     expect(prepareError()).toMatchObject({
@@ -623,23 +644,13 @@ describe("LiveKitTransport microphone preconditions", () => {
     expect(createLocalAudioTrack).not.toHaveBeenCalled();
   });
 
-  it("treats a page without mediaDevices and without the secure-context flag as insecure", () => {
-    stubPage({ secure: undefined, mediaDevices: false });
-    expect(prepareError()).toMatchObject({ code: "insecure_context" });
-    expect(createLocalAudioTrack).not.toHaveBeenCalled();
-  });
-
-  it("reports a secure page whose browser has no capture API as mic_unavailable", () => {
-    stubPage({ secure: true, mediaDevices: false });
-    expect(prepareError()).toMatchObject({
-      code: "mic_unavailable",
-      message: expect.stringContaining("navigator.mediaDevices.getUserMedia"),
-    });
-    expect(createLocalAudioTrack).not.toHaveBeenCalled();
-  });
-
-  it("captures on a secure page", () => {
-    stubPage({ secure: true, mediaDevices: true });
+  it.each([
+    ["no secure-context flag and no capture API (jsdom and the like)", undefined, false],
+    ["a secure page without a capture API", true, false],
+    ["an insecure flag but a capture API that is there anyway", false, true],
+    ["a secure page", true, true],
+  ])("does not refuse up front with %s", (_name, secure, mediaDevices) => {
+    stubPage({ secure, mediaDevices });
     expect(prepareError()).toBeUndefined();
     expect(createLocalAudioTrack).toHaveBeenCalledTimes(1);
   });
@@ -650,6 +661,50 @@ describe("LiveKitTransport microphone preconditions", () => {
     vi.stubGlobal("navigator", {});
     expect(prepareError()).toBeUndefined();
     expect(createLocalAudioTrack).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a capture that failed for lack of a capture API as mic_unavailable", async () => {
+    stubPage({ secure: true, mediaDevices: false });
+    const cause = captureFailsForLackOfApi();
+    expect(await connectError()).toMatchObject({
+      code: "mic_unavailable",
+      message: expect.stringContaining("no microphone capture API"),
+      cause,
+    });
+    // The same through a session start, where the session must not relabel it.
+    await expect(
+      startAgentSession({ sessionToken: SESSION_TOKEN, wakeLock: false }, () => new LiveKitTransport()),
+    ).rejects.toMatchObject({ code: "mic_unavailable" });
+    expect(FakeRoom.lastInstance?.state).not.toBe("connected");
+  });
+
+  it("leaves other capture failures as they came", async () => {
+    // A TypeError while the capture API exists is not about a missing API.
+    stubPage({ secure: true, mediaDevices: true });
+    const typeError = new TypeError("something else");
+    createLocalAudioTrack.mockRejectedValue(typeError);
+    expect(await connectError()).toBe(typeError);
+
+    // A denial stays a denial even where no capture API is visible (mocked capture).
+    stubPage({ secure: true, mediaDevices: false });
+    const denied = Object.assign(new Error("denied"), { name: "NotAllowedError" });
+    createLocalAudioTrack.mockRejectedValue(denied);
+    expect(await connectError()).toBe(denied);
+    await expect(
+      startAgentSession({ sessionToken: SESSION_TOKEN, wakeLock: false }, () => new LiveKitTransport()),
+    ).rejects.toMatchObject({ code: "mic_permission_denied" });
+  });
+
+  it("lets a start with a mocked capture through where no capture API is visible", async () => {
+    // jsdom-style test setups: a document, no secure-context flag, no mediaDevices.
+    stubPage({ secure: undefined, mediaDevices: false });
+    const session = await startAgentSession(
+      { sessionToken: SESSION_TOKEN, wakeLock: false },
+      () => new LiveKitTransport(),
+    );
+    expect(session.status).toBe("connected");
+    expect(createLocalAudioTrack).toHaveBeenCalledTimes(1);
+    await session.end();
   });
 
   it("fails a voice start on an insecure page before any session is requested", async () => {

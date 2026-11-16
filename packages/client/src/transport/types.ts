@@ -66,9 +66,8 @@ export interface Transport {
    * consumes the pending capture (denials surface there); `disconnect()`
    * releases a capture that was never published.
    *
-   * Throws synchronously, before capturing anything, where the page cannot
-   * reach a microphone at all (`insecure_context`, or `mic_unavailable` when
-   * the browser has no capture API).
+   * Throws `insecure_context` synchronously, before capturing anything, on a
+   * page that is certain to get no microphone.
    */
   prepareMicrophone?(options: { inputDeviceId?: string }): void;
   connect(sessionToken: SessionToken, options: TransportConnectOptions): Promise<void>;

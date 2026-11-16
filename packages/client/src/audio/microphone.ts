@@ -18,32 +18,27 @@ export const MIC_UNAVAILABLE_MESSAGES: ReadonlyMap<string, string> = new Map([
   ["AbortError", "The microphone could not be started."],
 ]);
 
+function hasCaptureApi(): boolean {
+  const scope = globalThis as { navigator?: { mediaDevices?: { getUserMedia?: unknown } } };
+  return typeof scope.navigator?.mediaDevices?.getUserMedia === "function";
+}
+
 /**
- * Throws where a web page cannot reach the microphone at all, so the start
- * fails with the reason instead of a failed capture later. Browsers only
- * expose `navigator.mediaDevices` to secure contexts: https pages, and
+ * Throws `insecure_context` on a web page that is certain to get no
+ * microphone: the browser says the page is not a secure context and exposes no
+ * capture API to it. Browsers only give the microphone to https pages, and to
  * `localhost` during development.
  *
- * Only web pages are checked. React Native and Node have no `document`, and
- * there the capture goes through whatever the runtime installed.
+ * Anything less certain is left to the capture itself, so nothing that could
+ * work is refused up front: no secure-context flag, a capture API that is
+ * there anyway, or no `document` at all (React Native, Node, test runners).
  */
 export function assertMicrophoneReachable(): void {
   if (typeof document === "undefined") {
     return;
   }
-  const scope = globalThis as {
-    isSecureContext?: boolean;
-    navigator?: { mediaDevices?: { getUserMedia?: unknown } };
-  };
-  const hasGetUserMedia = typeof scope.navigator?.mediaDevices?.getUserMedia === "function";
-  if (scope.isSecureContext === true && !hasGetUserMedia) {
-    throw new FishAgentError(
-      "mic_unavailable",
-      "This browser does not provide microphone access (`navigator.mediaDevices.getUserMedia` is missing). " +
-        "Some in-app browsers do not: open the page in the system browser instead.",
-    );
-  }
-  if (scope.isSecureContext === false || !hasGetUserMedia) {
+  const insecure = (globalThis as { isSecureContext?: boolean }).isSecureContext === false;
+  if (insecure && !hasCaptureApi()) {
     throw new FishAgentError(
       "insecure_context",
       "This page is not a secure context, so the browser gives it no microphone access. " +
@@ -51,4 +46,23 @@ export function assertMicrophoneReachable(): void {
         "To start without the microphone, pass `microphone: false`.",
     );
   }
+}
+
+/**
+ * A capture that failed where there is no capture API to call (the failure is
+ * the `TypeError` from reaching into a missing `navigator.mediaDevices`) is
+ * `mic_unavailable`. Every other failure is returned as it came, for the
+ * session to map by name.
+ */
+export function asCaptureError(error: unknown): unknown {
+  if (error instanceof TypeError && !hasCaptureApi()) {
+    return new FishAgentError(
+      "mic_unavailable",
+      "This environment provides no microphone capture API " +
+        "(`navigator.mediaDevices.getUserMedia` is missing). " +
+        "Some in-app browsers do not: open the page in the system browser instead.",
+      { cause: error },
+    );
+  }
+  return error;
 }

@@ -133,3 +133,6 @@ endpoint are yours.
 
 React apps pass the same function as the `sessionTokenProvider` prop on
 `<FishAgentWidget>`.
+
+A provider that returns nothing (a missing `return`) fails the start with
+[`invalid_session_token`](errors.md), and the reason is logged to the console.

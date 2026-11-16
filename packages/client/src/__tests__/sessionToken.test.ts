@@ -225,12 +225,42 @@ describe("session token validation", () => {
     expect(invalid(new Response("{}")).message).toMatch(/is a fetch Response\. Check `response\.ok`/);
   });
 
-  it("names empty and mistyped fields without echoing their values", () => {
-    const error = invalid({ ...SESSION_TOKEN, livekit_url: "", session_id: 12345 });
+  it("names empty and mistyped connection fields without echoing their values", () => {
+    const error = invalid({ ...SESSION_TOKEN, livekit_url: "", token: 12345 });
     expect(error.code).toBe("invalid_session_token");
-    expect(error.message).toMatch(/`session_id` \(expected a string, got number\)/);
+    expect(error.message).toMatch(/`token` \(expected a string, got number\)/);
     expect(error.message).toMatch(/`livekit_url` \(an empty string\)/);
     expect(error.message).not.toContain("12345");
+    expect(invalid({ ...SESSION_TOKEN, token: undefined }).message).toMatch(/is missing `token`\./);
+    expect(invalid({ ...SESSION_TOKEN, transport: "" }).message).toMatch(
+      /`transport` \(an empty string\)/,
+    );
+  });
+
+  it("accepts every token that could connect before, whatever its session_id and expires_at", () => {
+    const connectable = { transport: "livekit", livekit_url: "wss://x", token: "t" };
+    const accepted: unknown[] = [
+      connectable,
+      { ...connectable, session_id: null, expires_at: null },
+      { ...connectable, session_id: 12345 },
+      // Not a date: no deadline is checked, as before.
+      { ...connectable, expires_at: "soon" },
+      { ...connectable, expires_at: "" },
+      { ...connectable, expires_at: 4102444800000 },
+      { ...connectable, expires_at: { seconds: 1 } },
+    ];
+    for (const token of accepted) {
+      expect(validateSessionToken(token)).toBe(token);
+    }
+  });
+
+  it("accepts a session endpoint answer without session_id and expires_at", async () => {
+    stubFetch(201, { transport: "livekit", livekit_url: "wss://x", token: "t" });
+    await expect(resolveSessionToken({ agentId: "a" })).resolves.toEqual({
+      transport: "livekit",
+      livekit_url: "wss://x",
+      token: "t",
+    });
   });
 
   it("does not echo keys that could be a pasted secret", () => {
@@ -243,31 +273,28 @@ describe("session token validation", () => {
   it("does not mistake keys named like built-in properties for renamed fields", () => {
     const error = invalid({ constructor: "x", toString: "y", session_id: "sess-1" });
     expect(error.message).not.toMatch(/camelCase/);
-    expect(error.message).toMatch(/is missing `transport`, `expires_at`, `livekit_url`, `token`/);
+    expect(error.message).toMatch(/is missing `transport`, `livekit_url`, `token`\./);
   });
 
-  it("reports unsupported_transport only for a complete token with an unknown transport", () => {
+  it("reports unsupported_transport only for an object whose transport is an unknown string", () => {
     // A token for another transport need not carry the LiveKit fields.
     expect(
-      invalid({
-        transport: "carrier-pigeon",
-        session_id: "sess-1",
-        expires_at: SESSION_TOKEN.expires_at,
-        loft_address: "roof",
-      }),
+      invalid({ transport: "carrier-pigeon", session_id: "sess-1", loft_address: "roof" }),
     ).toMatchObject({
       code: "unsupported_transport",
       message: expect.stringContaining('transport "carrier-pigeon"'),
     });
-    // Shape problems win over the transport: none of these is an SDK-version problem.
-    expect(invalid({ transport: "carrier-pigeon" })).toMatchObject({
+    // None of these is an SDK-version problem.
+    expect(invalid({ ...SESSION_TOKEN, transport: undefined })).toMatchObject({
       code: "invalid_session_token",
-      message: expect.stringMatching(/is missing `session_id`, `expires_at`\./),
+      message: expect.stringMatching(/is missing `transport`\./),
     });
-    expect(invalid({ ...SESSION_TOKEN, transport: undefined }).code).toBe("invalid_session_token");
     expect(invalid({ ...SESSION_TOKEN, transport: 7 }).code).toBe("invalid_session_token");
-    expect(invalid("livekit").code).toBe("invalid_session_token");
+    expect(invalid("carrier-pigeon").code).toBe("invalid_session_token");
     expect(invalid({ error: "Unauthorized" }).code).toBe("invalid_session_token");
+    expect(invalid({ data: { ...SESSION_TOKEN, transport: "carrier-pigeon" } }).code).toBe(
+      "invalid_session_token",
+    );
   });
 
   it("still rejects a well-formed token past its join deadline", () => {
@@ -280,7 +307,9 @@ describe("session token validation", () => {
     stubFetch(200, { ok: true });
     await expect(resolveSessionToken({ agentId: "a" })).rejects.toMatchObject({
       code: "session_request_failed",
-      message: expect.stringMatching(/^The session endpoint answered with a body that is missing `transport`/),
+      message: expect.stringMatching(
+        /^The session endpoint answered with a body that is missing `transport`, `livekit_url`, `token`$/,
+      ),
     });
   });
 });

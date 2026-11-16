@@ -72,12 +72,14 @@ export interface SessionRequestOptions {
   toolEvents?: boolean;
 }
 
-/** Present on every session token, whatever its transport. */
-const COMMON_TOKEN_FIELDS = ["transport", "session_id", "expires_at"] as const;
-/** What the LiveKit arm adds; the SDK cannot connect without them. */
-const LIVEKIT_TOKEN_FIELDS = ["livekit_url", "token"] as const;
-/** `expires_at` may be any string: an unparseable one skips the expiry check, as before. */
-const MAY_BE_EMPTY: ReadonlySet<string> = new Set(["expires_at"]);
+/**
+ * What the SDK cannot connect without. `session_id` and `expires_at` are not
+ * on the list: a token without them connects (no session id is reported, no
+ * join deadline is checked), so it is not rejected for lacking them.
+ */
+const REQUIRED_TOKEN_FIELDS = ["transport", "livekit_url", "token"] as const;
+/** Every key of the session-creation response the SDK reads, for telling what an object is. */
+const TOKEN_FIELDS = ["transport", "session_id", "expires_at", "livekit_url", "token"] as const;
 
 /** Renamed keys seen when a backend or serializer converts the response to camelCase. */
 const CAMEL_CASE_FIELDS: ReadonlyMap<string, string> = new Map([
@@ -130,27 +132,20 @@ function quoteKeys(keys: string[]): string {
 
 /** How many session-token keys (snake_case or renamed to camelCase) the object has. */
 function countTokenFields(value: Record<string, unknown>): number {
-  return [
-    ...COMMON_TOKEN_FIELDS,
-    ...LIVEKIT_TOKEN_FIELDS,
-    ...CAMEL_CASE_FIELDS.keys(),
-  ].filter((field) => field in value).length;
+  return [...TOKEN_FIELDS, ...CAMEL_CASE_FIELDS.keys()].filter((field) => field in value).length;
 }
 
-function describeFieldProblems(
-  value: Record<string, unknown>,
-  fields: readonly string[],
-): string | undefined {
+function describeFieldProblems(value: Record<string, unknown>): string | undefined {
   const missing: string[] = [];
   const mistyped: string[] = [];
-  for (const field of fields) {
+  for (const field of REQUIRED_TOKEN_FIELDS) {
     const actual = value[field];
     if (actual === undefined || actual === null) {
       missing.push(field);
     } else if (typeof actual !== "string") {
       const got = Array.isArray(actual) ? "an array" : typeof actual;
       mistyped.push(`\`${field}\` (expected a string, got ${got})`);
-    } else if (actual === "" && !MAY_BE_EMPTY.has(field)) {
+    } else if (actual === "") {
       mistyped.push(`\`${field}\` (an empty string)`);
     }
   }
@@ -163,8 +158,9 @@ function describeFieldProblems(
 
 /**
  * Says what is wrong with a value that should be a session token, or returns
- * undefined when it has every field the SDK needs. Unknown extra fields are
- * fine: the response is additive.
+ * undefined when it has every field the SDK needs to connect. Only values that
+ * could never have connected are reported. Unknown extra fields are fine: the
+ * response is additive.
  */
 function findTokenProblem(value: unknown): TokenProblem | undefined {
   if (value === null || value === undefined) {
@@ -202,14 +198,12 @@ function findTokenProblem(value: unknown): TokenProblem | undefined {
   }
 
   const transport = value.transport;
-  // A token for a transport this SDK does not know may carry other connection
-  // fields, so only the fields every transport has are required of it.
-  const unknownTransport =
-    typeof transport === "string" && !SUPPORTED_TRANSPORTS.includes(transport);
-  const fieldProblems = describeFieldProblems(
-    value,
-    unknownTransport ? COMMON_TOKEN_FIELDS : [...COMMON_TOKEN_FIELDS, ...LIVEKIT_TOKEN_FIELDS],
-  );
+  if (typeof transport === "string" && transport !== "" && !SUPPORTED_TRANSPORTS.includes(transport)) {
+    // A token for another transport carries other connection fields. Its
+    // shape is not this SDK's to judge: the transport check reports it.
+    return undefined;
+  }
+  const fieldProblems = describeFieldProblems(value);
   if (fieldProblems === undefined) {
     return undefined;
   }
