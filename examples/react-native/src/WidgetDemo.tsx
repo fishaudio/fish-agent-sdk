@@ -56,6 +56,7 @@ export function WidgetDemo({
         proactiveMessage="需要帮忙挑选吗？"
         consent
         insets={insets}
+        draggable
         callNotification={{ title: '小鱼客服通话中', text: '点按返回 App' }}
         clientTools={{
           get_current_page: () => ({ page: 'product_list', products: PRODUCTS.map((p) => p.name) }),

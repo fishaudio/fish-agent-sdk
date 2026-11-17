@@ -22,7 +22,7 @@ import {
   type WidgetSettings,
   type WidgetTextContents,
 } from "@fishaudio/agent-widget-shared";
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   BackHandler,
   KeyboardAvoidingView,
@@ -37,6 +37,7 @@ import {
 } from "react-native";
 import { MOBILE_TEXTS } from "./texts.js";
 import { DARK_THEME, LIGHT_THEME, ThemeContext, type WidgetTheme } from "./theme.js";
+import { Draggable, type DragBounds, type DragPosition } from "./drag.js";
 import { CallView, ConsentView, FabView, HomeView, LiveStatus, MinimizedPill, PanelShell } from "./views.js";
 
 /** `onError` payload. `stage` and `recovered` come with in-call runtime errors that report them. */
@@ -103,6 +104,11 @@ export interface FishAgentWidgetProps {
   colorScheme?: "light" | "dark" | "system";
   /** Safe-area insets, e.g. from react-native-safe-area-context's `useSafeAreaInsets()`. */
   insets?: WidgetInsets;
+  /**
+   * Let the user drag the button (and the minimized call pill). It snaps to the
+   * nearer side on release and keeps its place for the app's run. Default `false`.
+   */
+  draggable?: boolean;
   /** Remembers the consent answer across launches. */
   consentStorage?: ConsentStorage;
   /** Android: the ongoing notification during voice calls (see `useConversation`). */
@@ -135,6 +141,8 @@ const CARD_MAX_HEIGHT = 600;
 
 /** The proactive bubble stays dismissed for the rest of the app's run, like the web's sessionStorage. */
 let proactiveDismissed = false;
+/** Where the user dragged the launcher, kept for the rest of the app's run. */
+let draggedPosition: DragPosition | null = null;
 /** Consent keys agreed to in this app run, so a remounted widget does not ask again. */
 const acceptedConsentKeys = new Set<string>();
 
@@ -269,6 +277,8 @@ export const FishAgentWidget = forwardRef<FishAgentWidgetHandle, FishAgentWidget
     );
 
     const [open, setOpen] = useState(false);
+    const [dragged, setDragged] = useState<DragPosition | null>(draggedPosition);
+    const [container, setContainer] = useState<{ width: number; height: number } | null>(null);
     const [phase, setPhase] = useState<WidgetPhase>("idle");
     const [pending, setPending] = useState<PendingAction | null>(null);
     const [seconds, setSeconds] = useState(0);
@@ -601,36 +611,67 @@ export const FishAgentWidget = forwardRef<FishAgentWidgetHandle, FishAgentWidget
     const screen = useWindowDimensions();
     const insets = props.insets ?? {};
     const top = settings.position.startsWith("top");
-    const alignEnd = settings.position.endsWith("right");
+    const draggable = props.draggable === true;
+    const position = draggable ? dragged : null;
+    const alignEnd = position ? position.side === "right" : settings.position.endsWith("right");
     const corner: ViewStyle = {
       position: "absolute",
       [top ? "top" : "bottom"]: theme.offset + ((top ? insets.top : insets.bottom) ?? 0),
       [alignEnd ? "right" : "left"]: theme.offset + ((alignEnd ? insets.right : insets.left) ?? 0),
     };
 
+    const bounds: DragBounds | null = container && {
+      ...container,
+      left: theme.offset + (insets.left ?? 0),
+      right: theme.offset + (insets.right ?? 0),
+      top: theme.offset + (insets.top ?? 0),
+      bottom: theme.offset + (insets.bottom ?? 0),
+    };
+    const launcher = (children: ReactNode, anchorSize?: { width: number; height: number }) => (
+      <Draggable
+        anchorSize={anchorSize}
+        cornerStyle={corner}
+        position={position}
+        bounds={bounds}
+        enabled={draggable}
+        onDragStart={() => {
+          if (proactiveVisible) {
+            dismissProactive();
+          }
+        }}
+        onDragEnd={(next) => {
+          draggedPosition = next;
+          setDragged(next);
+        }}
+      >
+        {children}
+      </Draggable>
+    );
+
     let content;
     if (!open) {
       content =
         phase === "live" || phase === "starting" ? (
-          <View style={corner}>
+          launcher(
             <MinimizedPill
               settings={settings}
               seconds={seconds}
               live={phase === "live"}
               onExpand={() => setOpen(true)}
               onEnd={endCall}
-            />
-          </View>
+            />,
+          )
         ) : (
-          <View style={corner}>
+          launcher(
             <FabView
               settings={settings}
               proactiveVisible={proactiveVisible}
               alignEnd={alignEnd}
               onOpen={() => setOpen(true)}
               onDismissProactive={dismissProactive}
-            />
-          </View>
+            />,
+            { width: theme.fabSize, height: theme.fabSize },
+          )
         );
     } else {
       const reconnecting = conversation.status === "reconnecting";
@@ -726,7 +767,11 @@ export const FishAgentWidget = forwardRef<FishAgentWidgetHandle, FishAgentWidget
 
     return (
       <ThemeContext.Provider value={theme}>
-        <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, props.style]}>
+        <View
+          pointerEvents="box-none"
+          style={[StyleSheet.absoluteFill, props.style]}
+          onLayout={(e) => setContainer({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}
+        >
           {content}
         </View>
       </ThemeContext.Provider>

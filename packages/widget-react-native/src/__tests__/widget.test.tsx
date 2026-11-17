@@ -69,6 +69,15 @@ vi.mock("react-native", async () => {
     Animated: {
       View: host("div"),
       Value,
+      ValueXY: class {
+        x = new Value();
+        y = new Value();
+        setValue() {}
+        getTranslateTransform() {
+          return [];
+        }
+      },
+      event: () => () => undefined,
       loop: () => ({ start() {}, stop() {} }),
       timing: () => ({}),
     },
@@ -80,6 +89,7 @@ vi.mock("react-native", async () => {
       addEventListener: () => ({ remove() {} }),
     },
     BackHandler: { addEventListener: () => ({ remove() {} }) },
+    PanResponder: { create: () => ({ panHandlers: {} }) },
     Linking: { openURL: async () => undefined },
     PermissionsAndroid: {
       PERMISSIONS: { RECORD_AUDIO: "mic" },

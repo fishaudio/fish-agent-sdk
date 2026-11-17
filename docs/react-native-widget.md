@@ -44,6 +44,7 @@ For a public agent the widget also loads the agent's widget settings from the pl
 ## How it behaves
 
 - **Button and proactive bubble.** A round button sits in the corner set by `position`. With `proactiveMessage` set, a bubble appears next to it after `proactiveDelay` seconds. Dismissing the bubble hides it until the app restarts.
+- **Dragging.** With `draggable`, the user can drag the button, and the minimized call pill, to another place. On release it snaps to the nearer side, stays clear of the insets, and keeps its place until the app restarts. Dragging hides the proactive bubble. A tap still opens the panel. On tablets the open card stays in the `position` corner.
 - **Panel.** On phones (screens narrower than 600 pt) the panel is a full-screen sheet. On tablets it is a card in the corner. The Android back button minimizes it.
 - **Starting.** "Start a voice chat" starts a voice call. The SDK asks for the microphone permission on Android, sets up the audio session, and runs the Android call service with the `callNotification` notification. Typing a message instead starts a text chat without the microphone. The mute pill can turn the microphone on later; on Android the widget asks for the permission at that point. A text chat has no Android call service, so if the user turns the microphone on there, it is silenced while the app is in the background. Voice calls started with the button keep it.
 - **Consent.** With `consent` on, the first call waits for the user to agree. The answer lasts until the app restarts. To remember it across launches, pass `consentStorage`, for example AsyncStorage.
@@ -73,6 +74,7 @@ For a public agent the widget also loads the agent's widget settings from the pl
 | `theme` | | Colors and sizes, see [Theming](#theming). |
 | `colorScheme` | `"light"` | `light`, `dark`, or `system` to follow the device. |
 | `insets` | `{}` | Safe-area insets, e.g. `useSafeAreaInsets()`. The button and sheet stay clear of them. |
+| `draggable` | `false` | Let the user drag the button and the minimized pill. See [How it behaves](#how-it-behaves). |
 | `callNotification` | `{ title: "Call in progress" }` | Android: the notification during voice calls. `false` turns off the call service. |
 | `audioOutput` | `"auto"` | Initial audio route: `auto`, `speaker` or `earpiece`. |
 | `clientTools` | | Client tools for every call. See [Client tools](client-tools.md). |
@@ -111,3 +113,4 @@ const widget = useRef<FishAgentWidgetHandle>(null);
 - `consentStorage` replaces `localStorage`. Without it, consent and the dismissed bubble last until the app restarts.
 - The error strings speak of the app and Settings, not the site and the browser.
 - Public agents that restrict origins need `origin`, since apps send no `Origin`.
+- `draggable` is React Native only for now.
