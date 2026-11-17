@@ -163,6 +163,8 @@ Wi-Fi 断开 8 秒触发的是信令恢复：
 
 **建议**：
 - 请后端确认：App 用公开 agent 时自带 `Origin`，是否是认可的用法；以后会不会对非浏览器请求收紧。
+
+**进展（2026-11-16）**：后端 platform-api #3282 改了规则：公开 agent 默认接受任何来源，包括不带 Origin 的请求；只有打开 Restrict origins 才校验允许列表（已经列了来源的旧 agent 自动算作打开）。所以 App 默认只传 `agentId` 就能连，`origin` 只在 agent 限制来源时需要。官网 Public Agents 页（docs #354）也写明了非浏览器客户端可以随便填 `Origin`，限制来源不等于私有。
 - 后端决定要不要支持原生 app 免 key：按 bundle ID / package name 做白名单，再加 App Attest / Play Integrity 校验（可以考虑复用现有的 App Check）。
 - 评估按 agent 计数的限流会不会挤掉正常用户。
 

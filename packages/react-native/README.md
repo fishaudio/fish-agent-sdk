@@ -7,7 +7,7 @@ Voice calls with [Fish Audio](https://fish.audio) agents in React Native apps. I
 ## Requirements
 
 - Expo (built natively with `npx expo run:ios` / `run:android` or EAS Build; Expo Go cannot run WebRTC) or bare React Native.
-- A backend that creates session tokens with your API key (recommended), or a public agent: `startSession({ agentId, origin })` with an origin on its allowlist (`origin` is experimental). Never ship the API key in the app.
+- A backend that creates session tokens with your API key (recommended), or a public agent: `startSession({ agentId })`, plus `origin` if the agent restricts origins (`origin` is experimental). Never ship the API key in the app.
 - Tested with Expo SDK 58 and bare React Native 0.88, `@livekit/react-native` 3.1, `@livekit/react-native-webrtc` 150.1 and `livekit-client` 2.20–2.23, on iOS 26 and Android 17.
 
 ## Install
@@ -31,12 +31,15 @@ Bare React Native: install the same packages without the two plugin packages, fo
 
 ## Use
 
-Call `setupFishAgent()` at the top of your entry file. With expo-router, create `index.ts` with the lines below and set `"main": "index.ts"` in `package.json`:
+Call `setupFishAgent()` in a file of its own and import it first in your entry file, so it runs before your app's modules load. With expo-router, create `index.ts` and set `"main": "index.ts"` in `package.json`:
 
 ```ts
+// setupFishAgent.ts
 import { setupFishAgent } from "@fishaudio/agent-react-native";
 setupFishAgent();
 
+// index.ts
+import "./setupFishAgent";
 import "expo-router/entry"; // or your registerRootComponent(App) entry
 ```
 
