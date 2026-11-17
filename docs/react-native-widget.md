@@ -37,7 +37,7 @@ Bare React Native: `npm install @fishaudio/agent-widget-react-native react-nativ
 Pass exactly one of the two:
 
 - **`sessionTokenProvider` (recommended):** a function that asks your backend for a session token and returns it. The backend holds the API key and calls `POST /v1/agent/sessions`. It runs before every call. See [Starting a session](react-native.md#starting-a-session).
-- **`agentId` with `origin` (experimental):** a public agent, with an origin on its allowlist, because an app sends no `Origin` of its own. Like the SDK's `origin` option, this may change in a minor release.
+- **`agentId`:** a public agent. If the agent restricts origins, also pass `origin` with one of its allowed origins, because an app sends no `Origin` of its own. Like the SDK's `origin` option, `origin` is experimental and may change in a minor release.
 
 For a public agent the widget also loads the agent's widget settings from the platform (name, greeting, proactive message, consent, which features are on, UI strings). Props win over those settings.
 
@@ -57,7 +57,7 @@ For a public agent the widget also loads the agent's widget settings from the pl
 |---|---|---|
 | `sessionTokenProvider` | | `() => SessionToken \| Promise<SessionToken>`, called before every call. |
 | `agentId` | | Public agent ID. |
-| `origin` | | Experimental. Public agents only: an origin on the agent's allowlist. |
+| `origin` | | Experimental. Public agents that restrict origins: one of the agent's allowed origins. |
 | `serverUrl`, `userId`, `language`, `dynamicVariables` | | Session options for public agents. A backend token already carries them. |
 | `agentName` | remote, else `"Agent"` | Header title. |
 | `greeting` | remote, else `"Hey! How can I help?"` | Home screen line. |
@@ -110,4 +110,4 @@ const widget = useRef<FishAgentWidgetHandle>(null);
 - Colors come from `theme` instead of CSS custom properties, and there is a dark scheme.
 - `consentStorage` replaces `localStorage`. Without it, consent and the dismissed bubble last until the app restarts.
 - The error strings speak of the app and Settings, not the site and the browser.
-- Public agents need `origin`, since apps send no `Origin`.
+- Public agents that restrict origins need `origin`, since apps send no `Origin`.

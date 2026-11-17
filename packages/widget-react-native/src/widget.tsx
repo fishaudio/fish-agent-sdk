@@ -67,9 +67,10 @@ export interface FishAgentWidgetProps {
   /** Public agent id. Exactly one of `agentId` / `sessionTokenProvider` is required. */
   agentId?: string;
   /**
-   * @experimental Public agents only: an origin on the agent's allowlist,
-   * sent because an app has no web origin of its own. May change or be
-   * removed in a minor release; prefer `sessionTokenProvider` in production.
+   * @experimental Public agents that restrict origins: one of the agent's
+   * allowed origins, sent because an app has no web origin of its own. Not
+   * needed otherwise. May change or be removed in a minor release; prefer
+   * `sessionTokenProvider` in production.
    */
   origin?: string;
   /** Fetches the session token from your backend (private agents); called before every session start. */
