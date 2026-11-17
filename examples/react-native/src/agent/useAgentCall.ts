@@ -171,7 +171,7 @@ export function useAgentCall() {
       startedAt.current = Date.now();
       setMetrics({ startedAt: startedAt.current });
       try {
-        let auth: { sessionToken: SessionToken } | { agentId: string; origin: string; language?: SessionLanguage };
+        let auth: { sessionToken: SessionToken } | { agentId: string; origin?: string; language?: SessionLanguage };
         if (source.kind === 'backend') {
           pushLog('sys', `requesting session token from ${source.tokenUrl}`);
           const sessionToken = await requestSessionToken({ tokenUrl: source.tokenUrl, language });
@@ -181,9 +181,14 @@ export function useAgentCall() {
           );
           auth = { sessionToken };
         } else {
-          // The SDK creates the session itself (keyless) and sends `origin` to the allowlist.
-          pushLog('sys', `public agent ${source.agentId} as ${source.origin}`);
-          auth = { agentId: source.agentId, origin: source.origin, ...(language ? { language } : {}) };
+          // The SDK creates the session itself (keyless). `origin` only matters
+          // when the agent restricts origins.
+          pushLog('sys', `public agent ${source.agentId}${source.origin ? ` as ${source.origin}` : ''}`);
+          auth = {
+            agentId: source.agentId,
+            ...(source.origin ? { origin: source.origin } : {}),
+            ...(language ? { language } : {}),
+          };
         }
         await startSession({
           ...auth,

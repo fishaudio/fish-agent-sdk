@@ -1,5 +1,5 @@
 ---
-"@fishaudio/agent-client": minor
+"@fishaudio/agent-client": patch
 ---
 
-New experimental `origin` option for public agents outside a browser (it may change or be removed in a minor release). Native apps (React Native) and Node send no `Origin` header, so a keyless session was always refused with `origin_forbidden`; `AgentSession.start({ agentId, origin })` now presents an origin from the agent's allowlist. Browsers ignore it. A missing origin outside a browser now says to pass one.
+Docs and hints for public agents follow the platform's new default: a public agent takes any origin unless it restricts origins, so apps connect with just `agentId`. `origin` is only needed for an agent that restricts origins, and the `origin_forbidden` hint outside a browser now says so.

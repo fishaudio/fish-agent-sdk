@@ -22,7 +22,7 @@ import { useAgentCall, type AgentMode, type CallMetrics, type CallStatus } from 
 // Recommended: your backend's token endpoint (server/index.mjs in this folder).
 // The API key stays on that server; the app only receives a short-lived token.
 const ENV_TOKEN_URL = process.env.EXPO_PUBLIC_TOKEN_URL ?? '';
-// Public agent: its ID and an origin on its allowlist (no key, no backend).
+// Public agent: its ID (no key, no backend), plus an origin if the agent restricts origins.
 const ENV_AGENT_ID = process.env.EXPO_PUBLIC_AGENT_ID ?? '';
 const ENV_ORIGIN = process.env.EXPO_PUBLIC_AGENT_ORIGIN ?? '';
 const LANGUAGES: { code: SessionLanguage | undefined; label: string }[] = [
@@ -67,8 +67,8 @@ function HomeScreen({ call }: { call: Call }) {
       ? tokenUrl.trim()
         ? { kind, tokenUrl: tokenUrl.trim() }
         : undefined
-      : agentId.trim() && origin.trim()
-        ? { kind, agentId: agentId.trim(), origin: origin.trim() }
+      : agentId.trim()
+        ? { kind, agentId: agentId.trim(), ...(origin.trim() ? { origin: origin.trim() } : {}) }
         : undefined;
   const onStart = () => {
     if (source) void call.start(source, language);
@@ -109,7 +109,7 @@ function HomeScreen({ call }: { call: Call }) {
         <>
           <Text style={styles.label}>Agent ID</Text>
           <TextInput style={styles.input} value={agentId} onChangeText={setAgentId} autoCapitalize="none" autoCorrect={false} />
-          <Text style={styles.label}>域名（agent 白名单里的 origin）</Text>
+          <Text style={styles.label}>域名（可选，agent 限制了来源时才需要）</Text>
           <TextInput
             style={styles.input}
             value={origin}

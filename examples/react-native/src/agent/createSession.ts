@@ -17,13 +17,14 @@ export interface SessionRequest {
  * The two supported ways for an app to start a call:
  * - `backend` (recommended): the app's own backend creates the session with
  *   the API key and returns the token.
- * - `public`: a public agent, keyless. The SDK creates the session itself and
- *   presents `origin` to the agent's allowlist, since a native app sends no
- *   Origin of its own. Anyone with the agent ID can do the same, as on the web.
+ * - `public`: a public agent, keyless. The SDK creates the session itself.
+ *   `origin` is only needed when the agent restricts origins, since a native
+ *   app sends no Origin of its own. Anyone with the agent ID can do the same,
+ *   as on the web.
  */
 export type CallSource =
   | { kind: 'backend'; tokenUrl: string }
-  | { kind: 'public'; agentId: string; origin: string };
+  | { kind: 'public'; agentId: string; origin?: string };
 
 export class SessionRequestError extends Error {
   constructor(

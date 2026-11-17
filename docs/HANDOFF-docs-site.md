@@ -27,7 +27,7 @@ The live page covers the channels and messages but not the behavior a working cl
 - **`client_tool.call.timeoutMs`** (new optional field) and the roughly 60 KB result limit.
 - **Reconnection:** treat both `SignalReconnecting` and `Reconnecting` as reconnecting; what to re-check after `Reconnected`.
 - **End rules:** `session.ended` first, then agent left / `ROOM_DELETED` / `ROOM_CLOSED` as `agent_hangup`, else `connection_lost`; the 10 s grace period.
-- **Native apps and public agents:** the SDK has a new experimental `origin` option for public agents outside a browser (native apps send no `Origin`). The live Public Agents page covers browsers only; it should say whether apps may use public agents this way, and state that the allowlist does not stop non-browser clients. Needs a decision from the backend team first (see FINDINGS P1-6).
+- **Native apps and public agents:** since platform-api #3282 (2026-11-16), a public agent takes any origin, including none, unless it restricts origins, so an app connects with just `agentId`. For a restricted agent the SDK's experimental `origin` option supplies one. The live Public Agents page already says non-browser clients can set any `Origin`.
 
 ## 3. Existing pages: Web SDK, React SDK
 

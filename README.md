@@ -62,7 +62,7 @@ const session = await AgentSession.start({
 
 ### Public agents
 
-A public agent needs no server. Enable public access on the agent in the dashboard and add your page origin to its allowlist. Then start the session in the browser with the `agentId`. `start` still uses the mic and speaker, so call it from a click handler.
+A public agent needs no server. Enable public access on the agent in the dashboard (to limit it to your sites, also turn on Restrict origins and list your page origin). Then start the session in the browser with the `agentId`. `start` still uses the mic and speaker, so call it from a click handler.
 
 ```js
 import { AgentSession } from "@fishaudio/agent-client";

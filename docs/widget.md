@@ -7,7 +7,7 @@ The fastest way to put a Fish Audio agent on a website. Two static lines, no bui
 <script src="https://unpkg.com/@fishaudio/agent-widget-embed" async type="text/javascript"></script>
 ```
 
-The agent must have public access enabled, and the page origin must be on its Origin allowlist. `localhost` and `127.0.0.1` count as separate origins. See [Authentication](authentication.md).
+The agent must have public access enabled. If it also restricts origins, the page origin must be one of them; `localhost` and `127.0.0.1` count as separate origins. See [Authentication](authentication.md).
 
 Bundlers can install the element instead: `npm install @fishaudio/agent-widget`, then call `registerWidget()` once. `@fishaudio/agent-widget-embed` is the same widget pre-bundled as one IIFE file that registers on load.
 

@@ -122,22 +122,28 @@ On a phone, two things differ from the browser:
 - **`localhost` is the phone, not your computer.** During development, use your computer's LAN address, or on Android forward the port with `adb reverse tcp:3001 tcp:3001`.
 - **iOS blocks plain `http://`** outside development builds. Serve the token endpoint over HTTPS.
 
-### Public agent (experimental)
+### Public agent
 
-> **Experimental.** The `origin` option may change or be removed in a minor release: the platform documents public agents for browsers only, and a dedicated way for apps to identify themselves may replace it. Use your backend for production apps.
+An agent with public access enabled takes sessions without a key or a backend. Pass its ID:
 
-An agent with public access enabled takes sessions without a key or a backend. The server checks the request's `Origin` against the agent's allowlist. A browser sends its page's origin by itself; a native app sends none, so pass one that is on the allowlist:
+```ts
+await conversation.startSession({ agentId: "your-agent-id" });
+```
+
+If the agent has **Restrict origins** on, the server checks the request's `Origin` against the agent's allowed origins. A browser sends its page's origin by itself; a native app sends none, so pass one that is on the list:
 
 ```ts
 await conversation.startSession({ agentId: "your-agent-id", origin: "https://www.example.com" });
 ```
 
-Without `origin` the request fails with `origin_forbidden`.
+Without it, a restricted agent answers `origin_forbidden`.
+
+> **Experimental.** The `origin` option may change or be removed in a minor release: a dedicated way for apps to identify themselves may replace it.
 
 Know what this means before shipping it:
 
-- **Anyone with the agent ID can start sessions, billed to the agent's owner.** This is the same exposure as a public agent on a website: the allowlist stops other websites from embedding the agent, but no script, on the web or in an app, is stopped by it. Platform rate limits (per agent and per IP) are the backstop, and per-session customization (`overrides`) only works for fields the agent allows.
-- **Use an origin you own.** List it on the agent; it does not need to serve anything.
+- **Anyone with the agent ID can start sessions, billed to the agent's owner.** This is the same exposure as a public agent on a website. Restricting origins stops other websites from embedding the agent, but not scripts or apps, which can send any `Origin`. Platform rate limits (per agent and per IP) are the backstop, and per-session customization (`overrides`) only works for fields the agent allows.
+- **With restricted origins, use an origin you own.** List it on the agent; it does not need to serve anything.
 
 For a production app, especially one with signed-in users, prefer your backend: it decides who gets a token and can pass `end_user_id`.
 
@@ -236,7 +242,7 @@ Not on React Native: the browser-only members of the React hook (`startAudio`, `
 | `startSession` rejects with `connection_failed` ("Could not establish the realtime session") | Check that the token endpoint returned a token from `POST /v1/agent/sessions`, that it was used right away (tokens are short-lived), and that the device has network. If you call LiveKit or WebRTC APIs directly before the first call, call `setupFishAgent()` in the entry file first. |
 | A plugin change has no effect (missing microphone text, no background audio) | Native settings only change on a rebuild: run `npx expo prebuild` (or `run:ios` / `run:android`) again. In bare React Native, check `Info.plist` and rebuild. |
 | iOS `pod install` cannot find `LiveKitWebRTC` | The LiveKit pod sources are missing from the top of the `Podfile`, see [Bare React Native](#bare-react-native). |
-| A public agent fails with `origin_forbidden` | Pass `origin` to `startSession`, matching an entry on the agent's allowlist exactly (scheme, host and port). |
+| A public agent fails with `origin_forbidden` | The agent restricts origins. Pass `origin` to `startSession`, matching one of its allowed origins exactly (scheme, host and port). |
 | `fetch` to your token endpoint fails on the phone | `localhost` points at the phone. Use your computer's LAN address or `adb reverse`, and HTTPS on iOS. |
 | Android: the agent stops hearing the user when the app is in the background | `callNotification` is `false`, or the app was not rebuilt after installing the package, so the foreground service is missing. |
 | A permission prompt about local networks or nearby devices at first launch | Debug builds look for the development server on the local network. It does not come from the call. |
