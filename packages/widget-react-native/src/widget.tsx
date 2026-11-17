@@ -135,6 +135,8 @@ const CARD_MAX_HEIGHT = 600;
 
 /** The proactive bubble stays dismissed for the rest of the app's run, like the web's sessionStorage. */
 let proactiveDismissed = false;
+/** Consent keys agreed to in this app run, so a remounted widget does not ask again. */
+const acceptedConsentKeys = new Set<string>();
 
 type Handler = (payload: never) => void;
 
@@ -380,7 +382,8 @@ export const FishAgentWidget = forwardRef<FishAgentWidgetHandle, FishAgentWidget
 
     const reportError = (detail: FishAgentWidgetErrorDetail) => propsRef.current.onError?.(detail);
 
-    const needsConsent = (): boolean => settings.consent && !consentAcceptedRef.current;
+    const needsConsent = (): boolean =>
+      settings.consent && !consentAcceptedRef.current && !acceptedConsentKeys.has(settings.consentKey);
 
     /** Resting phase once no call is in flight: keep the transcript view if history exists. */
     const restingPhase = (): WidgetPhase => (store.entries.length > 0 ? "ended" : "idle");
@@ -525,6 +528,7 @@ export const FishAgentWidget = forwardRef<FishAgentWidgetHandle, FishAgentWidget
 
     const agreeConsent = () => {
       consentAcceptedRef.current = true;
+      acceptedConsentKeys.add(settings.consentKey);
       const storage = propsRef.current.consentStorage;
       if (storage) {
         void Promise.resolve()

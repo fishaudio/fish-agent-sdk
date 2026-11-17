@@ -205,9 +205,27 @@ describe("FishAgentWidget", () => {
     expect(conversation.startCalls).toHaveLength(1);
   });
 
+  it("remembers consent without storage after the widget remounts", async () => {
+    const first = render(<FishAgentWidget agentId="agent_1" consent consentKey="consent-remount" />);
+    openPanel();
+    fireEvent.click(screen.getByText(DEFAULT_TEXTS.startVoice));
+    fireEvent.click(screen.getByText(DEFAULT_TEXTS.consentAgree));
+    await flush();
+    expect(conversation.startCalls).toHaveLength(1);
+    first.unmount();
+
+    conversation.startCalls = [];
+    render(<FishAgentWidget agentId="agent_1" consent consentKey="consent-remount" />);
+    openPanel();
+    fireEvent.click(screen.getByText(DEFAULT_TEXTS.startVoice));
+    await flush();
+    expect(screen.queryByText(DEFAULT_TEXTS.consentTitle)).toBeNull();
+    expect(conversation.startCalls).toHaveLength(1);
+  });
+
   it("skips consent when the storage already holds the answer", async () => {
     const storage = { getItem: vi.fn(async () => "accepted"), setItem: vi.fn() };
-    render(<FishAgentWidget agentId="agent_1" consent consentStorage={storage} />);
+    render(<FishAgentWidget agentId="agent_1" consent consentKey="consent-stored" consentStorage={storage} />);
     await flush();
     openPanel();
     fireEvent.click(screen.getByText(DEFAULT_TEXTS.startVoice));
