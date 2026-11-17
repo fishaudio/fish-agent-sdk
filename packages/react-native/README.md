@@ -31,12 +31,15 @@ Bare React Native: install the same packages without the two plugin packages, fo
 
 ## Use
 
-Call `setupFishAgent()` at the top of your entry file. With expo-router, create `index.ts` with the lines below and set `"main": "index.ts"` in `package.json`:
+Call `setupFishAgent()` in a file of its own and import it first in your entry file, so it runs before your app's modules load. With expo-router, create `index.ts` and set `"main": "index.ts"` in `package.json`:
 
 ```ts
+// setupFishAgent.ts
 import { setupFishAgent } from "@fishaudio/agent-react-native";
 setupFishAgent();
 
+// index.ts
+import "./setupFishAgent";
 import "expo-router/entry"; // or your registerRootComponent(App) entry
 ```
 
