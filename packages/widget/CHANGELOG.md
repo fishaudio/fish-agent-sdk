@@ -1,5 +1,14 @@
 # @fishaudio/agent-widget
 
+## 1.1.0
+
+### Patch Changes
+
+- Updated dependencies [57aeb33]
+- Updated dependencies [57aeb33]
+- Updated dependencies [57aeb33]
+  - @fishaudio/agent-client@1.1.0
+
 ## 1.0.0
 
 ### Major Changes

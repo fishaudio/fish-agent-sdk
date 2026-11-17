@@ -1,6 +1,6 @@
 {
   "name": "@fishaudio/agent-client",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Fish Audio voice-agent client SDK for browsers: sessions, realtime audio, transcripts, client tools.",
   "keywords": [
     "fish-audio",

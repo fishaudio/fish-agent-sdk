@@ -1,5 +1,24 @@
 # @fishaudio/agent-client
 
+## 1.1.0
+
+### Minor Changes
+
+- 57aeb33: New experimental `origin` option for public agents outside a browser (it may change or be removed in a minor release). Native apps (React Native) and Node send no `Origin` header. That is fine for most public agents, which take any origin, but an agent that restricts origins refuses such a request with `origin_forbidden`; `AgentSession.start({ agentId, origin })` presents one of its allowed origins. Browsers ignore it. An `origin_forbidden` outside a browser without `origin` now says to pass one.
+
+### Patch Changes
+
+- 57aeb33: Fixes found while running the SDK on mobile:
+
+  - A short network drop that LiveKit recovers with a signal-only resume now shows `reconnecting`. Before, the status stayed `connected` while nothing went through.
+  - Typed messages sent before the agent is ready now wait for its ready signal. The agent's framework state, which arrives seconds earlier, no longer releases them. Runtimes without the ready signal get it after 8 s.
+  - A client tool now times out when the agent stops waiting for it, if the runtime says how long that is. Otherwise `clientToolTimeoutMs` applies as before.
+  - Without a DOM (React Native), the session now reports audio readiness when the agent's speech track arrives. The opening line no longer waits out the runtime's limit.
+
+- 57aeb33: A client tool now times out slightly before the agent's own deadline (the smaller of 1 s and 10 % earlier) when the runtime sends `timeoutMs`, so the agent receives the error result instead of giving up first.
+- Updated dependencies [57aeb33]
+  - @fishaudio/agent-protocol@1.1.0
+
 ## 1.0.0
 
 ### Major Changes
