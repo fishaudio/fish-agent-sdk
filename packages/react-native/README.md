@@ -2,7 +2,7 @@
 
 Voice calls with [Fish Audio](https://fish.audio) agents in React Native apps. It runs the same session code as the web SDK and adds what phones need: the microphone permission, the audio session and routing (loudspeaker, earpiece, headsets), and background calls on iOS and Android.
 
-**Full documentation:** [React Native SDK](https://github.com/fishaudio/fish-agent-sdk-web/blob/main/docs/react-native.md), covering Expo and bare React Native setup, the entry file for expo-router, session tokens, the API, background calls, limitations and troubleshooting.
+**Full documentation:** [React Native SDK](https://docs.fish.audio/agents/deploy/react-native), covering Expo and bare React Native setup, the entry file for expo-router, session tokens, the API, background calls, limitations and troubleshooting.
 
 ## Requirements
 
@@ -27,7 +27,7 @@ Then build: `npx expo run:ios --device` or `npx expo run:android --device`.
 
 On Android the package adds a microphone-type foreground service (for background calls) and its permissions to your app. Before publishing on Google Play, declare its use in Play Console as Google Play requires.
 
-Bare React Native: install the same packages without the two plugin packages, follow LiveKit's native setup, and add `NSMicrophoneUsageDescription` and the `audio` background mode to `Info.plist`. Details in the [full documentation](https://github.com/fishaudio/fish-agent-sdk-web/blob/main/docs/react-native.md#bare-react-native).
+Bare React Native: install the same packages without the two plugin packages, follow LiveKit's native setup, and add `NSMicrophoneUsageDescription` and the `audio` background mode to `Info.plist`. Details in the [full documentation](https://docs.fish.audio/agents/deploy/react-native#bare-react-native).
 
 ## Use
 

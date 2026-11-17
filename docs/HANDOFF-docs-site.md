@@ -5,7 +5,7 @@ For whoever maintains docs.fish.audio. The pages in this folder are the source; 
 ## 1. New page: React Native SDK
 
 - **Source:** [`docs/react-native.md`](react-native.md)
-- **Suggested URL:** `https://docs.fish.audio/agents/deploy/react-native` (does not exist yet), next to `web-sdk` and `react-sdk` in the Deploy section.
+- **Live at** `https://docs.fish.audio/agents/deploy/react-native` since 2026-11-17 (fishaudio/docs#362), next to `web-sdk` and `react-sdk` in the Deploy section. Keep it in step with the source.
 - The package's `homepage` in `packages/react-native/package.json` already points at that URL, so npm links there once the page is live.
 - The page links to other pages in this folder by relative path; map them to the site URLs (the same ones the package READMEs use):
 

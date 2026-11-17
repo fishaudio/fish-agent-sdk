@@ -1,13 +1,14 @@
-# Fish Agent Web SDK
+# Fish Agent SDK
 
-Embed [Fish Audio](https://fish.audio) voice agents into any website or web app: realtime voice over WebRTC, live transcripts, text chat, and client tools. The API is small and event-driven.
+Embed [Fish Audio](https://fish.audio) voice agents into websites, web apps, and React Native apps: realtime voice over WebRTC, live transcripts, text chat, and client tools. The API is small and event-driven.
 
-Public documentation: [Web SDK](https://docs.fish.audio/agents/deploy/web-sdk), [React SDK](https://docs.fish.audio/agents/deploy/react-sdk), [Widget](https://docs.fish.audio/agents/deploy/widget). The in-repo notes under [`docs/`](docs/README.md) track the source.
+Public documentation: [Web SDK](https://docs.fish.audio/agents/deploy/web-sdk), [React SDK](https://docs.fish.audio/agents/deploy/react-sdk), [React Native SDK](https://docs.fish.audio/agents/deploy/react-native), [Widget](https://docs.fish.audio/agents/deploy/widget). The in-repo notes under [`docs/`](docs/README.md) track the source.
 
 | Package | Docs | Description |
 |---|---|---|
 | `@fishaudio/agent-client` | [docs](docs/README.md#fishaudioagent-client) | Framework-agnostic JS SDK. Sessions, realtime audio, transcripts, client tools. |
 | `@fishaudio/agent-react` | [docs](docs/react/README.md) | React hooks (`useConversation`), provider, chat-log and visualizer components. |
+| `@fishaudio/agent-react-native` | [docs](docs/react-native.md) | React Native hook (`useConversation`) with the microphone permission, audio routing, and background calls. Expo or bare React Native. |
 | `@fishaudio/agent-widget` | [docs](docs/widget.md) | `<fish-agent>` custom element (plus a `<FishAgentWidget>` React component): voice-first chat card with transcript, tool chips, consent, theming. |
 | `@fishaudio/agent-widget-embed` | [docs](docs/widget.md) | The widget as one CDN script. Loading it registers `<fish-agent>`. |
 | `@fishaudio/agent-protocol` | [README](packages/protocol/README.md) | Semi-internal wire contract for realtime messages and session creation. Dependency-free. Apps consume it via `agent-client`. |
@@ -106,6 +107,52 @@ export function CallButton() {
 ```
 
 See the [react docs](docs/react/README.md) for the full hook API, the [provider pattern](docs/react/provider.md), and the ready-made components.
+
+## React Native
+
+[`@fishaudio/agent-react-native`](docs/react-native.md) brings the same `useConversation` hook to iOS and Android apps, and handles what phones need: the microphone permission, the audio session and routing, and calls that keep going in the background. It works with Expo and with bare React Native. WebRTC is a native module, so the app needs a native build (not Expo Go), and testing the microphone needs a real device.
+
+```sh
+npx expo install @fishaudio/agent-react-native @livekit/react-native @livekit/react-native-webrtc \
+  @livekit/react-native-expo-plugin @config-plugins/react-native-webrtc livekit-client
+npx expo run:ios --device   # or run:android
+```
+
+Call `setupFishAgent()` in a module of its own and import it first in your entry file, so the WebRTC globals are installed before your app's modules load:
+
+```ts
+// setupFishAgent.ts
+import { setupFishAgent } from "@fishaudio/agent-react-native";
+setupFishAgent();
+
+// index.ts
+import "./setupFishAgent";
+import "expo-router/entry"; // or your registerRootComponent(App) entry
+```
+
+Then start a call from a button. As on the web, the app gets a session token from your backend, which keeps the API key:
+
+```tsx
+import { useConversation } from "@fishaudio/agent-react-native";
+import { Button } from "react-native";
+
+export function CallButton() {
+  const conversation = useConversation({}, { callNotification: { title: "Talking to support" } });
+
+  const start = async () => {
+    const sessionToken = await fetch("https://api.example.com/voice-session", { method: "POST" }).then((r) => r.json());
+    await conversation.startSession({ sessionToken }); // or { agentId } for a public agent
+  };
+
+  return conversation.status === "connected" ? (
+    <Button title="End call" onPress={() => void conversation.endSession()} />
+  ) : (
+    <Button title="Start call" onPress={() => void start()} />
+  );
+}
+```
+
+See the [React Native docs](https://docs.fish.audio/agents/deploy/react-native) for bare React Native setup, background calls, audio routes, and troubleshooting.
 
 ## License
 
