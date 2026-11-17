@@ -299,7 +299,7 @@ export const FishAgentWidget = forwardRef<FishAgentWidgetHandle, FishAgentWidget
         return;
       }
       let stale = false;
-      void fetchRemoteConfig(props.serverUrl, agentId).then((config) => {
+      void fetchRemoteConfig(props.serverUrl, agentId, props.origin).then((config) => {
         if (!stale && config) {
           setRemote(config);
         }
@@ -307,7 +307,7 @@ export const FishAgentWidget = forwardRef<FishAgentWidgetHandle, FishAgentWidget
       return () => {
         stale = true;
       };
-    }, [props.agentId, props.serverUrl]);
+    }, [props.agentId, props.serverUrl, props.origin]);
 
     // A remembered consent answer, read once the key is known.
     useEffect(() => {

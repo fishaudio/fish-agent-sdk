@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type Handler = (payload: never) => void;
 
+const { fetchRemoteConfig } = vi.hoisted(() => ({ fetchRemoteConfig: vi.fn(async () => null) }));
 const { conversation } = vi.hoisted(() => {
   const conversation = {
     startCalls: [] as Array<Record<string, unknown>>,
@@ -138,7 +139,7 @@ vi.mock("@fishaudio/agent-react-native", async () => {
 
 vi.mock("@fishaudio/agent-widget-shared", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@fishaudio/agent-widget-shared")>();
-  return { ...actual, fetchRemoteConfig: async () => null };
+  return { ...actual, fetchRemoteConfig };
 });
 
 import { DEFAULT_TEXTS, FishAgentWidget } from "../index.js";
@@ -182,6 +183,7 @@ describe("FishAgentWidget", () => {
       dynamicVariables: { plan: "pro" },
     });
     expect(onCall).toHaveBeenCalledOnce();
+    expect(fetchRemoteConfig).toHaveBeenCalledWith(undefined, "agent_1", "https://example.com");
 
     await act(async () => conversation.settle!({ id: "sess-9" }));
     expect(onConnect).toHaveBeenCalledWith({ sessionId: "sess-9" });
