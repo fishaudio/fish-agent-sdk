@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent avatar demo</title>
+    <style>
+      body { margin: 0; padding: 32px 24px; font: 14px/1.5 system-ui, sans-serif; color: #1c1917; background: #faf8f5; }
+      h2 { margin: 32px 0 12px; font-size: 13px; font-weight: 600; color: #78716c; }
+      .row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+      .hero { display: flex; gap: 32px; align-items: center; }
+      .controls { display: grid; gap: 10px; }
+      .item { display: flex; gap: 10px; align-items: center; width: 200px; }
+      .size { display: grid; justify-items: center; gap: 6px; color: #78716c; font-size: 12px; }
+      .grid { display: grid; grid-template-columns: repeat(12, 56px); gap: 12px; }
+      input { font: inherit; padding: 6px 10px; border: 1px solid #d6d3d1; border-radius: 8px; width: 220px; }
+      button { font: inherit; padding: 4px 12px; border: 1px solid #d6d3d1; border-radius: 999px; background: #fff; cursor: pointer; }
+      button[aria-pressed="true"] { background: #1c1917; color: #fff; border-color: #1c1917; }
+    </style>
+  </head>
+  <body>
+    <div class="hero">
+      <canvas id="hero"></canvas>
+      <div class="controls">
+        <input id="agent-id" value="Beau" aria-label="Agent id" />
+        <div class="row" id="motion">
+          <button data-animated="false" aria-pressed="true">Static</button>
+          <button data-animated="true" aria-pressed="false">Animated</button>
+        </div>
+        <div class="row" id="state">
+          <button data-state="idle" aria-pressed="true">Idle</button>
+          <button data-state="listening" aria-pressed="false">Listening</button>
+          <button data-state="speaking" aria-pressed="false">Speaking</button>
+        </div>
+      </div>
+    </div>
+    <h2>List, 40 px</h2>
+    <div class="row" id="list"></div>
+    <h2>Sizes. Eyes from 64 px</h2>
+    <div class="row" id="sizes"></div>
+    <h2>agent-1 to agent-24, 56 px</h2>
+    <div class="grid" id="grid"></div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

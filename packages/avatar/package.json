@@ -1,0 +1,93 @@
+{
+  "name": "@fishaudio/agent-avatar",
+  "version": "0.0.0",
+  "description": "Generated avatars for Fish Audio voice agents: one stable look per agent id, static or animated, rendered with WebGL.",
+  "keywords": [
+    "fish-audio",
+    "voice",
+    "agent",
+    "avatar",
+    "webgl"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fishaudio/fish-agent-sdk-web.git",
+    "directory": "packages/avatar"
+  },
+  "homepage": "https://github.com/fishaudio/fish-agent-sdk-web/tree/main/packages/avatar#readme",
+  "bugs": "https://github.com/fishaudio/fish-agent-sdk-web/issues",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "react": [
+        "./dist/react.d.ts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./react": {
+      "import": {
+        "types": "./dist/react.d.ts",
+        "default": "./dist/react.js"
+      },
+      "require": {
+        "types": "./dist/react.d.cts",
+        "default": "./dist/react.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepack": "node ../../scripts/assert-pnpm.mjs",
+    "prepublishOnly": "node ../../scripts/assert-built.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "demo": "vite -c demo/vite.config.ts"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.0",
+    "jsdom": "^26.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6",
+    "vitest": "^4.0.5"
+  }
+}
