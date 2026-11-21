@@ -22,16 +22,16 @@ export interface SessionRequestOptions {
   /** Public agent: the SDK creates the session directly against the Fish API. */
   agentId?: string;
   /**
-   * Public agent outside a browser (React Native, Node): the origin to present
-   * to the agent's allowlist, e.g. `"https://www.example.com"`. Browsers send
-   * their page's origin themselves and ignore this. Native apps send none, so
-   * without it a public agent answers 403 `origin_forbidden`. Use an origin you
-   * own that is on the agent's allowlist. Ignored with `sessionToken`.
+   * Public agent outside a browser (React Native, Node): the origin to present,
+   * e.g. `"https://www.example.com"`. Only needed when the agent restricts
+   * origins: native apps send no `Origin`, so such an agent answers 403
+   * `origin_forbidden` without it. Use an origin you own from the agent's list.
+   * Browsers send their page's origin themselves and ignore this. Ignored with
+   * `sessionToken`.
    *
-   * @experimental The platform documents public agents for browsers only, and a
-   * dedicated way for apps to identify themselves may replace this. It may
-   * change or be removed in a minor release. For production apps, prefer a
-   * session token from your backend.
+   * @experimental A dedicated way for apps to identify themselves may replace
+   * this. It may change or be removed in a minor release. For production apps,
+   * prefer a session token from your backend.
    */
   origin?: string;
   /** Session token created by the host backend, passed through verbatim. */
@@ -161,7 +161,7 @@ async function createPublicSession(options: SessionRequestOptions): Promise<Sess
     if (error.code === "origin_forbidden" && !options.origin && typeof document === "undefined") {
       // Outside a browser no Origin goes out at all unless the caller sets one.
       error.message +=
-        "; outside a browser (React Native) pass `origin` with an origin on the agent's allowlist";
+        "; the agent restricts origins, so outside a browser (React Native) pass `origin` with one of its allowed origins";
     }
     throw error;
   }

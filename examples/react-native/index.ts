@@ -1,8 +1,6 @@
-// Must run before livekit-client is used anywhere: it installs WebRTC,
-// TextEncoder/TextDecoder and ReadableStream on the RN global.
-import { setupFishAgent } from '@fishaudio/agent-react-native';
-setupFishAgent();
-
+// Must come first: imports run before this file's body, so the setup lives in
+// its own module.
+import './setupFishAgent';
 import { registerRootComponent } from 'expo';
 import App from './App';
 
