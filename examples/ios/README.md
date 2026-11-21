@@ -64,6 +64,8 @@ The microphone was checked by playing a sentence from a computer's speakers next
 | With the screen locked, the agent still hears the user | Pass |
 | After hanging up, the audio session category is back to the system default | Pass |
 | Hanging up | The call reads as ended about 0.3 seconds later. |
+| Airplane mode for 5 seconds during a call | Pass. The call reads as reconnecting, is connected again about 30 seconds later, and the agent hears and answers the user afterwards. A reply that was being spoken when the network dropped is kept with what had arrived. |
+| Airplane mode for 12 seconds, connected again 50 seconds later, by when the agent had hung up for silence | Pass: the call ends as `agent_hangup`. |
 
 The first run on a phone shows two more system prompts before the microphone one: local network access (the token backend is on the local network), and on iPhones sold in mainland China, wireless data. Until both are allowed, the token request fails as if the phone were offline.
 
@@ -80,6 +82,8 @@ The first run on a phone shows two more system prompts before the microphone one
 ### Known problems
 
 - **The opening line can be missed.** In 5 of 25 calls on the simulator, LiveKit's first connection attempt failed and was retried by itself. The server had already counted the app as in the room, so the agent spoke its opening line before the app was really connected: neither the audio nor the transcript arrived. The rest of the call worked. It did not happen in 6 calls on the iPhone, which is too few to say it cannot. This is between LiveKit's connect retry and the runtime; the SDK cannot make up for it.
+- **Reconnecting is slow.** After a 5 second outage the call was back about 25 seconds after the network was. LiveKit decides when to try again; the SDK only reports the state. Android took about 6 seconds for the same.
+- **A start that never began.** Once, on the iPhone, the app's own request to the token backend neither answered nor failed, and the app was then suspended in the background with no call running. It did not happen again. The Android example saw a similar one-off timeout. The cause was not found; the SDK had not been called yet.
 - **On the simulator only:** unmuting a call that started without the microphone fails with `connection_failed` (LiveKit reports audio engine error -4010), and hanging up can take about 2.5 seconds. Neither happens on the iPhone.
 
 ### Not checked yet
@@ -87,5 +91,5 @@ The first run on a phone shows two more system prompts before the microphone one
 - Audio was not listened to. The route the audio session reports was read instead.
 - A wired or Bluetooth headset.
 - An incoming phone call during a call: whether the microphone is released, whether the call resumes, and how it ends.
-- Network outages and moving between Wi-Fi and cellular. Nothing about reconnection has been tried on iOS.
+- Moving between Wi-Fi and cellular. The phone used had no SIM.
 - A client tool called by a real agent (the agent used has none configured; the tool path is covered by unit tests).

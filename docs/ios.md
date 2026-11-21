@@ -4,7 +4,7 @@ The iOS SDK adds voice calls with a Fish Audio agent to a native iOS app, in Swi
 
 It has no UI. You build the screen; the SDK gives you the state to show.
 
-> **Status.** Calls, the microphone, audio routes, and calls in the background and with the screen locked were checked on an iPhone 12. Reconnection, headsets and phone-call interruptions have not been checked yet. See [Limitations](#limitations).
+> **Status.** Calls, the microphone, audio routes, reconnection, and calls in the background and with the screen locked were checked on an iPhone 12. Headsets, phone-call interruptions and moving between Wi-Fi and cellular have not been checked yet. See [Limitations](#limitations).
 
 ## Requirements
 
@@ -176,7 +176,8 @@ During a call the session is `playAndRecord`, in video-chat mode on the speaker 
 
 ## Limitations
 
-- **Not checked yet:** reconnection after a network outage, moving between Wi-Fi and cellular, wired and Bluetooth headsets, and an incoming phone call during a call. [`examples/ios/README.md`](../examples/ios/README.md) lists what was checked on an iPhone and what was not. The reconnect rules are the ones verified on Android.
+- **Not checked yet:** moving between Wi-Fi and cellular, wired and Bluetooth headsets, and an incoming phone call during a call. [`examples/ios/README.md`](../examples/ios/README.md) lists what was checked on an iPhone and what was not.
+- **Reconnecting is slow.** After a 5 second network outage on an iPhone, the call was `reconnecting` for about 30 seconds before it was back. Show that state to the user. If the agent gives up on the silence in the meantime, the call ends as `agent_hangup` once the connection returns.
 - **The opening line can be missed.** In 5 of 25 calls on a simulator, LiveKit's first connection attempt failed and was retried by itself; the agent had already spoken its opening line to an app that was not connected yet. The rest of the call worked. It did not happen in 6 calls on an iPhone, which is too few to rule it out.
 - **On the simulator**, unmuting a call that started without the microphone fails with `connection_failed`, and hanging up can take about 2.5 seconds. Both work on an iPhone.
 - **No audio levels.** There is nothing to drive a waveform or an orb from.

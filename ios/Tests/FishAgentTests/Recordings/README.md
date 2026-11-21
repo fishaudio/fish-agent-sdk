@@ -48,5 +48,5 @@ Where iOS differs from the browser SDK that `packages/client/src/transport/livek
 ## Not recorded
 
 - Any of this on a physical iPhone.
-- Network outages and reconnects. The simulator shares the Mac's network, so an outage cannot be made for it alone. The transport's reconnect rules are tested with the sequences recorded on Android.
+- Network outages and reconnects. The simulator shares the Mac's network, so an outage cannot be made for it alone. The transport's reconnect rules are tested with the sequences recorded on Android. Reconnecting was later tried through the finished SDK on an iPhone 12 and worked (see `examples/ios/README.md`), but the event order was not recorded there.
 - An agent that leaves while the room stays open (older runtimes).
