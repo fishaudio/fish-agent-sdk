@@ -59,19 +59,30 @@ export function WidgetDemo({
         insets={insets}
         draggable
         callNotification={{ title: '小鱼客服通话中', text: '点按返回 App' }}
+        // The order card waits for the user, longer than the SDK's default 15 s.
+        // The agent waits 30 s for this tool; answer before that.
+        onCall={(options) => {
+          options.clientToolTimeoutMs = 28_000;
+        }}
         // The client tools the demo agent is configured with (Fish Audio dashboard).
         clientTools={{
           get_device_info: () => readDeviceInfo(),
           show_order_card: (params) =>
             new Promise((resolve) => {
+              // Answer before the tool times out, so the agent hears a clear "not confirmed".
+              const timer = setTimeout(() => resolve({ confirmed: false, timed_out: true }), 24_000);
+              const answer = (confirmed: boolean) => {
+                clearTimeout(timer);
+                resolve({ confirmed });
+              };
               Alert.alert(
                 `订单 ${String(params.order_id ?? '')}`,
                 [params.item, params.status].filter(Boolean).map(String).join(' · ') || undefined,
                 [
-                  { text: '不对', style: 'cancel', onPress: () => resolve({ confirmed: false }) },
-                  { text: '确认', onPress: () => resolve({ confirmed: true }) },
+                  { text: '不对', style: 'cancel', onPress: () => answer(false) },
+                  { text: '确认', onPress: () => answer(true) },
                 ],
-                { cancelable: true, onDismiss: () => resolve({ confirmed: false }) },
+                { cancelable: true, onDismiss: () => answer(false) },
               );
             }),
         }}
