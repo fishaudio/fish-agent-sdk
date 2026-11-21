@@ -1,5 +1,7 @@
 package com.fishaudio.agent.internal
 
+import com.fishaudio.agent.AudioOutputRoute
+
 // The second seam, below the transport: a LiveKit room reduced to plain facts
 // and commands. All of the transport's logic sits above it, where tests drive
 // it with event sequences recorded from real calls (see
@@ -73,4 +75,9 @@ internal interface RoomAdapter {
 
     /** Captures and publishes the microphone, or mutes it. Throws when it cannot. */
     suspend fun setMicrophoneEnabled(enabled: Boolean)
+}
+
+/** Where call audio plays. Separate from [RoomAdapter] because the session and transport have no part in it. */
+internal fun interface AudioRouter {
+    fun route(route: AudioOutputRoute)
 }

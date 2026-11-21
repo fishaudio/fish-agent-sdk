@@ -86,3 +86,9 @@ jobs:
 
       - name: Build the release library
         run: ./gradlew :agent:assembleRelease
+
+      # The example is minified with R8, so this also checks that the SDK
+      # needs no extra rules in an app.
+      - name: Build the example app
+        working-directory: examples/android
+        run: ./gradlew :app:assembleRelease

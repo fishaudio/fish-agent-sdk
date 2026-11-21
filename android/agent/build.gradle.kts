@@ -53,8 +53,9 @@ kotlin {
 }
 
 dependencies {
-    // Flows are part of the public API.
+    // Flows and ComponentActivity (the permission helper) are part of the public API.
     api(libs.coroutines.core)
+    api(libs.androidx.activity)
     implementation(libs.coroutines.android)
     // Never in the public API: apps must not need these libraries to call the SDK,
     // and can move LiveKit to a newer 2.x themselves.
