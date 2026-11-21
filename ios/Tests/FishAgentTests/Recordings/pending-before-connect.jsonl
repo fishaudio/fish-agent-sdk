@@ -1,0 +1,43 @@
+{"call":1,"e":"mic.permission","granted":true,"n":1,"t":25}
+{"call":1,"category":"AVAudioSessionCategorySoloAmbient","e":"audio.session.before","inputs":[],"mode":"AVAudioSessionModeDefault","n":2,"options":0,"outputs":["Speaker"],"t":25}
+{"call":1,"e":"token","n":3,"t":26,"transport":"livekit"}
+{"call":1,"e":"connect.begin","n":4,"remotes":0,"roomState":"disconnected","t":55}
+{"call":1,"e":"connect.returned","n":5,"remotes":0,"roomState":"connected","t":687}
+{"call":1,"e":"attr.pending.begin","n":6,"remotes":0,"roomState":"connected","t":688}
+{"call":1,"e":"Connected","n":7,"remotes":0,"roomState":"connected","t":688}
+{"call":1,"e":"attr.pending.done","n":8,"remotes":0,"roomState":"connected","t":691}
+{"attributes":{"fish.client.audio_ready":"pending"},"call":1,"e":"AttributesChanged","isLocal":true,"n":9,"remotes":0,"roomState":"connected","t":691}
+{"attributes":{},"call":1,"e":"AttributesChanged","isLocal":false,"n":10,"remotes":1,"roomState":"connected","t":941}
+{"attributes":{},"call":1,"e":"ParticipantConnected","n":11,"remotes":1,"roomState":"connected","t":941}
+{"attributes":{"lk.agent.state":"initializing"},"call":1,"e":"AttributesChanged","isLocal":false,"n":12,"remotes":1,"roomState":"connected","t":1894}
+{"attributes":{"lk.agent.state":"listening"},"call":1,"e":"AttributesChanged","isLocal":false,"n":13,"remotes":1,"roomState":"connected","t":3382}
+{"call":1,"e":"AudioTrackSubscribed","isMicrophoneSource":true,"n":14,"remotes":1,"roomState":"connected","t":3383}
+{"attributes":{"fish.agent.ready":"1795242280667"},"call":1,"e":"AttributesChanged","isLocal":false,"n":15,"remotes":1,"roomState":"connected","t":3400}
+{"call":1,"e":"AudioTrackSubscribed","isMicrophoneSource":false,"n":16,"remotes":1,"roomState":"connected","t":3489}
+{"call":1,"category":"AVAudioSessionCategoryPlayAndRecord","e":"mic.enabled","inputs":["MicrophoneBuiltIn"],"mode":"AVAudioSessionModeDefault","n":17,"options":108,"outputs":["Speaker"],"remotes":1,"roomState":"connected","t":3493}
+{"attributes":{"lk.agent.state":"speaking"},"call":1,"e":"AttributesChanged","isLocal":false,"n":18,"remotes":1,"roomState":"connected","t":3568}
+{"attributes":{"lk.segment_id":"SG_a9f0a859-6b7","lk.transcribed_track_id":"TR_AMVhYo57o5vDuX","lk.transcription_final":"false"},"call":1,"e":"stream.open","fromLocal":false,"n":19,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":3864,"topic":"lk.transcription"}
+{"call":1,"e":"stream.chunk","n":20,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":3914,"text":"Hi,"}
+{"call":1,"e":"stream.chunk","n":21,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":4032,"text":" thanks"}
+{"call":1,"e":"stream.chunk","n":22,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":4265,"text":" for"}
+{"call":1,"e":"stream.chunk","n":23,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":4656,"text":" calling"}
+{"call":1,"e":"stream.chunk","n":24,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":5406,"text":" Fernway"}
+{"call":1,"e":"stream.chunk","n":25,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":6300,"text":" support."}
+{"call":1,"e":"stream.chunk","n":26,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":6350,"text":" How"}
+{"call":1,"e":"stream.chunk","n":27,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":6614,"text":" can"}
+{"call":1,"e":"stream.chunk","n":28,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":6873,"text":" I"}
+{"call":1,"e":"stream.chunk","n":29,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":7828,"text":" help"}
+{"call":1,"e":"stream.chunk","n":30,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":7829,"text":" with"}
+{"call":1,"e":"stream.chunk","n":31,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":7829,"text":" your"}
+{"call":1,"e":"stream.chunk","n":32,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":9042,"text":" order?"}
+{"call":1,"e":"stream.close","n":33,"remotes":1,"roomState":"connected","streamId":"a18031bb-6394-400e-8f9b-fba1aff10dd9","t":9043}
+{"attributes":{"lk.agent.state":"listening"},"call":1,"e":"AttributesChanged","isLocal":false,"n":34,"remotes":1,"roomState":"connected","t":11414}
+{"call":1,"category":"AVAudioSessionCategoryPlayAndRecord","e":"audio.session.during","inputs":["MicrophoneBuiltIn"],"mode":"AVAudioSessionModeDefault","n":35,"options":108,"outputs":["Speaker"],"remotes":1,"roomState":"connected","t":16295}
+{"call":1,"cmd":"hangup","e":"cmd","n":36,"remotes":1,"roomState":"connected","t":16295}
+{"call":1,"e":"sent","message":{"type":"user.hangup"},"n":37,"remotes":1,"roomState":"connected","t":16297}
+{"attributes":{"fish.client.audio_ready":""},"call":1,"e":"AttributesChanged","isLocal":true,"n":38,"remotes":0,"roomState":"disconnected","t":18881}
+{"call":1,"e":"ParticipantDisconnected","n":39,"remotes":0,"roomState":"disconnected","t":18883}
+{"call":1,"e":"disconnect.returned","n":40,"remotes":0,"roomState":"disconnected","t":18883}
+{"attributes":{"fish.agent.ready":"","lk.agent.state":""},"call":1,"e":"AttributesChanged","isLocal":false,"n":41,"remotes":0,"roomState":"disconnected","t":18883}
+{"call":1,"e":"Disconnected","n":42,"reason":"CLIENT_INITIATED","remotes":0,"roomState":"disconnected","t":18883}
+{"call":1,"e":"probe.done","n":43,"remotes":0,"roomState":"disconnected","t":20483}
