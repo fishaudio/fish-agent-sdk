@@ -5,13 +5,10 @@ import {
   type EndReason,
   type SessionStatus,
 } from '@fishaudio/agent-react-native';
-import * as Battery from 'expo-battery';
-import * as Device from 'expo-device';
-import * as Network from 'expo-network';
 import { RoomEvent, Track, type RemoteParticipant } from 'livekit-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
 import { requestSessionToken, type CallSource } from './createSession';
+import { readDeviceInfo } from './deviceInfo';
 
 const ORDER_CARD_TIMEOUT_MS = 24_000;
 /** Above the order card's own timeout, for runtimes that do not send `timeoutMs` yet. */
@@ -61,20 +58,6 @@ export type Phase = 'idle' | 'starting' | 'in-call' | 'ended';
 export interface EndInfo {
   reason: EndReason;
   durationMs: number;
-}
-
-async function readDeviceInfo() {
-  const [battery, network] = await Promise.all([
-    Battery.getBatteryLevelAsync().catch(() => -1),
-    Network.getNetworkStateAsync().catch(() => undefined),
-  ]);
-  return {
-    os: `${Device.osName ?? Platform.OS} ${Device.osVersion ?? ''}`.trim(),
-    model: Device.modelName ?? 'unknown',
-    battery_percent: battery >= 0 ? Math.round(battery * 100) : null,
-    network: network?.type ?? 'unknown',
-    online: network?.isInternetReachable ?? null,
-  };
 }
 
 /** Demo state on top of the SDK's `useConversation`: transcript, tool chips, the order card, logs and timings. */

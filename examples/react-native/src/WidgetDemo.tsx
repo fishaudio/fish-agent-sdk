@@ -1,8 +1,9 @@
 import type { SessionLanguage } from '@fishaudio/agent-protocol';
 import { FishAgentWidget } from '@fishaudio/agent-widget-react-native';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { requestSessionToken, type CallSource } from './agent/createSession';
+import { readDeviceInfo } from './agent/deviceInfo';
 
 const PRODUCTS = [
   { name: '无线降噪耳机', price: '¥899' },
@@ -58,8 +59,21 @@ export function WidgetDemo({
         insets={insets}
         draggable
         callNotification={{ title: '小鱼客服通话中', text: '点按返回 App' }}
+        // The client tools the demo agent is configured with (Fish Audio dashboard).
         clientTools={{
-          get_current_page: () => ({ page: 'product_list', products: PRODUCTS.map((p) => p.name) }),
+          get_device_info: () => readDeviceInfo(),
+          show_order_card: (params) =>
+            new Promise((resolve) => {
+              Alert.alert(
+                `订单 ${String(params.order_id ?? '')}`,
+                [params.item, params.status].filter(Boolean).map(String).join(' · ') || undefined,
+                [
+                  { text: '不对', style: 'cancel', onPress: () => resolve({ confirmed: false }) },
+                  { text: '确认', onPress: () => resolve({ confirmed: true }) },
+                ],
+                { cancelable: true, onDismiss: () => resolve({ confirmed: false }) },
+              );
+            }),
         }}
         onError={(e) => console.warn('[widget]', e.code, e.message)}
       />

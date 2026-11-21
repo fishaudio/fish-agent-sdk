@@ -4,4 +4,4 @@
 export * from "./settings.js";
 export * from "./messages.js";
 export { fetchRemoteConfig } from "./remoteConfig.js";
-export { errorText, formatTimer, formatToolPayload } from "./format.js";
+export { errorText, formatTimer, formatToolPayload, showsErrorBanner } from "./format.js";

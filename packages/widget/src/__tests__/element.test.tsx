@@ -286,6 +286,27 @@ describe("<fish-agent>", () => {
     ]);
   });
 
+  it("shows no banner for a client tool failure, which leaves the call running", async () => {
+    const element = await mount({ "agent-id": "agent_1" });
+    const details: unknown[] = [];
+    element.addEventListener("fish-agent:error", (event) => {
+      details.push((event as CustomEvent).detail);
+    });
+    await openPanel(element);
+    click($(element, ".fa-cta"));
+    await tick();
+    const session = sessions[0]!;
+
+    session.emit("error", { code: "tool_failed", message: 'Client tool "get_device_info" is not registered' });
+    session.emit("error", { code: "tool_timeout", message: "slow tool" });
+    await tick();
+    expect(query(element, ".fa-error")).toBeNull();
+    expect(details).toEqual([
+      { code: "tool_failed", message: 'Client tool "get_device_info" is not registered' },
+      { code: "tool_timeout", message: "slow tool" },
+    ]);
+  });
+
   it("renders streaming transcript segments and tool chips", async () => {
     const element = await mount({ "agent-id": "agent_1" });
     await openPanel(element);

@@ -15,6 +15,7 @@ import {
 } from "./config.js";
 import {
   errorText as sharedErrorText,
+  showsErrorBanner,
   fetchRemoteConfig,
   TranscriptStore,
 } from "@fishaudio/agent-widget-shared";
@@ -252,9 +253,9 @@ export function FishAgentWidget({ host, attributes }: FishAgentWidgetProps) {
         emit("disconnect", { reason });
       });
       session.on("error", (sessionError) => {
-        // A failure the agent is already recovering from on its own is not a
-        // broken call, so no banner for it. The host page still hears about it.
-        if (sessionError.recovered !== true) {
+        // Recovering failures and client tool failures leave the call running,
+        // so no banner for them. The host page still hears about them.
+        if (showsErrorBanner(sessionError)) {
           setError(
             sessionError.code === "mic_permission_denied"
               ? texts.errorMicDenied

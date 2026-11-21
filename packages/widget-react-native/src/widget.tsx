@@ -21,6 +21,7 @@ import {
   type WidgetPosition,
   type WidgetSettings,
   type WidgetTextContents,
+  showsErrorBanner,
 } from "@fishaudio/agent-widget-shared";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode } from "react";
 import {
@@ -463,8 +464,8 @@ export const FishAgentWidget = forwardRef<FishAgentWidgetHandle, FishAgentWidget
             if (liveRef.current !== bridge) {
               return;
             }
-            // A failure the agent is already recovering from is not a broken call: no banner.
-            if (sessionError.recovered !== true) {
+            // Recovering failures and client tool failures leave the call running: no banner.
+            if (showsErrorBanner(sessionError)) {
               setError(errorText(texts, sessionError.code));
             }
             reportError({

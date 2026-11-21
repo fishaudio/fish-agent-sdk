@@ -288,6 +288,24 @@ describe("FishAgentWidget", () => {
     expect(onError).toHaveBeenCalledWith({ code: "origin_forbidden", message: "forbidden" });
   });
 
+  it("shows no banner for a client tool failure but reports it", async () => {
+    const onError = vi.fn();
+    render(<FishAgentWidget agentId="agent_1" onError={onError} />);
+    openPanel();
+    fireEvent.click(screen.getByText(DEFAULT_TEXTS.startVoice));
+    await flush();
+    await act(async () => conversation.settle!({}));
+    const callbacks = conversation.callbacks();
+    const toolError = Object.assign(new Error('Client tool "get_device_info" is not registered'), { code: "tool_failed" });
+    await act(async () => callbacks.onError!(toolError as never));
+    expect(screen.queryByText(DEFAULT_TEXTS.errorConnection)).toBeNull();
+    expect(onError).toHaveBeenCalledWith({ code: "tool_failed", message: 'Client tool "get_device_info" is not registered' });
+
+    const lost = Object.assign(new Error("lost"), { code: "provider_error", recovered: false });
+    await act(async () => callbacks.onError!(lost as never));
+    expect(screen.getByText(DEFAULT_TEXTS.errorConnection)).toBeTruthy();
+  });
+
   it("streams the transcript through the session callbacks and adds a divider when the call ends", async () => {
     const onDisconnect = vi.fn();
     render(<FishAgentWidget agentId="agent_1" onDisconnect={onDisconnect} />);

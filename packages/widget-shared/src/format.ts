@@ -5,6 +5,15 @@ export function formatTimer(seconds: number): string {
   return `${minutes}:${rest.toString().padStart(2, "0")}`;
 }
 
+/**
+ * Whether an in-call error breaks the call and deserves the error banner. A
+ * failure the agent is recovering from does not, and neither does a client
+ * tool failure: the agent hears the error as the tool's result and carries on.
+ */
+export function showsErrorBanner(error: { code: string; recovered?: boolean }): boolean {
+  return error.recovered !== true && error.code !== "tool_failed" && error.code !== "tool_timeout";
+}
+
 /** Map an SDK error code to the widget's user-facing message. */
 export function errorText(
   texts: { errorMicDenied: string; errorOrigin: string; errorUnavailable: string; errorConnection: string },
