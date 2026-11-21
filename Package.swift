@@ -14,15 +14,24 @@ let package = Package(
     products: [
         .library(name: "FishAgent", targets: ["FishAgent"]),
     ],
+    dependencies: [
+        // 2.19.0 is the version the transport was recorded and tested against.
+        // No LiveKit type appears in the public API, so an app can move to a
+        // newer 2.x by itself.
+        .package(url: "https://github.com/livekit/client-sdk-swift.git", from: "2.19.0"),
+    ],
     targets: [
         .target(
             name: "FishAgent",
+            dependencies: [.product(name: "LiveKit", package: "client-sdk-swift")],
             path: "ios/Sources/FishAgent"
         ),
         .testTarget(
             name: "FishAgentTests",
             dependencies: ["FishAgent"],
-            path: "ios/Tests/FishAgentTests"
+            path: "ios/Tests/FishAgentTests",
+            // Read from disk by the tests, through the test file's own path.
+            exclude: ["Recordings"]
         ),
     ]
 )
