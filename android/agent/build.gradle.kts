@@ -32,13 +32,33 @@ android {
     }
 
     testOptions {
+        // android.util.Log is a stub on the JVM; let it return defaults instead of throwing.
+        unitTests.isReturnDefaultValues = true
         unitTests.all {
             // Tests read android/package.json to check the version.
             it.systemProperty("fishAgent.markerPackage", rootProject.file("package.json").path)
+            // The conformance fixtures shared with the other SDKs.
+            it.systemProperty(
+                "fishAgent.fixtures",
+                rootProject.file("../packages/protocol/fixtures").path,
+            )
+            it.inputs.dir(rootProject.file("../packages/protocol/fixtures"))
         }
     }
 }
 
+kotlin {
+    // Every public declaration must say so: nothing becomes API by accident.
+    explicitApi()
+}
+
 dependencies {
+    // Flows are part of the public API.
+    api(libs.coroutines.core)
+    implementation(libs.coroutines.android)
+    // Never in the public API: apps must not need this library to call the SDK.
+    implementation(libs.serialization.json)
+
     testImplementation(libs.junit)
+    testImplementation(libs.coroutines.test)
 }
