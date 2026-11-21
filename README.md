@@ -11,6 +11,7 @@ Public documentation: [Web SDK](https://docs.fish.audio/agents/deploy/web-sdk), 
 | `@fishaudio/agent-react-native` | [docs](docs/react-native.md) | React Native hook (`useConversation`) with the microphone permission, audio routing, and background calls. Expo or bare React Native. |
 | `@fishaudio/agent-widget` | [docs](docs/widget.md) | `<fish-agent>` custom element (plus a `<FishAgentWidget>` React component): voice-first chat card with transcript, tool chips, consent, theming. |
 | `@fishaudio/agent-widget-embed` | [docs](docs/widget.md) | The widget as one CDN script. Loading it registers `<fish-agent>`. |
+| `@fishaudio/agent-widget-react-native` | [docs](docs/react-native-widget.md) | The widget for React Native apps: floating button and call panel, built on `@fishaudio/agent-react-native`. |
 | `@fishaudio/agent-protocol` | [README](packages/protocol/README.md) | Semi-internal wire contract for realtime messages and session creation. Dependency-free. Apps consume it via `agent-client`. |
 
 ### Widget (no build step)
