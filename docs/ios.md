@@ -4,14 +4,14 @@ The iOS SDK adds voice calls with a Fish Audio agent to a native iOS app, in Swi
 
 It has no UI. You build the screen; the SDK gives you the state to show.
 
-> **Status.** Everything on this page was checked on an iOS simulator. Checks on physical iPhones are still to come, and there are known problems. See [Limitations](#limitations).
+> **Status.** Calls, the microphone, audio routes, and calls in the background and with the screen locked were checked on an iPhone 12. Reconnection, headsets and phone-call interruptions have not been checked yet. See [Limitations](#limitations).
 
 ## Requirements
 
 - **iOS 15 or later.**
 - **Xcode 16.3 or later.** The SDK is built on LiveKit's Swift SDK, which needs Swift 6.1 tools.
 - **Your own backend** to create session tokens, or a public agent (see [Starting a session](#starting-a-session)). Do not ship an API key inside an app.
-- **Tested with** LiveKit's Swift SDK 2.19.0 on an iPhone 16 simulator with iOS 18.5. Other versions may work but are untested.
+- **Tested with** LiveKit's Swift SDK 2.19.0 on an iPhone 12 with iOS 26.6 and an iPhone 16 simulator with iOS 18.5. Other versions may work but are untested.
 
 ## Install
 
@@ -172,18 +172,16 @@ Arguments and results are `JSONValue`, which can be written with literals. Retur
 
 LiveKit configures, activates and deactivates the app's audio session by itself as a call's audio starts and stops. The SDK does not touch activation. It states a route preference, and when the call ends it sets the session's category back to the system default, because LiveKit leaves the call category behind and other audio in the app would otherwise play quieter and ignore the silent switch.
 
-If your app plays other audio, expect its audio session to be reconfigured for the length of a call.
+During a call the session is `playAndRecord`, in video-chat mode on the speaker and voice-chat mode on the receiver. If your app plays other audio, expect its audio session to be reconfigured for the length of a call.
 
 ## Limitations
 
-- **Checked on a simulator only.** [`examples/ios/README.md`](../examples/ios/README.md) lists what was checked and what still needs an iPhone: where audio actually plays, the microphone on a second call, calls in the background, an incoming phone call during a call, and network changes.
-- **Unmuting a call that started without the microphone fails** on the simulator, with `connection_failed`. Start the call with the microphone and mute it instead, until this is checked on an iPhone.
-- **The opening line can be missed.** In 5 of 25 calls on the simulator, LiveKit's first connection attempt failed and was retried by itself; the agent had already spoken its opening line to an app that was not connected yet. The rest of the call worked.
-- **Hanging up can take about 2.5 seconds** before `status` is `ended`.
+- **Not checked yet:** reconnection after a network outage, moving between Wi-Fi and cellular, wired and Bluetooth headsets, and an incoming phone call during a call. [`examples/ios/README.md`](../examples/ios/README.md) lists what was checked on an iPhone and what was not. The reconnect rules are the ones verified on Android.
+- **The opening line can be missed.** In 5 of 25 calls on a simulator, LiveKit's first connection attempt failed and was retried by itself; the agent had already spoken its opening line to an app that was not connected yet. The rest of the call worked. It did not happen in 6 calls on an iPhone, which is too few to rule it out.
+- **On the simulator**, unmuting a call that started without the microphone fails with `connection_failed`, and hanging up can take about 2.5 seconds. Both work on an iPhone.
 - **No audio levels.** There is nothing to drive a waveform or an orb from.
 - **`audioOutput` is the route that was asked for**, not the active device, and there is no event when the route changes.
-- **Phone calls, Bluetooth and other interruptions are not handled.** What LiveKit does by default is what happens. Untested.
-- **Reconnection was not tried on iOS.** A simulator cannot lose its network by itself. The reconnect rules are the ones verified on Android.
+- **Phone calls, Bluetooth and other interruptions are not handled.** What LiveKit does by default is what happens.
 
 ## Troubleshooting
 
@@ -194,5 +192,5 @@ If your app plays other audio, expect its audio session to be reconfigured for t
 | `mic_permission_denied` | The user refused the microphone. iOS does not ask twice: send them to Settings. |
 | `ConversationUsageError.callAlreadyActive` | Only one call runs per app. End the other call, or use one `Conversation` for the app. |
 | A public agent fails with `origin_forbidden` | The agent restricts origins. Pass `origin`, matching one of its allowed origins exactly (scheme, host and port). |
-| The token request fails on an iPhone | `localhost` is the phone. Use your computer's LAN address, and allow local networking or use HTTPS. |
+| The token request fails on an iPhone | `localhost` is the phone. Use your computer's LAN address, and allow local networking or use HTTPS. On the first run iOS also asks whether the app may reach the local network; until that is allowed, requests to it fail as if the phone were offline. Add `NSLocalNetworkUsageDescription` to explain the prompt. |
 | The call stops in the background | The `audio` background mode is missing from `Info.plist`. |
