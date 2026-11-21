@@ -2,7 +2,7 @@
 
 This page is for building a client without `@fishaudio/agent-client`: a native app, a React Native app that does not use the SDK, or another language. It spells out the behavior the SDK implements on top of the types in [`@fishaudio/agent-protocol`](../packages/protocol/README.md), so you can match it without reading the SDK source.
 
-If you are on the web, React Native or iOS, use the SDK instead. It already does all of this. [`packages/protocol/fixtures`](../packages/protocol/fixtures/README.md) holds the test cases every SDK here runs; a client of your own can run them too.
+If you are on the web, React Native, iOS or Android, use the SDK instead. It already does all of this. [`packages/protocol/fixtures`](../packages/protocol/fixtures/README.md) holds the test cases every SDK here runs; a client of your own can run them too.
 
 The transport today is LiveKit (WebRTC). Media goes over audio tracks, control messages over data packets on two topics, readiness over participant attributes, and transcripts over LiveKit text streams.
 
@@ -114,7 +114,7 @@ The call ends in one of these ways, in order of priority:
 
 Case 3 is a guess. A runtime crash, a network failure, and some server-side ends look the same from the client.
 
-The order of these signals differs by LiveKit SDK. On iOS the agent's departure is reported while the room still reads connected, a millisecond before the disconnect that explains it, so "the agent left while the room is still connected" needs a short wait before it is believed. On iOS a departing participant's attributes are also reported once more with empty values; treat an empty value as no value. The iOS recordings these notes come from are in [`ios/Tests/FishAgentTests/Recordings`](../ios/Tests/FishAgentTests/Recordings/README.md).
+The order of these signals differs by LiveKit SDK. On iOS the agent's departure is reported while the room still reads connected, a millisecond before the disconnect that explains it, so "the agent left while the room is still connected" needs a short wait before it is believed. On iOS a departing participant's attributes are also reported once more with empty values; treat an empty value as no value. The recordings these notes come from are in [`android/agent/src/test/resources/livekit-recordings`](../android/agent/src/test/resources/livekit-recordings/README.md) and [`ios/Tests/FishAgentTests/Recordings`](../ios/Tests/FishAgentTests/Recordings/README.md).
 
 ## Known gaps
 

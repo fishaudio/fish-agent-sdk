@@ -21,6 +21,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  android: {}
+
   examples/react-native:
     dependencies:
       '@config-plugins/react-native-webrtc':

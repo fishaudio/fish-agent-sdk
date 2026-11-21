@@ -16,5 +16,12 @@ xcuserdata/
 DerivedData/
 *.xcuserstate
 
+# Gradle and Android
+.gradle/
+android/**/build/
+examples/android/**/build/
+local.properties
+.kotlin/
+
 # Resolved by each app, not by this library.
 Package.resolved

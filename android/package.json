@@ -1,0 +1,6 @@
+{
+  "name": "@fishaudio/agent-android",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Version marker for the Fish Agent Android SDK. Never published to npm: it exists so the Android library is versioned together with the JavaScript packages, and the Gradle build reads its version from here. The SDK itself is the Gradle project in this directory."
+}

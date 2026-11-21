@@ -3,6 +3,7 @@
 // Swift has no build step that could read the version at compile time, so the
 // number has to be in a source file. Changesets bumps ios/package.json with
 // the other packages; `pnpm version-packages` then runs this script.
+// The Android build needs no such step: Gradle reads android/package.json.
 //
 // Run from anywhere: `node scripts/sync-native-version.mjs`.
 import { readFileSync, writeFileSync } from "node:fs";

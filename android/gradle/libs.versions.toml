@@ -1,0 +1,22 @@
+[versions]
+activity = "1.9.3"
+# AGP 9 compiles Kotlin itself; there is no separate Kotlin Android plugin to apply.
+agp = "9.2.1"
+coroutines = "1.10.2"
+junit = "4.13.2"
+# The version the transport was recorded and tested against. An app can use a newer 2.x.
+livekit = "2.30.0"
+serialization = "1.9.0"
+
+[libraries]
+androidx-activity = { module = "androidx.activity:activity", version.ref = "activity" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+junit = { module = "junit:junit", version.ref = "junit" }
+livekit = { module = "io.livekit:livekit-android", version.ref = "livekit" }
+# Only the JSON tree API is used (no @Serializable classes), so the compiler plugin is not needed.
+serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+
+[plugins]
+android-library = { id = "com.android.library", version.ref = "agp" }

@@ -1,10 +1,10 @@
-// Checks that the iOS SDK carries the same version as the JavaScript
+// Checks that the native SDKs carry the same version as the JavaScript
 // packages, and that the generated Swift constant is up to date.
 //
-// All packages are released together under one version number. The iOS SDK
-// follows through a marker package (ios/package.json) that changesets bumps
-// with the rest. This fails when the marker was edited by hand, or when
-// Version.swift was not regenerated after a bump.
+// All packages are released together under one version number. The native
+// SDKs follow through marker packages (ios/package.json, android/package.json)
+// that changesets bumps with the rest. This fails when a marker was edited by
+// hand, or when Version.swift was not regenerated after a bump.
 //
 // Run from the repo root: `node scripts/check-native-version.mjs`.
 import { readFileSync } from "node:fs";
@@ -17,7 +17,7 @@ const versionOf = (path) => JSON.parse(read(path)).version;
 const reference = versionOf("packages/client/package.json");
 const problems = [];
 
-for (const marker of ["ios/package.json"]) {
+for (const marker of ["ios/package.json", "android/package.json"]) {
   const version = versionOf(marker);
   if (version !== reference) {
     problems.push(`${marker} is at ${version}, but @fishaudio/agent-client is at ${reference}`);
