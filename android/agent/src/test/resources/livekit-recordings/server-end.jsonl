@@ -1,0 +1,47 @@
+{"n":1,"t":3060,"e":"token","thread":"main","session_id":"sess_recorded","transport":"livekit","max_duration_seconds":1800}
+{"n":2,"t":3141,"e":"connect.begin","thread":"main","roomState":"DISCONNECTED","remotes":0}
+{"n":3,"t":4217,"e":"connect.returned","thread":"main","roomState":"CONNECTING","remotes":0,"localIdentity":"user"}
+{"n":4,"t":4218,"e":"attr.pending.sent","thread":"main","roomState":"CONNECTING","remotes":0}
+{"n":5,"t":4353,"e":"mic.enabled","thread":"main","roomState":"CONNECTING","remotes":0,"ok":true}
+{"n":6,"t":4354,"e":"TrackPublished","thread":"main","roomState":"CONNECTING","remotes":0,"participant":{"identity":"user","kind":"STANDARD","isLocal":true},"sid":"TR_AMFLS3z5Q5hcSe","source":"MICROPHONE"}
+{"n":7,"t":4598,"e":"Connected","thread":"main","roomState":"CONNECTED","remotes":0}
+{"n":8,"t":4645,"e":"ParticipantConnected","thread":"main","roomState":"CONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"attributes":{}}
+{"n":9,"t":5083,"e":"other","thread":"main","roomState":"CONNECTED","remotes":1,"class":"LocalTrackSubscribed"}
+{"n":10,"t":5091,"e":"ParticipantAttributesChanged","thread":"main","roomState":"CONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"changed":{"lk.agent.state":"initializing"}}
+{"n":11,"t":5091,"e":"ParticipantStateChanged","thread":"main","roomState":"CONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"old":"JOINED","new":"ACTIVE"}
+{"n":12,"t":5093,"e":"TrackPublished","thread":"main","roomState":"CONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"sid":"TR_AMQxMFHQetA6RQ","source":"MICROPHONE"}
+{"n":13,"t":5105,"e":"TrackSubscribed","thread":"main","roomState":"CONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"sid":"TR_AMQxMFHQetA6RQ","kind":"AUDIO","source":"MICROPHONE"}
+{"n":14,"t":5106,"e":"attr.ready.sent","thread":"main","roomState":"CONNECTED","remotes":1,"at":1795236394303}
+{"n":15,"t":5109,"e":"sent","thread":"main","roomState":"CONNECTED","remotes":1,"message":{"type":"client.audio_ready","at":1795236394303},"ok":true,"error":null}
+{"n":16,"t":5217,"e":"ParticipantAttributesChanged","thread":"main","roomState":"CONNECTED","remotes":1,"participant":{"identity":"user","kind":"STANDARD","isLocal":true},"changed":{"fish.client.audio_ready":"1795236394303"}}
+{"n":17,"t":5242,"e":"other","thread":"main","roomState":"CONNECTED","remotes":1,"class":"RecordingStatusChanged"}
+{"n":18,"t":5260,"e":"ParticipantAttributesChanged","thread":"main","roomState":"CONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"changed":{"lk.agent.state":"listening"}}
+{"n":19,"t":5321,"e":"TrackPublished","thread":"main","roomState":"CONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"sid":"TR_AfEjxC8HezXW4","source":"UNKNOWN"}
+{"n":20,"t":5336,"e":"TrackSubscribed","thread":"main","roomState":"CONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"sid":"TR_AfEjxC8HezXW4","kind":"AUDIO","source":"UNKNOWN"}
+{"n":21,"t":5344,"e":"ParticipantAttributesChanged","thread":"main","roomState":"CONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"changed":{"fish.agent.ready":"1795236394175"}}
+{"n":22,"t":5576,"e":"ParticipantAttributesChanged","thread":"main","roomState":"CONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"changed":{"lk.agent.state":"speaking"}}
+{"n":25,"t":6201,"e":"stream.open","thread":"background","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","from":"agent","fromLocal":false,"attributes":{"lk.transcribed_track_id":"TR_AMQxMFHQetA6RQ","lk.transcription_final":"false","lk.segment_id":"SG_5ca8139b-faa"}}
+{"n":26,"t":6202,"e":"stream.chunk","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","text":"Hi,"}
+{"n":27,"t":6203,"e":"stream.chunk","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","text":" thanks"}
+{"n":29,"t":6274,"e":"stream.chunk","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","text":" for"}
+{"n":31,"t":6667,"e":"stream.chunk","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","text":" calling"}
+{"n":33,"t":7319,"e":"stream.chunk","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","text":" Fernway"}
+{"n":36,"t":8533,"e":"stream.chunk","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","text":" support."}
+{"n":37,"t":8534,"e":"stream.chunk","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","text":" How"}
+{"n":39,"t":8621,"e":"stream.chunk","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","text":" can"}
+{"n":41,"t":8883,"e":"stream.chunk","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","text":" I"}
+{"n":43,"t":9142,"e":"stream.chunk","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","text":" help"}
+{"n":45,"t":9404,"e":"stream.chunk","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","text":" with"}
+{"n":48,"t":10132,"e":"stream.chunk","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","text":" your"}
+{"n":49,"t":10133,"e":"stream.chunk","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7","text":" order?"}
+{"n":51,"t":10314,"e":"stream.close","thread":"main","roomState":"CONNECTED","remotes":1,"streamId":"da665661-4a86-47c6-87af-5740f3ce7cf7"}
+{"n":52,"t":12670,"e":"ParticipantAttributesChanged","thread":"main","roomState":"CONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"changed":{"lk.agent.state":"listening"}}
+{"n":53,"t":15547,"e":"cmd","thread":"main","roomState":"CONNECTED","remotes":1,"cmd":"mark","text":"server-end.request"}
+{"n":54,"t":16207,"e":"DataReceived","thread":"main","roomState":"CONNECTED","remotes":1,"topic":"agent-event","from":null,"payload":"{\"type\":\"session.ended\",\"reason\":\"user_hangup\"}"}
+{"n":55,"t":16421,"e":"TrackUnpublished","thread":"main","roomState":"DISCONNECTED","remotes":1,"participant":{"identity":"user","kind":"STANDARD","isLocal":true},"sid":"TR_AMFLS3z5Q5hcSe"}
+{"n":56,"t":16424,"e":"TrackUnsubscribed","thread":"main","roomState":"DISCONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"sid":"TR_AMQxMFHQetA6RQ"}
+{"n":57,"t":16424,"e":"TrackUnpublished","thread":"main","roomState":"DISCONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"sid":"TR_AMQxMFHQetA6RQ"}
+{"n":58,"t":16425,"e":"TrackUnsubscribed","thread":"main","roomState":"DISCONNECTED","remotes":1,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"sid":"TR_AfEjxC8HezXW4"}
+{"n":59,"t":16425,"e":"TrackUnpublished","thread":"main","roomState":"DISCONNECTED","remotes":0,"participant":{"identity":"agent","kind":"AGENT","isLocal":false},"sid":"TR_AfEjxC8HezXW4"}
+{"n":60,"t":16425,"e":"ParticipantDisconnected","thread":"main","roomState":"DISCONNECTED","remotes":0,"participant":{"identity":"agent","kind":"AGENT","isLocal":false}}
+{"n":61,"t":16427,"e":"Disconnected","thread":"main","roomState":"DISCONNECTED","remotes":0,"reason":"ROOM_DELETED","error":null}
