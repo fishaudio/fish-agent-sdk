@@ -8,3 +8,17 @@ playwright-report/
 *.tgz
 .env
 .env.*
+
+# Swift Package Manager and Xcode
+.build/
+.swiftpm/
+xcuserdata/
+DerivedData/
+*.xcuserstate
+
+# Gradle and Android
+.gradle/
+android/**/build/
+examples/android/**/build/
+local.properties
+.kotlin/

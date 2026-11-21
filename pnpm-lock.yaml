@@ -21,6 +21,8 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  android: {}
+
   examples/react-native:
     dependencies:
       '@config-plugins/react-native-webrtc':
@@ -94,6 +96,8 @@ importers:
       vite:
         specifier: ^7.3.0
         version: 7.3.6(lightningcss@1.33.0)(terser@5.51.2)
+
+  ios: {}
 
   packages/client:
     dependencies:

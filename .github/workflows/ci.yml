@@ -38,5 +38,47 @@ jobs:
       - name: Check publish manifests
         run: pnpm check:publish
 
+      - name: Check native SDK versions
+        run: pnpm check:native-version
+
       - name: Test
         run: pnpm test
+
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test
+
+      # The host build above compiles for macOS; this compiles the iOS-only code.
+      - name: Build for the iOS simulator
+        run: xcodebuild build -scheme FishAgent -destination 'generic/platform=iOS Simulator' -quiet
+
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Test
+        run: ./gradlew :agent:testDebugUnitTest
+
+      - name: Lint
+        run: ./gradlew :agent:lintDebug
+
+      - name: Build the release library
+        run: ./gradlew :agent:assembleRelease

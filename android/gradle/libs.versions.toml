@@ -1,0 +1,10 @@
+[versions]
+# AGP 9 compiles Kotlin itself; there is no separate Kotlin Android plugin to apply.
+agp = "9.2.1"
+junit = "4.13.2"
+
+[libraries]
+junit = { module = "junit:junit", version.ref = "junit" }
+
+[plugins]
+android-library = { id = "com.android.library", version.ref = "agp" }
