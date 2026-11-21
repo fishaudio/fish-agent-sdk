@@ -68,7 +68,8 @@ dependencies {
     // Never in the public API: apps must not need these libraries to call the SDK,
     // and can move LiveKit to a newer 2.x themselves.
     implementation(libs.serialization.json)
-    implementation(libs.livekit)
+    // -PlivekitVersion=… builds against another LiveKit release (the weekly CI job uses it).
+    implementation(providers.gradleProperty("livekitVersion").map { "io.livekit:livekit-android:$it" }.orElse(libs.livekit.map { it.toString() }))
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
