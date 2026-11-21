@@ -1,0 +1,65 @@
+{
+  "description": "How long a client tool gets before the SDK answers with a timeout. With a positive timeoutMs from the agent it is max(timeoutMs - 1000, timeoutMs * 0.9); otherwise the configured fallback.",
+  "cases": [
+    {
+      "name": "a long agent timeout loses one second",
+      "call": { "timeoutMs": 30000 },
+      "fallbackMs": 15000,
+      "expectMs": 29000
+    },
+    {
+      "name": "at ten seconds both margins agree",
+      "call": { "timeoutMs": 10000 },
+      "fallbackMs": 15000,
+      "expectMs": 9000
+    },
+    {
+      "name": "a short agent timeout loses ten percent",
+      "call": { "timeoutMs": 5000 },
+      "fallbackMs": 15000,
+      "expectMs": 4500
+    },
+    {
+      "name": "one second leaves nine hundred milliseconds",
+      "call": { "timeoutMs": 1000 },
+      "fallbackMs": 15000,
+      "expectMs": 900
+    },
+    {
+      "name": "the agent timeout wins even when it is longer than the fallback",
+      "call": { "timeoutMs": 60000 },
+      "fallbackMs": 5000,
+      "expectMs": 59000
+    },
+    {
+      "name": "no timeoutMs uses the fallback",
+      "call": {},
+      "fallbackMs": 7000,
+      "expectMs": 7000
+    },
+    {
+      "name": "zero uses the fallback",
+      "call": { "timeoutMs": 0 },
+      "fallbackMs": 7000,
+      "expectMs": 7000
+    },
+    {
+      "name": "a negative value uses the fallback",
+      "call": { "timeoutMs": -500 },
+      "fallbackMs": 7000,
+      "expectMs": 7000
+    },
+    {
+      "name": "a value that is not a number uses the fallback",
+      "call": { "timeoutMs": "30000" },
+      "fallbackMs": 7000,
+      "expectMs": 7000
+    },
+    {
+      "name": "null uses the fallback",
+      "call": { "timeoutMs": null },
+      "fallbackMs": 7000,
+      "expectMs": 7000
+    }
+  ]
+}

@@ -1,0 +1,332 @@
+{
+  "description": "Scripts for the session state machine: what the transport reports and the app calls, step by step, and what the session sends, emits and becomes.",
+  "cases": [
+    {
+      "name": "a typed message waits for the agent's ready signal",
+      "start": { "agent": "absent" },
+      "steps": [
+        { "do": "sendUserMessage", "text": "first" },
+        { "do": "sendUserMessage", "text": "second", "audio": true },
+        { "expect": "sent", "messages": [] },
+        { "do": "agentState", "state": "initializing" },
+        { "expect": "sent", "messages": [] },
+        { "do": "agentReady" },
+        {
+          "expect": "sent",
+          "messages": [
+            { "type": "user.message", "text": "first", "audio": false },
+            { "type": "user.message", "text": "second" }
+          ]
+        },
+        { "do": "sendUserMessage", "text": "third" },
+        { "expect": "sent", "messages": [{ "type": "user.message", "text": "third", "audio": false }] }
+      ]
+    },
+    {
+      "name": "activity and interrupt are not queued",
+      "start": { "agent": "absent" },
+      "steps": [
+        { "do": "sendUserActivity" },
+        { "do": "interrupt" },
+        { "expect": "sent", "messages": [{ "type": "user.activity" }, { "type": "user.interrupt" }] }
+      ]
+    },
+    {
+      "name": "an agent state without a ready signal counts as ready after 8 seconds",
+      "start": { "agent": "absent" },
+      "steps": [
+        { "do": "agentState", "state": "listening" },
+        { "do": "sendUserMessage", "text": "hello" },
+        { "do": "advance", "ms": 7999 },
+        { "expect": "sent", "messages": [] },
+        { "do": "advance", "ms": 1 },
+        { "expect": "sent", "messages": [{ "type": "user.message", "text": "hello", "audio": false }] }
+      ]
+    },
+    {
+      "name": "the ready signal ends the 8 second wait early",
+      "start": { "agent": "absent" },
+      "steps": [
+        { "do": "agentState", "state": "initializing" },
+        { "do": "sendUserMessage", "text": "hello" },
+        { "do": "advance", "ms": 2000 },
+        { "do": "agentReady" },
+        { "expect": "sent", "messages": [{ "type": "user.message", "text": "hello", "audio": false }] },
+        { "do": "advance", "ms": 20000 },
+        { "expect": "sent", "messages": [] },
+        { "expect": "state", "status": "connected" }
+      ]
+    },
+    {
+      "name": "the session ends when no agent joins within 15 seconds",
+      "start": { "agent": "absent" },
+      "steps": [
+        { "do": "advance", "ms": 14999 },
+        { "expect": "state", "status": "connected" },
+        { "do": "advance", "ms": 1 },
+        {
+          "expect": "events",
+          "of": ["error", "statusChange", "disconnect"],
+          "events": [
+            { "event": "statusChange", "payload": "connected" },
+            { "event": "error", "payload": { "code": "connection_failed" } },
+            { "event": "statusChange", "payload": "ended" },
+            { "event": "disconnect", "payload": { "reason": "connection_lost" } }
+          ]
+        },
+        { "expect": "state", "status": "ended", "endReason": "connection_lost" }
+      ]
+    },
+    {
+      "name": "an agent state stops the 15 second join timeout",
+      "start": { "agent": "absent" },
+      "steps": [
+        { "do": "advance", "ms": 14000 },
+        { "do": "agentState", "state": "initializing" },
+        { "do": "advance", "ms": 5000 },
+        { "expect": "state", "status": "connected" },
+        { "expect": "events", "of": ["error", "disconnect"], "events": [] }
+      ]
+    },
+    {
+      "name": "reconnecting and back",
+      "steps": [
+        { "expect": "events", "of": ["statusChange"], "events": [{ "event": "statusChange", "payload": "connected" }] },
+        { "do": "connectionState", "state": "reconnecting" },
+        { "expect": "state", "status": "reconnecting" },
+        { "do": "connectionState", "state": "reconnecting" },
+        { "do": "connectionState", "state": "connected" },
+        { "do": "connectionState", "state": "connected" },
+        {
+          "expect": "events",
+          "of": ["statusChange"],
+          "events": [
+            { "event": "statusChange", "payload": "reconnecting" },
+            { "event": "statusChange", "payload": "connected" }
+          ]
+        },
+        { "expect": "state", "status": "connected" }
+      ]
+    },
+    {
+      "name": "a disconnect with no reason is connection_lost",
+      "steps": [
+        { "do": "connectionState", "state": "disconnected" },
+        {
+          "expect": "events",
+          "of": ["statusChange", "disconnect"],
+          "events": [
+            { "event": "statusChange", "payload": "connected" },
+            { "event": "statusChange", "payload": "ended" },
+            { "event": "disconnect", "payload": { "reason": "connection_lost" } }
+          ]
+        },
+        { "expect": "state", "status": "ended", "endReason": "connection_lost" }
+      ]
+    },
+    {
+      "name": "a failed reconnect is connection_lost",
+      "steps": [
+        { "do": "connectionState", "state": "reconnecting" },
+        { "do": "connectionState", "state": "disconnected" },
+        { "expect": "state", "status": "ended", "endReason": "connection_lost" }
+      ]
+    },
+    {
+      "name": "the agent leaving is agent_hangup",
+      "steps": [
+        { "do": "connectionState", "state": "disconnected", "reason": "AGENT_LEFT" },
+        { "expect": "state", "status": "ended", "endReason": "agent_hangup" }
+      ]
+    },
+    {
+      "name": "a deleted room is agent_hangup",
+      "steps": [
+        { "do": "connectionState", "state": "disconnected", "reason": "ROOM_DELETED" },
+        { "expect": "state", "status": "ended", "endReason": "agent_hangup" }
+      ]
+    },
+    {
+      "name": "a closed room is agent_hangup",
+      "steps": [
+        { "do": "connectionState", "state": "disconnected", "reason": "ROOM_CLOSED" },
+        { "expect": "state", "status": "ended", "endReason": "agent_hangup" }
+      ]
+    },
+    {
+      "name": "any other disconnect reason is connection_lost",
+      "steps": [
+        { "do": "connectionState", "state": "disconnected", "reason": "SERVER_SHUTDOWN" },
+        { "expect": "state", "status": "ended", "endReason": "connection_lost" }
+      ]
+    },
+    {
+      "name": "the announced reason wins over the transport's reason",
+      "steps": [
+        { "do": "agentEvent", "message": { "type": "session.ended", "reason": "conversation_timeout" } },
+        { "expect": "state", "status": "connected" },
+        { "do": "connectionState", "state": "disconnected", "reason": "ROOM_DELETED" },
+        { "expect": "state", "status": "ended", "endReason": "conversation_timeout" }
+      ]
+    },
+    {
+      "name": "the first announcement wins over a second one",
+      "steps": [
+        { "do": "agentEvent", "message": { "type": "session.ended", "reason": "escalated" } },
+        { "do": "agentEvent", "message": { "type": "session.ended", "reason": "agent_hangup" } },
+        { "do": "connectionState", "state": "disconnected" },
+        { "expect": "state", "status": "ended", "endReason": "escalated" }
+      ]
+    },
+    {
+      "name": "an announced end finishes locally after 10 seconds if the room never closes",
+      "steps": [
+        { "do": "agentEvent", "message": { "type": "session.ended", "reason": "agent_hangup" } },
+        { "do": "advance", "ms": 9999 },
+        { "expect": "state", "status": "connected" },
+        { "do": "advance", "ms": 1 },
+        { "expect": "state", "status": "ended", "endReason": "agent_hangup" }
+      ]
+    },
+    {
+      "name": "the user hanging up wins over an announcement",
+      "steps": [
+        { "do": "agentEvent", "message": { "type": "session.ended", "reason": "agent_hangup" } },
+        { "do": "end" },
+        { "expect": "sent", "messages": [{ "type": "user.hangup" }] },
+        {
+          "expect": "events",
+          "of": ["disconnect"],
+          "events": [{ "event": "disconnect", "payload": { "reason": "user_hangup" } }]
+        },
+        { "expect": "state", "status": "ended", "endReason": "user_hangup" }
+      ]
+    },
+    {
+      "name": "nothing is reported after the session has ended",
+      "steps": [
+        { "do": "connectionState", "state": "disconnected", "reason": "ROOM_DELETED" },
+        { "expect": "events", "of": ["statusChange", "disconnect"], "events": [
+          { "event": "statusChange", "payload": "connected" },
+          { "event": "statusChange", "payload": "ended" },
+          { "event": "disconnect", "payload": { "reason": "agent_hangup" } }
+        ] },
+        { "do": "connectionState", "state": "reconnecting" },
+        { "do": "connectionState", "state": "disconnected" },
+        { "do": "agentEvent", "message": { "type": "session.ended", "reason": "escalated" } },
+        { "do": "advance", "ms": 30000 },
+        { "expect": "events", "of": ["statusChange", "disconnect"], "events": [] },
+        { "expect": "state", "status": "ended", "endReason": "agent_hangup" }
+      ]
+    },
+    {
+      "name": "an agent reply streams as deltas and ends as one message",
+      "steps": [
+        { "expect": "events", "events": "any" },
+        { "do": "transcription", "role": "agent", "segmentId": "SG_1", "text": "Hi", "final": false },
+        { "expect": "state", "mode": "speaking" },
+        { "do": "transcription", "role": "agent", "segmentId": "SG_1", "text": "Hi there", "final": false },
+        { "do": "transcription", "role": "agent", "segmentId": "SG_1", "text": "Hi there", "final": true },
+        {
+          "expect": "events",
+          "events": [
+            { "event": "modeChange", "payload": "speaking" },
+            { "event": "agentResponseDelta", "payload": { "segmentId": "SG_1", "delta": "Hi", "text": "Hi" } },
+            { "event": "agentResponseDelta", "payload": { "segmentId": "SG_1", "delta": " there", "text": "Hi there" } },
+            { "event": "modeChange", "payload": "listening" },
+            { "event": "agentResponse", "payload": { "segmentId": "SG_1", "text": "Hi there" } },
+            { "event": "message", "payload": { "role": "agent", "text": "Hi there" } }
+          ]
+        },
+        { "expect": "state", "mode": "listening" }
+      ]
+    },
+    {
+      "name": "agent text that does not extend the previous text is a delta of its own",
+      "steps": [
+        { "expect": "events", "events": "any" },
+        { "do": "transcription", "role": "agent", "segmentId": "SG_1", "text": "Helo", "final": false },
+        { "do": "transcription", "role": "agent", "segmentId": "SG_1", "text": "Hello", "final": false },
+        {
+          "expect": "events",
+          "of": ["agentResponseDelta"],
+          "events": [
+            { "event": "agentResponseDelta", "payload": { "segmentId": "SG_1", "delta": "Helo", "text": "Helo" } },
+            { "event": "agentResponseDelta", "payload": { "segmentId": "SG_1", "delta": "Hello", "text": "Hello" } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "the user's speech is replaced until it is final",
+      "steps": [
+        { "expect": "events", "events": "any" },
+        { "do": "transcription", "role": "user", "segmentId": "SG_2", "text": "where is", "final": false },
+        { "do": "transcription", "role": "user", "segmentId": "SG_2", "text": "where is my order", "final": true },
+        {
+          "expect": "events",
+          "events": [
+            { "event": "userTranscript", "payload": { "segmentId": "SG_2", "text": "where is", "final": false } },
+            { "event": "userTranscript", "payload": { "segmentId": "SG_2", "text": "where is my order", "final": true } },
+            { "event": "message", "payload": { "role": "user", "text": "where is my order" } }
+          ]
+        },
+        { "expect": "state", "mode": "listening" }
+      ]
+    },
+    {
+      "name": "thinking comes from the agent's state, other states do not change the mode",
+      "steps": [
+        { "expect": "events", "events": "any" },
+        { "do": "agentState", "state": "thinking" },
+        { "expect": "state", "mode": "thinking" },
+        { "do": "agentState", "state": "speaking" },
+        { "do": "agentState", "state": "listening" },
+        { "expect": "state", "mode": "thinking" },
+        { "do": "transcription", "role": "agent", "segmentId": "SG_1", "text": "Sure", "final": false },
+        { "expect": "state", "mode": "speaking" },
+        {
+          "expect": "events",
+          "of": ["modeChange"],
+          "events": [
+            { "event": "modeChange", "payload": "thinking" },
+            { "event": "modeChange", "payload": "speaking" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "a typed message is shown at once, with ids that count up",
+      "steps": [
+        { "expect": "events", "events": "any" },
+        { "do": "sendUserMessage", "text": "  hello  " },
+        { "do": "sendUserMessage", "text": "again" },
+        {
+          "expect": "events",
+          "events": [
+            { "event": "userTranscript", "payload": { "segmentId": "typed_1", "text": "hello", "final": true } },
+            { "event": "message", "payload": { "role": "user", "text": "hello" } },
+            { "event": "userTranscript", "payload": { "segmentId": "typed_2", "text": "again", "final": true } },
+            { "event": "message", "payload": { "role": "user", "text": "again" } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "a queued typed message is shown before it is sent",
+      "start": { "agent": "absent" },
+      "steps": [
+        { "expect": "events", "events": "any" },
+        { "do": "sendUserMessage", "text": "hello" },
+        { "expect": "sent", "messages": [] },
+        {
+          "expect": "events",
+          "events": [
+            { "event": "userTranscript", "payload": { "segmentId": "typed_1", "text": "hello", "final": true } },
+            { "event": "message", "payload": { "role": "user", "text": "hello" } }
+          ]
+        }
+      ]
+    }
+  ]
+}

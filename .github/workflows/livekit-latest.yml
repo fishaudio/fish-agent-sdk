@@ -1,0 +1,29 @@
+name: LiveKit latest
+
+# The iOS SDK declares the LiveKit version it was tested with and lets an app
+# move to a newer 2.x. This builds and tests against the newest release every
+# week, so a LiveKit change that breaks the SDK shows up here before it shows
+# up in an app.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      # No Package.resolved is checked in, so this resolves the newest LiveKit 2.x.
+      - name: Resolve the newest LiveKit
+        run: swift package update && swift package show-dependencies | grep -i livekit
+
+      - name: Test
+        run: swift test
+
+      - name: Build for the iOS simulator
+        run: xcodebuild build -scheme FishAgent -destination 'generic/platform=iOS Simulator' -quiet

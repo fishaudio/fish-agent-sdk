@@ -1,0 +1,96 @@
+{
+  "description": "Failed session-creation responses and the error each becomes.",
+  "cases": [
+    {
+      "name": "402 is insufficient_credit",
+      "response": { "status": 402, "json": { "message": "Out of credit" } },
+      "expect": { "code": "insufficient_credit", "statusCode": 402, "message": "Out of credit" }
+    },
+    {
+      "name": "403 mentioning the origin is origin_forbidden",
+      "response": { "status": 403, "json": { "message": "Origin not allowed" } },
+      "expect": { "code": "origin_forbidden", "statusCode": 403, "messageStartsWith": "Origin not allowed" }
+    },
+    {
+      "name": "origin_forbidden keeps the server message when an origin was sent",
+      "response": { "status": 403, "json": { "message": "Origin not allowed" } },
+      "options": { "origin": "https://wrong.example" },
+      "expect": { "code": "origin_forbidden", "statusCode": 403, "message": "Origin not allowed" }
+    },
+    {
+      "name": "the origin check ignores case and reads the error field too",
+      "response": { "status": 403, "json": { "error": "ORIGIN mismatch" } },
+      "options": { "origin": "https://wrong.example" },
+      "expect": { "code": "origin_forbidden", "statusCode": 403, "message": "ORIGIN mismatch" }
+    },
+    {
+      "name": "any other 403 is agent_not_public",
+      "response": { "status": 403, "json": { "message": "Agent is not public" } },
+      "expect": { "code": "agent_not_public", "statusCode": 403, "message": "Agent is not public" }
+    },
+    {
+      "name": "a 403 whose body is not JSON is agent_not_public with a status message",
+      "response": { "status": 403, "text": "Forbidden" },
+      "expect": {
+        "code": "agent_not_public",
+        "statusCode": 403,
+        "message": "Session request failed with HTTP 403"
+      }
+    },
+    {
+      "name": "409 with the unsupported_transport code asks for an upgrade",
+      "response": {
+        "status": 409,
+        "json": { "code": "unsupported_transport", "message": "Transport not supported" }
+      },
+      "expect": {
+        "code": "unsupported_transport",
+        "statusCode": 409,
+        "messageStartsWith": "Transport not supported",
+        "messageContains": "please upgrade"
+      }
+    },
+    {
+      "name": "409 without that code is a plain request failure",
+      "response": { "status": 409, "json": { "message": "Agent is not published" } },
+      "expect": { "code": "session_request_failed", "statusCode": 409, "message": "Agent is not published" }
+    },
+    {
+      "name": "a 500 whose body is not JSON gets a status message",
+      "response": { "status": 500, "text": "<html>Internal Server Error</html>" },
+      "expect": {
+        "code": "session_request_failed",
+        "statusCode": 500,
+        "message": "Session request failed with HTTP 500"
+      }
+    },
+    {
+      "name": "the error field is used when there is no message",
+      "response": { "status": 404, "json": { "error": "Agent not found" } },
+      "expect": { "code": "session_request_failed", "statusCode": 404, "message": "Agent not found" }
+    },
+    {
+      "name": "message wins over error",
+      "response": { "status": 400, "json": { "message": "Override not allowed", "error": "bad_request" } },
+      "expect": { "code": "session_request_failed", "statusCode": 400, "message": "Override not allowed" }
+    },
+    {
+      "name": "an empty JSON body gets a status message",
+      "response": { "status": 429, "json": {} },
+      "expect": {
+        "code": "session_request_failed",
+        "statusCode": 429,
+        "message": "Session request failed with HTTP 429"
+      }
+    },
+    {
+      "name": "no response at all",
+      "response": { "networkError": true },
+      "expect": {
+        "code": "session_request_failed",
+        "statusCode": null,
+        "message": "Could not reach the session endpoint"
+      }
+    }
+  ]
+}

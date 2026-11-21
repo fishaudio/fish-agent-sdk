@@ -95,6 +95,8 @@ importers:
         specifier: ^7.3.0
         version: 7.3.6(lightningcss@1.33.0)(terser@5.51.2)
 
+  ios: {}
+
   packages/client:
     dependencies:
       '@fishaudio/agent-protocol':

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>Fish Agent</string>
+	<!-- Required: iOS ends an app that uses the microphone without it. -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Fish Agent uses the microphone for voice calls with the agent.</string>
+	<!-- Lets a call continue while the app is in the background or the screen is locked. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
+	<!-- Development only: shown when iOS asks whether the app may reach the
+	     local network, which the token backend on your machine is on. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Fish Agent reaches the token backend on your development machine.</string>
+	<!-- Development only: allows plain http to the token backend on this
+	     machine or the local network. Remove it in an app of your own. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<!-- Where the app asks for a session token. See the README. -->
+	<key>FishAgentTokenURL</key>
+	<string>http://127.0.0.1:3001/agent-session</string>
+	<key>UILaunchScreen</key>
+	<dict/>
+</dict>
+</plist>

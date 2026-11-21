@@ -37,3 +37,7 @@ The `POST /v1/agent/sessions` exchange:
 - **Casing.** Session-creation shapes are `snake_case`, following the Fish API convention, because clients consume responses verbatim. Realtime message fields are `camelCase`.
 - **Compatibility is additive-only.** Published fields never change name, meaning, or type. New fields are optional. A semantic change ships as a new `type`. Consumers must ignore unknown `type` values and unknown fields. Old clients then keep working as the protocol grows.
 - **Transports.** `SessionToken.transport` is a discriminated union. A consumer that doesn't recognize the negotiated arm must fail with an explicit upgrade error, never silently.
+
+## Conformance fixtures
+
+[`fixtures/`](https://github.com/fishaudio/fish-agent-sdk-web/tree/main/packages/protocol/fixtures) holds test cases as plain JSON: sample messages and what a client does with each, the session-creation request built from each set of options, the error each failed response becomes, and client tool timeouts and replies. `@fishaudio/agent-client` runs them in its own tests. A client in another language can run the same files to check that it behaves the same way. They are not part of the npm package.

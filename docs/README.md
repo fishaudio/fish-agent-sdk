@@ -1,6 +1,6 @@
-# Fish Agent Web SDK developer docs
+# Fish Agent SDK developer docs
 
-Source of the developer documentation for embedding [Fish Audio](https://fish.audio) voice agents into websites and web apps. Plain Markdown, one topic per page, ready to be published as a docs site.
+Source of the developer documentation for embedding [Fish Audio](https://fish.audio) voice agents into websites, web apps and mobile apps. Plain Markdown, one topic per page, ready to be published as a docs site.
 
 ## Getting started
 
@@ -20,6 +20,10 @@ Framework-agnostic JavaScript/TypeScript SDK.
 ## `@fishaudio/agent-react-native`
 
 - [React Native SDK](react-native.md) covers installation in Expo and bare React Native, the entry file, session tokens from a mobile app, `useConversation` additions, background calls, limitations, and troubleshooting.
+
+## Native SDK
+
+- [iOS SDK](ios.md) covers the Swift package: installation, session tokens, the `Conversation` object, client tools, audio, limitations, and troubleshooting.
 
 ## Building your own client
 
