@@ -39,14 +39,14 @@ importers:
         specifier: workspace:^
         version: link:../../packages/widget-react-native
       '@livekit/react-native':
-        specifier: ^3.1.0
-        version: 3.1.0(@livekit/react-native-webrtc@150.1.1(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(tslib@2.8.1)
+        specifier: ^3.2.0
+        version: 3.2.0(@livekit/react-native-webrtc@150.2.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(tslib@2.8.1)
       '@livekit/react-native-expo-plugin':
-        specifier: ^1.1.0
-        version: 1.1.0(@livekit/react-native@3.1.0(@livekit/react-native-webrtc@150.1.1(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(tslib@2.8.1))(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+        specifier: ^1.2.0
+        version: 1.2.0(@livekit/react-native-webrtc@150.2.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(@livekit/react-native@3.2.0(@livekit/react-native-webrtc@150.2.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(tslib@2.8.1))(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
       '@livekit/react-native-webrtc':
-        specifier: ^150.1.1
-        version: 150.1.1(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))
+        specifier: ^150.2.0
+        version: 150.2.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))
       expo:
         specifier: ~58.0.23
         version: 58.0.23(@babel/core@7.29.13)(@expo/dom-webview@58.0.2)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@6.0.3)
@@ -173,11 +173,11 @@ importers:
         version: 58.0.23(@babel/core@7.29.13)(@expo/dom-webview@58.0.2)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@5.9.3)
     devDependencies:
       '@livekit/react-native':
-        specifier: ^3.1.0
-        version: 3.1.0(@livekit/react-native-webrtc@150.1.1(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(tslib@2.8.1)
+        specifier: ^3.2.0
+        version: 3.2.0(@livekit/react-native-webrtc@150.2.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(tslib@2.8.1)
       '@livekit/react-native-webrtc':
-        specifier: ^150.1.1
-        version: 150.1.1(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))
+        specifier: ^150.2.0
+        version: 150.2.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))
       '@testing-library/react':
         specifier: ^16.3.0
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1203,24 +1203,25 @@ packages:
   '@livekit/protocol@1.46.6':
     resolution: {integrity: sha512-upzlHP1vi/kZ/QqALZTFskQ0ifqc2f15RKucHYOsIHJsaXvEYanG75mAb7o+Yomfs4XhQ4BaRsdY+TFHXpaqrg==}
 
-  '@livekit/react-native-expo-plugin@1.1.0':
-    resolution: {integrity: sha512-/GFXKebMn2VYsMMYcE/JuSPpjD0ghY+aFyvIjqZ/DE7F2AA53G9FDGRDlCzO59ApZk4XI4rEnmlC+w82LWmVXw==}
+  '@livekit/react-native-expo-plugin@1.2.0':
+    resolution: {integrity: sha512-TPBeveUt/Pq8L8b7BKx77IHW3/kD35Ho1mDRIYcVmHrQ0XllpiCTSAlbY4rJCAKcCZCQ1xK++mGfa5Dm7HrBdg==}
     peerDependencies:
-      '@livekit/react-native': ^2.1.0 || ^3.0.0
+      '@livekit/react-native': ^3.2.0
+      '@livekit/react-native-webrtc': ^150.2.0
       expo: '*'
       react: '*'
       react-native: '*'
 
-  '@livekit/react-native-webrtc@150.1.1':
-    resolution: {integrity: sha512-xF7AUO2S0dy44JAKqT7xn2q8+6fAVsykYfrHZN9BmwI0jB49doWeTMt8XnGTvfX4tMkC2mvUT7AMe+a04xjcRA==}
+  '@livekit/react-native-webrtc@150.2.0':
+    resolution: {integrity: sha512-kte4P8ghTItxXCuoAG5J+ZC5fw2+AegnAYRmMOvSBjvBUPcDa7nHMt3dnPYb61s+6FvVVfJL+Rwjv4Rha9J5CQ==}
     peerDependencies:
       react-native: '>=0.60.0'
 
-  '@livekit/react-native@3.1.0':
-    resolution: {integrity: sha512-5pcVfvnQBQsVxjchivRXAkyp1zeMBOPTVnrAhK425DS4tsMzpKiwTTnUObMAggrpEkb9Oou6VT1RAAZOFZ35FQ==}
+  '@livekit/react-native@3.2.0':
+    resolution: {integrity: sha512-Y9+Ff+EFs6AMzAEuUl6AC5iryVqtxYz48Ckw4Tb+Aq4foh3lvm5RFNL3zTmGJNoIFQcjFV8VdA/woGNohW032Q==}
     engines: {node: '>=20'}
     peerDependencies:
-      '@livekit/react-native-webrtc': ^150.1.0
+      '@livekit/react-native-webrtc': ^150.2.0
       livekit-client: ^2.20.0
       react: '*'
       react-native: '*'
@@ -5783,14 +5784,15 @@ snapshots:
     dependencies:
       '@bufbuild/protobuf': 1.10.1
 
-  '@livekit/react-native-expo-plugin@1.1.0(@livekit/react-native@3.1.0(@livekit/react-native-webrtc@150.1.1(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(tslib@2.8.1))(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)':
+  '@livekit/react-native-expo-plugin@1.2.0(@livekit/react-native-webrtc@150.2.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(@livekit/react-native@3.2.0(@livekit/react-native-webrtc@150.2.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(tslib@2.8.1))(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@livekit/react-native': 3.1.0(@livekit/react-native-webrtc@150.1.1(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(tslib@2.8.1)
+      '@livekit/react-native': 3.2.0(@livekit/react-native-webrtc@150.2.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(tslib@2.8.1)
+      '@livekit/react-native-webrtc': 150.2.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))
       expo: 58.0.23(@babel/core@7.29.13)(@expo/dom-webview@58.0.2)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@6.0.3)
       react: 19.3.0
       react-native: 0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)
 
-  '@livekit/react-native-webrtc@150.1.1(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))':
+  '@livekit/react-native-webrtc@150.2.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))':
     dependencies:
       base64-js: 1.5.1
       debug: 4.3.4
@@ -5798,11 +5800,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@livekit/react-native@3.1.0(@livekit/react-native-webrtc@150.1.1(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(tslib@2.8.1)':
+  '@livekit/react-native@3.2.0(@livekit/react-native-webrtc@150.2.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0)))(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(tslib@2.8.1)':
     dependencies:
       '@livekit/components-react': 2.9.25(livekit-client@2.20.0(@types/dom-mediacapture-record@1.0.22))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(tslib@2.8.1)
       '@livekit/mutex': 1.1.1
-      '@livekit/react-native-webrtc': 150.1.1(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))
+      '@livekit/react-native-webrtc': 150.2.0(react-native@0.88.1(@babel/core@7.29.13)(@types/react@19.3.0)(react@19.3.0))
       array.prototype.at: 1.2.0
       base64-js: 1.5.1
       events: 3.3.0

@@ -64,8 +64,8 @@
     "@fishaudio/agent-react": "workspace:^"
   },
   "peerDependencies": {
-    "@livekit/react-native": ">=3.1.0",
-    "@livekit/react-native-webrtc": ">=150.1.1",
+    "@livekit/react-native": ">=3.2.0",
+    "@livekit/react-native-webrtc": ">=150.2.0",
     "expo": ">=58",
     "livekit-client": "^2.20.0",
     "react": ">=19",
@@ -77,8 +77,8 @@
     }
   },
   "devDependencies": {
-    "@livekit/react-native": "^3.1.0",
-    "@livekit/react-native-webrtc": "^150.1.1",
+    "@livekit/react-native": "^3.2.0",
+    "@livekit/react-native-webrtc": "^150.2.0",
     "@testing-library/react": "^16.3.0",
     "@types/react": "^19.1.0",
     "jsdom": "^26.1.0",
