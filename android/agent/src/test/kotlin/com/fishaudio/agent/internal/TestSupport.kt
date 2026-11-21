@@ -47,9 +47,13 @@ internal class FakeTransport : Transport {
     var sendError: Throwable? = null
     var sendFailures = 0
 
+    /** When set, `connect()` waits for it. */
+    var connectGate: CompletableDeferred<Unit>? = null
+
     override suspend fun connect(sessionToken: SessionToken, options: TransportConnectOptions) {
         callbacks = options.callbacks
         connectOptions = options
+        connectGate?.await()
         connectError?.let { throw it }
     }
 

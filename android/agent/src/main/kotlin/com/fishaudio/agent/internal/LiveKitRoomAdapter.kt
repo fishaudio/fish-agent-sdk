@@ -1,12 +1,15 @@
 package com.fishaudio.agent.internal
 
 import android.content.Context
+import com.fishaudio.agent.AudioOutputRoute
 import com.fishaudio.agent.FishAgentError
 import com.fishaudio.agent.FishAgentErrorCode
 import io.livekit.android.AudioOptions
 import io.livekit.android.AudioType
 import io.livekit.android.LiveKit
+import com.twilio.audioswitch.AudioDevice
 import io.livekit.android.LiveKitOverrides
+import io.livekit.android.audio.AudioSwitchHandler
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.events.collect
 import io.livekit.android.room.Room
@@ -32,7 +35,7 @@ internal class LiveKitRoomAdapter(
     context: Context,
     /** The main dispatcher's scope. Facts are delivered on it. */
     scope: CoroutineScope,
-) : RoomAdapter {
+) : RoomAdapter, AudioRouter {
     private val work: CoroutineScope = scope + SupervisorJob(scope.coroutineContext.job)
 
     private val room: Room = LiveKit.create(
@@ -103,6 +106,24 @@ internal class LiveKitRoomAdapter(
         }
     }
 
+    /**
+     * Routes call audio through LiveKit's audio switch. The preference order
+     * applies from the next device change on (and before the call starts);
+     * selecting the first available device of that order applies it now.
+     */
+    override fun route(route: AudioOutputRoute) {
+        val handler = room.audioHandler as? AudioSwitchHandler ?: return
+        val order: List<Class<out AudioDevice>> = when (route) {
+            AudioOutputRoute.AUTO -> listOf(BLUETOOTH, WIRED, SPEAKER, EARPIECE)
+            AudioOutputRoute.SPEAKER -> listOf(SPEAKER, BLUETOOTH, WIRED, EARPIECE)
+            AudioOutputRoute.EARPIECE -> listOf(EARPIECE, BLUETOOTH, WIRED, SPEAKER)
+        }
+        handler.preferredDeviceList = order
+        val available = handler.availableAudioDevices
+        order.firstNotNullOfOrNull { wanted -> available.firstOrNull { wanted.isInstance(it) } }
+            ?.let(handler::selectDevice)
+    }
+
     override suspend fun connect(url: String, token: String) {
         room.connect(url, token)
     }
@@ -136,5 +157,12 @@ internal class LiveKitRoomAdapter(
         if (enabled && !applied) {
             throw FishAgentError(FishAgentErrorCode.CONNECTION_FAILED, "The microphone could not be published")
         }
+    }
+
+    private companion object {
+        val BLUETOOTH = AudioDevice.BluetoothHeadset::class.java
+        val WIRED = AudioDevice.WiredHeadset::class.java
+        val SPEAKER = AudioDevice.Speakerphone::class.java
+        val EARPIECE = AudioDevice.Earpiece::class.java
     }
 }
