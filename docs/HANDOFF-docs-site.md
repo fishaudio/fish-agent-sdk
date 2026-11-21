@@ -34,20 +34,20 @@ The live page covers the channels and messages but not the behavior a working cl
 - Add a line pointing React Native developers to the new page.
 - `clientToolTimeoutMs`: the SDK now uses the agent's own wait, less a margin of up to 1 s, when the runtime sends `timeoutMs`, and falls back to `clientToolTimeoutMs` (default 15 s) otherwise. The source wording is in [`client-tools.md`](client-tools.md) and [`errors.md`](errors.md).
 
-## 4. New page: iOS SDK
+## 4. New pages: iOS SDK and Android SDK
 
-- **Source:** [`docs/ios.md`](ios.md).
-- **Suggested URL:** `/agents/deploy/ios`, next to `react-native` in the Deploy section.
-- The page opens with a status note saying what was checked on a phone and what was not. Keep it until the open items are done; the list is in `examples/ios/README.md`.
-- The page lists a known problem under Limitations (the opening line can be missed). It is real and should be published as written.
-- Relative links in the page map to the same site URLs as the React Native page's (table in section 1). Two more:
+- **Sources:** [`docs/ios.md`](ios.md) and [`docs/android.md`](android.md).
+- **Suggested URLs:** `/agents/deploy/ios` and `/agents/deploy/android`, next to `react-native` in the Deploy section.
+- Both pages open with a status note saying what was checked on a phone and what was not. Keep it until the open items are done; the lists are in `examples/ios/README.md` and `examples/android/README.md`.
+- The iOS page lists a known problem under Limitations (the opening line can be missed). It is real and should be published as written.
+- Relative links in the two pages map to the same site URLs as the React Native page's (table in section 1). Two more:
 
   | In the source | On the site |
   |---|---|
   | `react-native.md#public-agent` | `/agents/deploy/react-native#public-agent` |
-  | `../examples/ios` | the directory on GitHub |
+  | `../examples/ios`, `../examples/android` | the directories on GitHub |
 
-- The Web SDK, React SDK and React Native pages should each point iOS developers to the new page.
+- The Web SDK, React SDK and React Native pages should each point native developers to the two new pages.
 
 ## 5. Wire Protocol page: notes for native clients
 

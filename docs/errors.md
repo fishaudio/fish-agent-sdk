@@ -21,7 +21,7 @@ try {
 | `origin_forbidden` | The agent restricts origins and the page origin is not listed. Outside a browser, pass `origin` (experimental; one of the listed origins) when starting with `agentId`. |
 | `insufficient_credit` | Keyless session request, but the agent owner's account has no Agent credit left (HTTP 402). The owner needs to top up. |
 | `unsupported_transport` | The session uses a transport this SDK version doesn't know. Upgrade the package. |
-| `mic_permission_denied` | The user declined microphone access. |
+| `mic_permission_denied` | The user declined microphone access. On Android the native SDK does not ask: the app does not hold `RECORD_AUDIO` yet. See [Android SDK](android.md#the-microphone-permission). |
 | `device_change_failed` | A requested audio device could not be activated, or the browser does not support output selection (`setSinkId`, common on mobile browsers). Output stays on the previous device; a failed mic switch switches back to the previous microphone (best effort). |
 | `connection_failed` | The realtime connection could not be (re)established, a send to the agent failed, the agent never joined the session (15 s), or the microphone could not be toggled. |
 | `session_expired` | The session token's join deadline passed before connecting. |

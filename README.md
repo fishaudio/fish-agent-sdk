@@ -1,6 +1,6 @@
 # Fish Agent SDK
 
-Embed [Fish Audio](https://fish.audio) voice agents into websites, web apps, React Native apps, and native iOS apps: realtime voice over WebRTC, live transcripts, text chat, and client tools. The API is small and event-driven.
+Embed [Fish Audio](https://fish.audio) voice agents into websites, web apps, React Native apps, and native iOS and Android apps: realtime voice over WebRTC, live transcripts, text chat, and client tools. The API is small and event-driven.
 
 Public documentation: [Web SDK](https://docs.fish.audio/agents/deploy/web-sdk), [React SDK](https://docs.fish.audio/agents/deploy/react-sdk), [React Native SDK](https://docs.fish.audio/agents/deploy/react-native), [Widget](https://docs.fish.audio/agents/deploy/widget). The in-repo notes under [`docs/`](docs/README.md) track the source.
 
@@ -10,6 +10,7 @@ Public documentation: [Web SDK](https://docs.fish.audio/agents/deploy/web-sdk), 
 | `@fishaudio/agent-react` | [docs](docs/react/README.md) | React hooks (`useConversation`), provider, chat-log and visualizer components. |
 | `@fishaudio/agent-react-native` | [docs](docs/react-native.md) | React Native hook (`useConversation`) with the microphone permission, audio routing, and background calls. Expo or bare React Native. |
 | iOS SDK (Swift package `FishAgent`) | [docs](docs/ios.md) | Native iOS: a `Conversation` object with published state, the microphone permission and audio routing. Sources in [`ios/`](ios). |
+| Android SDK (`com.fishaudio.agent:agent-android`) | [docs](docs/android.md) | Native Android: a `Conversation` object with `StateFlow` state, audio routing and a foreground service for background calls. Sources in [`android/`](android). |
 | `@fishaudio/agent-widget` | [docs](docs/widget.md) | `<fish-agent>` custom element (plus a `<FishAgentWidget>` React component): voice-first chat card with transcript, tool chips, consent, theming. |
 | `@fishaudio/agent-widget-embed` | [docs](docs/widget.md) | The widget as one CDN script. Loading it registers `<fish-agent>`. |
 | `@fishaudio/agent-protocol` | [README](packages/protocol/README.md) | Semi-internal wire contract for realtime messages and session creation. Dependency-free. Apps consume it via `agent-client`. |
@@ -171,7 +172,26 @@ try await conversation.startSession(.sessionToken(token))
 
 `conversation.status`, `mode` and `messages` are published properties for SwiftUI. See the [iOS docs](docs/ios.md) and the example app in [`examples/ios`](examples/ios).
 
-The iOS SDK has been checked on an iPhone 12; its docs list what was checked and what is still open.
+## Android
+
+```kotlin
+dependencies {
+    implementation("com.fishaudio.agent:agent-android:<version>")
+}
+```
+
+```kotlin
+val conversation = Conversation(context)
+
+if (FishAgentPermissions.requestMicrophonePermission(activity)) {
+    val token = SessionToken.fromJson(responseBody)
+    conversation.startSession(SessionAuth.Token(token))
+}
+```
+
+`conversation.status`, `mode` and `messages` are `StateFlow`s. The app also needs the JitPack repository, for a dependency of LiveKit. See the [Android docs](docs/android.md) and the example app in [`examples/android`](examples/android).
+
+Both native SDKs have been checked on phones (an iPhone 12 and a Pixel 8); their docs list what was checked and what is still open.
 
 ## License
 

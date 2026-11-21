@@ -21,9 +21,10 @@ Framework-agnostic JavaScript/TypeScript SDK.
 
 - [React Native SDK](react-native.md) covers installation in Expo and bare React Native, the entry file, session tokens from a mobile app, `useConversation` additions, background calls, limitations, and troubleshooting.
 
-## Native SDK
+## Native SDKs
 
 - [iOS SDK](ios.md) covers the Swift package: installation, session tokens, the `Conversation` object, client tools, audio, limitations, and troubleshooting.
+- [Android SDK](android.md) covers the Kotlin library: installation, session tokens, the microphone permission, the `Conversation` object, client tools, background calls, limitations, and troubleshooting.
 
 ## Building your own client
 
