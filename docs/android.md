@@ -8,7 +8,7 @@ The Android SDK adds voice calls with a Fish Audio agent to a native Android app
 
 It has no UI. You build the screen; the SDK gives you the state to show.
 
-> **Status.** Calls, the microphone, audio routes, background calls and reconnection were checked on a Pixel 8. Headsets, phone-call interruptions and moving between Wi-Fi and cellular have not been checked yet. See [Limitations](#limitations).
+> **Status.** Calls, the microphone, audio routes, reconnection, and calls in the background and with the screen locked were checked on a Pixel 8. Headsets, phone-call interruptions and moving between Wi-Fi and cellular have not been checked yet. See [Limitations](#limitations).
 
 ## Requirements
 
@@ -203,7 +203,7 @@ During a call with the microphone on, the SDK runs a foreground service with an 
 
 ## Limitations
 
-- **Not checked yet:** wired and Bluetooth headsets, an incoming phone call during a call, the microphone with the screen locked, and moving between Wi-Fi and cellular. [`examples/android/README.md`](../examples/android/README.md) lists what was checked on a phone and what was not.
+- **Not checked yet:** wired and Bluetooth headsets, an incoming phone call during a call, and moving between Wi-Fi and cellular. [`examples/android/README.md`](../examples/android/README.md) lists what was checked on a phone and what was not.
 - **No audio levels.** There is nothing to drive a waveform or an orb from.
 - **`audioOutput` is the route that was asked for**, not the active device, and there is no event when the route changes.
 - **Bluetooth headsets need `BLUETOOTH_CONNECT`** on Android 12 and later. The SDK neither declares nor asks for it. Without it a Bluetooth headset is not seen and `AUTO` falls through to the wired headset or the loudspeaker. Bluetooth is untested.

@@ -72,6 +72,7 @@ The microphone was checked by playing a sentence from a computer's speakers next
 | The microphone captures: speech near the phone arrives as the user's transcript and the agent answers it | Pass |
 | Switching the audio output during a call | Pass. Android's communication device is the speaker for `auto` and `speaker` and the earpiece for `earpiece`. Not listened to. |
 | With the app in the background, the agent still hears the user, and the microphone foreground service is running | Pass |
+| With the screen off and the phone locked, the agent still hears the user, and the service is running | Pass |
 | After hanging up, the service is gone | Pass |
 | A call started without the microphone runs no service; unmuting starts it, and speech after the unmute is transcribed and answered | Pass |
 | The microphone captures on a second call in the same app run | Pass |
@@ -94,7 +95,6 @@ One start of the release build on the emulator failed with a 20 second timeout i
 ### Not checked yet
 
 - Audio was not listened to. The device Android reports for call audio was read instead.
-- The microphone with the screen locked on a phone. (The attempt ended the call for a reason in this app, since fixed: the `Conversation` lived in the Activity, which Android recreated when the screen turned off.)
 - A wired or Bluetooth headset. Bluetooth needs the app to hold `BLUETOOTH_CONNECT` on Android 12 and later.
 - An incoming phone call during a call: whether the microphone is released, whether the call resumes, and how it ends.
 - Moving between Wi-Fi and cellular. The phone used had no cellular service.
