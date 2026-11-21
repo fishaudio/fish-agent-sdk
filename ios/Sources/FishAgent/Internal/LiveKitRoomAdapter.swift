@@ -57,6 +57,7 @@ final class LiveKitRoomAdapter: NSObject, RoomAdapter {
                 let topic = reader.info.topic
                 let attributes = reader.info.attributes
                 let fromLocal = sender == room.localParticipant.identity
+                sdkLog.debug("text stream opened on \(topic, privacy: .public), from the local identity: \(fromLocal)")
                 post.yield { $0.roomTextStreamDidOpen(streamId: streamId, topic: topic, fromLocalIdentity: fromLocal, attributes: attributes) }
                 var aborted = false
                 do {

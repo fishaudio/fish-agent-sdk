@@ -82,6 +82,7 @@ final class LiveKitTransport: Transport, RoomListener {
         replayAgentAttributes()
         if microphone {
             try await room.setMicrophoneEnabled(true)
+            sdkLog.debug("microphone published")
         }
     }
 
@@ -199,6 +200,7 @@ final class LiveKitTransport: Transport, RoomListener {
         guard isMicrophoneSource, audioReadyStamp == nil else { return }
         let stamp = String(now())
         audioReadyStamp = stamp
+        sdkLog.debug("agent voice track subscribed, reporting audio readiness \(stamp, privacy: .public)")
         publishAudioReady(stamp)
     }
 
@@ -272,6 +274,7 @@ final class LiveKitTransport: Transport, RoomListener {
     /// iOS: when a participant leaves, its attributes are reported once more
     /// with empty values. An empty value is the same as no value.
     private func handleAgentAttributes(_ attributes: [String: String]) {
+        sdkLog.debug("agent attributes \(attributes.filter { $0.key == WireProtocol.agentReadyAttribute || $0.key == WireProtocol.agentStateAttribute }, privacy: .public)")
         if let ready = attributes[WireProtocol.agentReadyAttribute], !ready.isEmpty {
             delegate?.transportDidSeeAgentReady()
         }
@@ -292,6 +295,7 @@ final class LiveKitTransport: Transport, RoomListener {
             await previous?.value
             do {
                 try await room.setLocalAttributes([WireProtocol.clientAudioReadyAttribute: value])
+                sdkLog.debug("audio readiness attribute set to \(value, privacy: .public)")
             } catch {
                 sdkLog.debug("Setting the audio readiness attribute failed: \(String(describing: error), privacy: .public)")
             }
@@ -300,6 +304,7 @@ final class LiveKitTransport: Transport, RoomListener {
         Task { @MainActor [room] in
             do {
                 try await room.publishData(try ClientMessages.audioReady(atEpochMs: at).encoded(), topic: WireProtocol.clientEventTopic)
+                sdkLog.debug("audio readiness message sent")
             } catch {
                 sdkLog.debug("Sending the audio readiness report failed: \(String(describing: error), privacy: .public)")
             }

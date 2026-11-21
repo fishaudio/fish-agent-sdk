@@ -59,6 +59,10 @@ jobs:
       - name: Build for the iOS simulator
         run: xcodebuild build -scheme FishAgent -destination 'generic/platform=iOS Simulator' -quiet
 
+      - name: Build the example app
+        working-directory: examples/ios
+        run: xcodebuild build -project FishAgentExample.xcodeproj -scheme FishAgentExample -configuration Release -destination 'generic/platform=iOS Simulator' -quiet
+
   android:
     runs-on: ubuntu-latest
     defaults:
