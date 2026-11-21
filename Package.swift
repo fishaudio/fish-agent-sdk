@@ -24,7 +24,10 @@ let package = Package(
         .target(
             name: "FishAgent",
             dependencies: [.product(name: "LiveKit", package: "client-sdk-swift")],
-            path: "ios/Sources/FishAgent"
+            path: "ios/Sources/FishAgent",
+            // Reports what Swift 6 language mode would reject, as warnings, so the
+            // sources stay ready for it.
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency")]
         ),
         .testTarget(
             name: "FishAgentTests",
