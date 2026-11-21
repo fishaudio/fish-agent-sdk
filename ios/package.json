@@ -1,0 +1,6 @@
+{
+  "name": "@fishaudio/agent-ios",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Version marker for the Fish Agent iOS SDK. Never published to npm: it exists so the Swift package is versioned together with the JavaScript packages. The SDK itself is the Swift package in Package.swift at the repository root."
+}

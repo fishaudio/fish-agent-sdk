@@ -7,8 +7,10 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "changeset": "changeset",
+    "version-packages": "changeset version && node scripts/sync-native-version.mjs",
     "release": "turbo run build && node scripts/check-publish-manifests.mjs && changeset publish",
-    "check:publish": "node scripts/check-publish-manifests.mjs"
+    "check:publish": "node scripts/check-publish-manifests.mjs",
+    "check:native-version": "node scripts/check-native-version.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.5",

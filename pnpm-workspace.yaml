@@ -1,6 +1,8 @@
 packages:
   - "packages/*"
   - "examples/*"
+  # Version marker for the iOS SDK (private, never published); see scripts/check-native-version.mjs.
+  - "ios"
 
 overrides:
   "esbuild@>=0.27.3 <0.28.1": ">=0.28.1"
