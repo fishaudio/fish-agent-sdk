@@ -15,7 +15,7 @@ if (FishAgentPermissions.requestMicrophonePermission(activity)) {
 - **Example app:** [`examples/android`](../examples/android)
 - **Requirements:** Android 7.0 (API 24). Apps need the JitPack repository, for a dependency of LiveKit.
 
-It has been checked on an emulator only so far. The docs list what is still to be checked on phones.
+It has been checked on a Pixel 8 and an emulator. The docs list what was checked and what is still open.
 
 ## Working on it
 

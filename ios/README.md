@@ -15,7 +15,7 @@ try await conversation.startSession(.sessionToken(token))
 - **Example app:** [`examples/ios`](../examples/ios)
 - **Requirements:** iOS 15, Xcode 16.3
 
-It has been checked on a simulator only so far. The docs list the known problems and what is still to be checked on iPhones.
+It has been checked on an iPhone 12 and a simulator. The docs list what was checked and what is still open.
 
 ## Working on it
 

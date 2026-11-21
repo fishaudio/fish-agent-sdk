@@ -2,7 +2,7 @@
 
 Real event sequences from `io.livekit:livekit-android` 2.30.0, recorded on 2026-11-21 against a production agent. They are the input for the transport tests: the fake room used in those tests replays these sequences, so the tests check our logic against what LiveKit actually does on Android, not against what we assumed.
 
-**Recorded on an emulator** (Android 16, API 36, arm64). Nothing here has been checked on a physical phone yet.
+**Recorded on an emulator** (Android 16, API 36, arm64). Calls through the finished SDK were later checked on a Pixel 8, including 12 and 40 second outages (see `examples/android/README.md`); the SDK behaved the same there. These sequences were not recorded again on the phone.
 
 ## How they were made
 

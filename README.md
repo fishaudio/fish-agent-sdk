@@ -191,7 +191,7 @@ if (FishAgentPermissions.requestMicrophonePermission(activity)) {
 
 `conversation.status`, `mode` and `messages` are `StateFlow`s. The app also needs the JitPack repository, for a dependency of LiveKit. See the [Android docs](docs/android.md) and the example app in [`examples/android`](examples/android).
 
-Both native SDKs have been checked on a simulator and an emulator only so far; their docs list what is still to be checked on phones.
+Both native SDKs have been checked on phones (an iPhone 12 and a Pixel 8); their docs list what was checked and what is still open.
 
 ## License
 

@@ -8,14 +8,14 @@ The Android SDK adds voice calls with a Fish Audio agent to a native Android app
 
 It has no UI. You build the screen; the SDK gives you the state to show.
 
-> **Status.** Everything on this page was checked on an Android emulator. Checks on physical phones are still to come. See [Limitations](#limitations).
+> **Status.** Calls, the microphone, audio routes, background calls and reconnection were checked on a Pixel 8. Headsets, phone-call interruptions and moving between Wi-Fi and cellular have not been checked yet. See [Limitations](#limitations).
 
 ## Requirements
 
 - **Android 7.0 (API 24) or later.** Built against API 36.
 - **Kotlin coroutines.** State is exposed as `StateFlow`, events as `SharedFlow`.
 - **Your own backend** to create session tokens, or a public agent (see [Starting a session](#starting-a-session)). Do not ship an API key inside an app.
-- **Tested with** `io.livekit:livekit-android` 2.30.0, Android Gradle Plugin 9.2 and Gradle 9.4, on an Android 16 emulator. Other versions may work but are untested.
+- **Tested with** `io.livekit:livekit-android` 2.30.0, Android Gradle Plugin 9.2 and Gradle 9.4, on a Pixel 8 with Android 17 and an Android 16 emulator. Other versions may work but are untested.
 
 ## Install
 
@@ -81,6 +81,8 @@ Without it, a restricted agent answers `origin_forbidden`.
 Anyone with the agent ID can start sessions, billed to the agent's owner. For a production app, especially one with signed-in users, prefer your backend: it decides who gets a token and can pass `end_user_id`. [React Native SDK](react-native.md#public-agent) says more about what a public agent exposes; all of it applies here.
 
 ## Quick start
+
+Keep the `Conversation` somewhere that outlives an Activity instance. Android recreates an Activity when the device rotates and at other configuration changes; a `Conversation` that is closed in `onDestroy` ends the call each time.
 
 ```kotlin
 class CallViewModel(application: Application) : AndroidViewModel(application) {
@@ -201,7 +203,7 @@ During a call with the microphone on, the SDK runs a foreground service with an 
 
 ## Limitations
 
-- **Checked on an emulator only.** [`examples/android/README.md`](../examples/android/README.md) lists what was checked and what still needs a phone: where audio actually plays, capture in the background, an incoming phone call during a call, and moving between Wi-Fi and cellular.
+- **Not checked yet:** wired and Bluetooth headsets, an incoming phone call during a call, the microphone with the screen locked, and moving between Wi-Fi and cellular. [`examples/android/README.md`](../examples/android/README.md) lists what was checked on a phone and what was not.
 - **No audio levels.** There is nothing to drive a waveform or an orb from.
 - **`audioOutput` is the route that was asked for**, not the active device, and there is no event when the route changes.
 - **Bluetooth headsets need `BLUETOOTH_CONNECT`** on Android 12 and later. The SDK neither declares nor asks for it. Without it a Bluetooth headset is not seen and `AUTO` falls through to the wired headset or the loudspeaker. Bluetooth is untested.
@@ -219,3 +221,4 @@ During a call with the microphone on, the SDK runs a foreground service with an 
 | The token request fails on an emulator or phone | `localhost` is the device. Use `10.0.2.2` on an emulator, or your computer's LAN address. Plain `http` also needs `android:usesCleartextTraffic="true"` during development. |
 | The agent stops hearing the user in the background | The call service is not running: `callNotification` is `null`, or the service was refused because the call started while the app was in the background. |
 | No call notification | The app does not hold `POST_NOTIFICATIONS`. The service still runs. |
+| The call ends when the phone rotates or the screen turns off | The `Conversation` is held by the Activity and closed in `onDestroy`. Hold it in a ViewModel. |

@@ -38,8 +38,8 @@ The live page covers the channels and messages but not the behavior a working cl
 
 - **Sources:** [`docs/ios.md`](ios.md) and [`docs/android.md`](android.md).
 - **Suggested URLs:** `/agents/deploy/ios` and `/agents/deploy/android`, next to `react-native` in the Deploy section.
-- Both pages open with a status note: checked on a simulator and an emulator only. Keep it until the phone checks are done; the lists of what is still open are in `examples/ios/README.md` and `examples/android/README.md`.
-- The iOS page has three known problems under Limitations. They are real and should be published as written.
+- Both pages open with a status note saying what was checked on a phone and what was not. Keep it until the open items are done; the lists are in `examples/ios/README.md` and `examples/android/README.md`.
+- The iOS page lists a known problem under Limitations (the opening line can be missed). It is real and should be published as written.
 - Relative links in the two pages map to the same site URLs as the React Native page's (table in section 1). Two more:
 
   | In the source | On the site |

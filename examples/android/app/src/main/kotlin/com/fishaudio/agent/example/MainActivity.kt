@@ -1,5 +1,6 @@
 package com.fishaudio.agent.example
 
+import android.app.Application
 import android.content.Intent
 import android.graphics.Typeface
 import android.os.Build
@@ -15,6 +16,8 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.lifecycleScope
 import com.fishaudio.agent.AudioOutputRoute
 import com.fishaudio.agent.CallNotification
@@ -39,13 +42,44 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * One screen: start a call, talk or type, hang up.
+ * Holds the Conversation for as long as the screen exists, not for as long as
+ * one Activity instance does. Android destroys and recreates an Activity when
+ * the device rotates and at other configuration changes; a call must not end
+ * with it.
+ */
+class CallViewModel(application: Application) : AndroidViewModel(application) {
+    val conversation = Conversation(
+        context = application,
+        defaults = SessionOptions(
+            // Tools the agent can call in the app. Configure a client tool
+            // with the same name on the agent for it to be used.
+            clientTools = mapOf(
+                "get_device_info" to ClientToolHandler { _, _ ->
+                    mapOf(
+                        "manufacturer" to Build.MANUFACTURER,
+                        "model" to Build.MODEL,
+                        "androidVersion" to Build.VERSION.RELEASE,
+                        "sdk" to Build.VERSION.SDK_INT,
+                    )
+                },
+            ),
+        ),
+        mobile = MobileOptions(callNotification = CallNotification(title = "Fish Agent call in progress")),
+    )
+
+    /** The screen is gone for good: end the call, if any, and stop the call service. */
+    override fun onCleared() = conversation.close()
+}
+
+/**
+ * One screen: start a call, talk or type, hang up. The call lives in [CallViewModel].
  *
  * The app never holds the Fish API key. It asks a backend of yours for a
  * session token (see the README) and hands the response to the SDK as it is.
  */
 class MainActivity : ComponentActivity() {
-    private lateinit var conversation: Conversation
+    private val model: CallViewModel by viewModels()
+    private val conversation: Conversation get() = model.conversation
 
     private lateinit var statusView: TextView
     private lateinit var errorView: TextView
@@ -58,40 +92,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // One Conversation for the screen. In an app with more screens, keep it
-        // in a ViewModel or another holder that outlives the Activity.
-        conversation = Conversation(
-            context = this,
-            defaults = SessionOptions(
-                // Tools the agent can call in the app. Configure a client tool
-                // with the same name on the agent for it to be used.
-                clientTools = mapOf(
-                    "get_device_info" to ClientToolHandler { _, _ ->
-                        mapOf(
-                            "manufacturer" to Build.MANUFACTURER,
-                            "model" to Build.MODEL,
-                            "androidVersion" to Build.VERSION.RELEASE,
-                            "sdk" to Build.VERSION.SDK_INT,
-                        )
-                    },
-                ),
-            ),
-            mobile = MobileOptions(callNotification = CallNotification(title = "Fish Agent call in progress")),
-        )
         setContentView(buildLayout())
         observe()
-        handleAutomation(intent)
+        // Only for a fresh start: a recreated Activity gets the same intent again.
+        if (savedInstanceState == null) handleAutomation(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleAutomation(intent)
-    }
-
-    override fun onDestroy() {
-        // Ends the call if one is running, and stops the call service.
-        conversation.close()
-        super.onDestroy()
     }
 
     // ---- the call ----
