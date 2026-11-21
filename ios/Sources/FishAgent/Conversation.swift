@@ -44,6 +44,7 @@ public final class Conversation: ObservableObject {
     private let environment: ConversationEnvironment
 
     /// One call to `startSession` that is still on its way.
+    @MainActor
     private final class PendingStart {
         var task: Task<String, Error>?
         /// `endSession` ran while this was starting.
@@ -82,12 +83,11 @@ public final class Conversation: ObservableObject {
 
     deinit {
         // Releasing the conversation ends its call. Best effort: call endSession() to wait for it.
+        // The event streams end by themselves: their continuations go away with this object.
         let session = session
         let environment = environment
         let id = ObjectIdentifier(self)
-        let streams = streams
         Task { @MainActor in
-            streams.values.forEach { $0.finish() }
             guard let session, session.status != .ended else { return }
             try? await session.end()
             environment.callDidEnd()

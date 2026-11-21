@@ -3,7 +3,7 @@ import Foundation
 /// Everything `Conversation` needs from the device. Tests replace it; the app
 /// gets `AppleEnvironment`.
 @MainActor
-protocol ConversationEnvironment: AnyObject {
+protocol ConversationEnvironment: AnyObject, Sendable {
     var scheduler: Scheduler { get }
     var tokens: SessionTokenResolver { get }
 
