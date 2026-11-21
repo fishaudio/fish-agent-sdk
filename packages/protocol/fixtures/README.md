@@ -94,3 +94,35 @@ A `client_tool.call`, a tool handler, and the reply.
   - `result`: one `client_tool.result` without `isError`. With `expect.result`, its `result` equals that value; with `expect.resultAbsent`, it has no `result` key.
   - `error`: one `client_tool.result` with `isError: true`. With `expect.result`, its `result` equals that value.
 - `expect.errorCode`: the code of the one `error` event the session emits, or `null` for none.
+
+### `scenarios/session.json`
+
+Scripts for the session state machine. Each case starts a session on a fake transport and then runs `steps` in order. A step either does something (`do`) or checks something (`expect`).
+
+- `start.agent`: what the agent has done when the steps begin.
+  - `ready` (the default): it joined and set its ready signal, as a current runtime does.
+  - `joined`: it reported a state but no ready signal, as an older runtime does.
+  - `absent`: it has not shown up.
+
+Actions:
+
+| `do` | Fields | What it is |
+|---|---|---|
+| `agentState` | `state` | The transport reports the agent's `lk.agent.state`. |
+| `agentReady` | | The transport reports the agent's ready signal. |
+| `agentEvent` | `message` | A message arrives on `agent-event`. |
+| `transcription` | `role`, `segmentId`, `text`, `final` | A transcript update. `text` is the whole segment so far. |
+| `connectionState` | `state`, `reason`? | The transport reports `connected`, `reconnecting` or `disconnected`. |
+| `sendUserMessage` | `text`, `audio`? | The app sends a typed message. |
+| `sendUserActivity`, `interrupt`, `end` | | The app calls that method. `end` waits for it to finish. |
+| `advance` | `ms` | Time passes. Timers due at exactly the new time have fired. |
+
+Expectations:
+
+| `expect` | Fields | What is checked |
+|---|---|---|
+| `sent` | `messages` | The messages sent on `client-event` since the last `sent` check, in order. |
+| `events` | `events`, `of`? | The events emitted since the last `events` check, in order, each as `{ "event", "payload" }`. With `of`, only events with those names are compared. `"events": "any"` discards them without checking. The first check also sees the events from starting the session. |
+| `state` | `status`?, `mode`?, `endReason`? | The session's current values. `"endReason": null` means it has none. |
+
+Event payloads are the TypeScript ones. `statusChange` and `modeChange` carry the value as a string. An `error` is `{ "code", "stage"?, "recovered"? }`. Do not check `connect`: its session ID differs between runners.

@@ -18,6 +18,7 @@ import errorsFixture from "../../../protocol/fixtures/session/errors.json";
 import tokensFixture from "../../../protocol/fixtures/session/tokens.json";
 import timeoutsFixture from "../../../protocol/fixtures/tools/timeouts.json";
 import resultsFixture from "../../../protocol/fixtures/tools/results.json";
+import scenariosFixture from "../../../protocol/fixtures/scenarios/session.json";
 import { FishAgentError } from "../errors.js";
 import type { AgentSessionEvents } from "../events.js";
 import {
@@ -27,7 +28,12 @@ import {
 } from "../session/agentSession.js";
 import type { ClientToolHandler } from "../session/toolDispatcher.js";
 import { resolveSessionToken, type SessionRequestOptions } from "../sessionToken.js";
-import type { Transport, TransportCallbacks, TransportConnectOptions } from "../transport/types.js";
+import type {
+  Transport,
+  TransportCallbacks,
+  TransportConnectionState,
+  TransportConnectOptions,
+} from "../transport/types.js";
 
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 type JsonObject = { [key: string]: Json };
@@ -560,6 +566,155 @@ describe("fixtures: tools/results.json", () => {
         }
         default:
           throw new Error(`${where}: unknown reply "${item.expect.reply}"; update this runner`);
+      }
+    });
+  }
+});
+
+// ---- scenarios/session.json ----
+
+interface ScenarioCase {
+  name: string;
+  start?: { agent?: string };
+  steps: Array<JsonObject & { do?: string; expect?: string }>;
+}
+
+/** An event in the shape the fixtures use: errors reduced to their code, stage and recovered flag. */
+function eventForFixture(name: string, payload: unknown): { event: string; payload: unknown } {
+  if (name === "error") {
+    const { code, stage, recovered } = payload as FishAgentError;
+    return { event: name, payload: { code, stage, recovered } };
+  }
+  return { event: name, payload };
+}
+
+describe("fixtures: scenarios/session.json", () => {
+  const where = "scenarios/session.json";
+  for (const item of load<ScenarioCase>(scenariosFixture, where)) {
+    it(item.name, async () => {
+      onlyKeys(item, ["name", "start", "steps"], where);
+      onlyKeys(item.start ?? {}, ["agent"], where);
+      // Before the session starts: its join timeout is armed during start.
+      vi.useFakeTimers();
+      const seen: Array<{ event: string; payload: unknown }> = [];
+      const callbacks = Object.fromEntries(
+        EVENT_NAMES.map((name) => [
+          `on${name.charAt(0).toUpperCase()}${name.slice(1)}`,
+          (payload: unknown) => seen.push(eventForFixture(name, payload)),
+        ]),
+      );
+      const transport = new FixtureTransport();
+      const session = await startAgentSession(
+        { sessionToken: SESSION_TOKEN, callbacks },
+        () => transport,
+      );
+      const agent = item.start?.agent ?? "ready";
+      if (agent === "ready") {
+        transport.callbacks!.onAgentState("initializing");
+        transport.callbacks!.onAgentReady();
+      } else if (agent === "joined") {
+        transport.callbacks!.onAgentState("initializing");
+      } else if (agent !== "absent") {
+        throw new Error(`${where}: unknown start.agent "${agent}"; update this runner`);
+      }
+      const settle = () => vi.advanceTimersByTimeAsync(0);
+      await settle();
+
+      for (const [index, step] of item.steps.entries()) {
+        const at = `${where}: "${item.name}" step ${index + 1}`;
+        if (step.do !== undefined) {
+          switch (step.do) {
+            case "agentState":
+              onlyKeys(step, ["do", "state"], at);
+              transport.callbacks!.onAgentState(step.state as string);
+              break;
+            case "agentReady":
+              onlyKeys(step, ["do"], at);
+              transport.callbacks!.onAgentReady();
+              break;
+            case "agentEvent":
+              onlyKeys(step, ["do", "message"], at);
+              transport.agent(step.message);
+              break;
+            case "transcription":
+              onlyKeys(step, ["do", "role", "segmentId", "text", "final"], at);
+              transport.callbacks!.onTranscription({
+                role: step.role as "user" | "agent",
+                segmentId: step.segmentId as string,
+                text: step.text as string,
+                final: step.final as boolean,
+              });
+              break;
+            case "connectionState":
+              onlyKeys(step, ["do", "state", "reason"], at);
+              transport.callbacks!.onConnectionState(
+                step.state as TransportConnectionState,
+                step.reason as string | undefined,
+              );
+              break;
+            case "sendUserMessage":
+              onlyKeys(step, ["do", "text", "audio"], at);
+              session.sendUserMessage(
+                step.text as string,
+                step.audio === undefined ? undefined : { audio: step.audio as boolean },
+              );
+              break;
+            case "sendUserActivity":
+              onlyKeys(step, ["do"], at);
+              session.sendUserActivity();
+              break;
+            case "interrupt":
+              onlyKeys(step, ["do"], at);
+              session.interrupt();
+              break;
+            case "end":
+              onlyKeys(step, ["do"], at);
+              await session.end();
+              break;
+            case "advance":
+              onlyKeys(step, ["do", "ms"], at);
+              await vi.advanceTimersByTimeAsync(step.ms as number);
+              break;
+            default:
+              throw new Error(`${at}: unknown action "${step.do}"; update this runner`);
+          }
+          await settle();
+        } else if (step.expect !== undefined) {
+          switch (step.expect) {
+            case "sent":
+              onlyKeys(step, ["expect", "messages"], at);
+              expect(transport.sent.splice(0), at).toEqual(step.messages);
+              break;
+            case "events": {
+              onlyKeys(step, ["expect", "of", "events"], at);
+              const since = seen.splice(0);
+              if (step.events === "any") {
+                onlyKeys(step, ["expect", "events"], at);
+                break;
+              }
+              const of = step.of as string[] | undefined;
+              const relevant = of ? since.filter((event) => of.includes(event.event)) : since;
+              expect(relevant, at).toEqual(step.events);
+              break;
+            }
+            case "state":
+              onlyKeys(step, ["expect", "status", "mode", "endReason"], at);
+              if (step.status !== undefined) {
+                expect(session.status, at).toBe(step.status);
+              }
+              if (step.mode !== undefined) {
+                expect(session.mode, at).toBe(step.mode);
+              }
+              if (step.endReason !== undefined) {
+                expect(session.endReason ?? null, at).toBe(step.endReason);
+              }
+              break;
+            default:
+              throw new Error(`${at}: unknown expectation "${step.expect}"; update this runner`);
+          }
+        } else {
+          throw new Error(`${at}: a step needs "do" or "expect"`);
+        }
       }
     });
   }
