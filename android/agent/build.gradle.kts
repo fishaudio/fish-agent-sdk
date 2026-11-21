@@ -56,8 +56,10 @@ dependencies {
     // Flows are part of the public API.
     api(libs.coroutines.core)
     implementation(libs.coroutines.android)
-    // Never in the public API: apps must not need this library to call the SDK.
+    // Never in the public API: apps must not need these libraries to call the SDK,
+    // and can move LiveKit to a newer 2.x themselves.
     implementation(libs.serialization.json)
+    implementation(libs.livekit)
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
