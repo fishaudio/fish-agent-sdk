@@ -1,4 +1,4 @@
-# Handoff: docs.fish.audio updates for the React Native SDK
+# Handoff: docs.fish.audio updates for the mobile SDKs
 
 For whoever maintains docs.fish.audio. The pages in this folder are the source; these are the changes the site needs.
 
@@ -33,3 +33,27 @@ The live page covers the channels and messages but not the behavior a working cl
 
 - Add a line pointing React Native developers to the new page.
 - `clientToolTimeoutMs`: the SDK now uses the agent's own wait, less a margin of up to 1 s, when the runtime sends `timeoutMs`, and falls back to `clientToolTimeoutMs` (default 15 s) otherwise. The source wording is in [`client-tools.md`](client-tools.md) and [`errors.md`](errors.md).
+
+## 4. New page: iOS SDK
+
+- **Source:** [`docs/ios.md`](ios.md).
+- **Suggested URL:** `/agents/deploy/ios`, next to `react-native` in the Deploy section.
+- The page opens with a status note saying what was checked on a phone and what was not. Keep it until the open items are done; the list is in `examples/ios/README.md`.
+- The page lists a known problem under Limitations (the opening line can be missed). It is real and should be published as written.
+- Relative links in the page map to the same site URLs as the React Native page's (table in section 1). Two more:
+
+  | In the source | On the site |
+  |---|---|
+  | `react-native.md#public-agent` | `/agents/deploy/react-native#public-agent` |
+  | `../examples/ios` | the directory on GitHub |
+
+- The Web SDK, React SDK and React Native pages should each point iOS developers to the new page.
+
+## 5. Wire Protocol page: notes for native clients
+
+[`docs/protocol.md`](protocol.md) gained notes that came out of recording real calls with LiveKit's Android and Swift SDKs:
+
+- Section 2: on Android, set `"pending"` only after the room is connected.
+- Section 6: after `Reconnected`, wait a moment before treating an empty roster as a hangup; handle only `agent-event`.
+- Section 7: on iOS, a short wait before believing the agent left; empty attribute values are no values.
+- Known gaps: the opening line spoken before the client is connected, the reason announced for a backend-forced end, and an unannounced hangup after a long outage. These three are for the runtime team as much as for the page.

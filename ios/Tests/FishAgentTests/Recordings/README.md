@@ -2,7 +2,7 @@
 
 Real event sequences from LiveKit's Swift SDK 2.19.0, recorded on 2026-11-21 against a production agent. They are the input for the transport tests: the fake room used in those tests replays these sequences, so the tests check our logic against what LiveKit actually does on iOS, not against what we assumed.
 
-**Recorded on a simulator** (iPhone 16, iOS 18.5). Nothing here has been checked on a physical iPhone yet.
+**Recorded on a simulator** (iPhone 16, iOS 18.5). Calls through the finished SDK were later checked on an iPhone 12 (see `examples/ios/README.md`), but these sequences were not recorded again there. Two things differ on the phone: `disconnect` returns in about 0.3 seconds, not 2.6, and the audio session is in video-chat or voice-chat mode, not `default`.
 
 ## How they were made
 
@@ -48,5 +48,5 @@ Where iOS differs from the browser SDK that `packages/client/src/transport/livek
 ## Not recorded
 
 - Any of this on a physical iPhone.
-- Network outages and reconnects. The simulator shares the Mac's network, so an outage cannot be made for it alone. The transport's reconnect rules are tested with the sequences recorded on Android.
+- Network outages and reconnects. The simulator shares the Mac's network, so an outage cannot be made for it alone. The transport's reconnect rules are tested with the sequences recorded on Android. Reconnecting was later tried through the finished SDK on an iPhone 12 and worked (see `examples/ios/README.md`), but the event order was not recorded there.
 - An agent that leaves while the room stays open (older runtimes).

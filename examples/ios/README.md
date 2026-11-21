@@ -47,34 +47,49 @@ Commands: `start`, `start-text` (no microphone), `start-public agentId|serverUrl
 
 ## What has been checked
 
-On an iPhone 16 simulator (iOS 18.5), on 2026-11-21, against a production agent:
+Against a production agent, on 2026-11-21.
+
+### On an iPhone 12 (iOS 26.6.1)
+
+The microphone was checked by playing a sentence from a computer's speakers next to the phone and reading the user's transcript.
 
 | Check | Result |
 |---|---|
-| A call connects, the opening line plays and its transcript arrives | Pass in most calls. See "Known problems" for the rest. |
+| A call connects, the opening line plays and its transcript arrives | Pass (6 of 6 calls) |
+| The microphone captures: speech near the phone arrives as the user's transcript and the agent answers it | Pass |
+| Switching the audio output during a call | Pass. The session's route is the receiver for `earpiece` and the speaker for `speaker` and `auto`. Not listened to. |
+| A call started without the microphone, then unmuted | Pass. Speech after the unmute is transcribed and answered. |
+| The microphone captures on the second and third call of one app run | Pass |
+| With the app in the background, the agent still hears the user | Pass |
+| With the screen locked, the agent still hears the user | Pass |
+| After hanging up, the audio session category is back to the system default | Pass |
+| Hanging up | The call reads as ended about 0.3 seconds later. |
+| Airplane mode for 5 seconds during a call | Pass. The call reads as reconnecting, is connected again about 30 seconds later, and the agent hears and answers the user afterwards. A reply that was being spoken when the network dropped is kept with what had arrived. |
+| Airplane mode for 12 seconds, connected again 50 seconds later, by when the agent had hung up for silence | Pass: the call ends as `agent_hangup`. |
+
+The first run on a phone shows two more system prompts before the microphone one: local network access (the token backend is on the local network), and on iPhones sold in mainland China, wireless data. Until both are allowed, the token request fails as if the phone were offline.
+
+### On an iPhone 16 simulator (iOS 18.5)
+
+| Check | Result |
+|---|---|
 | A typed message is sent and answered | Pass |
 | Mute and unmute during a call that started with the microphone | Pass |
-| Switching between auto, speaker and earpiece during a call | The audio session's options change as expected (default-to-speaker on for auto and speaker, off for earpiece). Where audio actually plays cannot be heard on a simulator. |
-| After hanging up, the audio session category is back to the system default | Pass |
-| A second call in the same app run | Pass |
 | A call ended by the backend ends the call in the app | Pass |
 | A public-agent request sends `Origin` when given and leaves it out otherwise | Pass (against a local server that echoes the headers) |
 | The Release configuration builds | Pass (built, not run) |
 
 ### Known problems
 
-- **Unmuting a call that started without the microphone fails.** `start-text`, then `unmute`: the SDK throws `connection_failed` ("Could not toggle the microphone"). Underneath, LiveKit reports audio engine error -4010 when recording is added while the agent's audio is already playing. Trying again, and preparing recording first, did not help. Not known yet whether an iPhone behaves the same.
-- **In 5 of 25 calls the opening line was missed.** LiveKit's first connection attempt failed and was retried by itself. The server had already counted the app as in the room, so the agent spoke its opening line before the app was really connected: neither the audio nor the transcript arrived. The rest of the call worked. This is between LiveKit's connect retry and the runtime; the SDK cannot make up for it.
-- **Hanging up takes about 2.5 seconds** before the call reads as ended, in some calls. That is how long LiveKit takes to leave the room.
+- **The opening line can be missed.** In 5 of 25 calls on the simulator, LiveKit's first connection attempt failed and was retried by itself. The server had already counted the app as in the room, so the agent spoke its opening line before the app was really connected: neither the audio nor the transcript arrived. The rest of the call worked. It did not happen in 6 calls on the iPhone, which is too few to say it cannot. This is between LiveKit's connect retry and the runtime; the SDK cannot make up for it.
+- **Reconnecting is slow.** After a 5 second outage the call was back about 25 seconds after the network was. LiveKit decides when to try again; the SDK only reports the state. Android took about 6 seconds for the same.
+- **A start that never began.** Once, on the iPhone, the app's own request to the token backend neither answered nor failed, and the app was then suspended in the background with no call running. It did not happen again. The Android example saw a similar one-off timeout. The cause was not found; the SDK had not been called yet.
+- **On the simulator only:** unmuting a call that started without the microphone fails with `connection_failed` (LiveKit reports audio engine error -4010), and hanging up can take about 2.5 seconds. Neither happens on the iPhone.
 
 ### Not checked yet
 
-On a physical iPhone, none of the above. These in particular need a phone:
-
-- Audio is heard from the loudspeaker, the receiver, and a wired or Bluetooth headset as selected.
-- The microphone captures on the second call of an app run. (On the simulator the second call connects and publishes the microphone.)
-- The call continues in the background and with the screen locked.
+- Audio was not listened to. The route the audio session reports was read instead.
+- A wired or Bluetooth headset.
 - An incoming phone call during a call: whether the microphone is released, whether the call resumes, and how it ends.
-- Network outages and moving between Wi-Fi and cellular. The simulator shares the Mac's network, so none of this could be tried.
-
-Also not checked: a client tool called by a real agent (the agent used has none configured; the tool path is covered by unit tests).
+- Moving between Wi-Fi and cellular. The phone used had no SIM.
+- A client tool called by a real agent (the agent used has none configured; the tool path is covered by unit tests).

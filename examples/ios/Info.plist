@@ -12,6 +12,10 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<!-- Development only: shown when iOS asks whether the app may reach the
+	     local network, which the token backend on your machine is on. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Fish Agent reaches the token backend on your development machine.</string>
 	<!-- Development only: allows plain http to the token backend on this
 	     machine or the local network. Remove it in an app of your own. -->
 	<key>NSAppTransportSecurity</key>
