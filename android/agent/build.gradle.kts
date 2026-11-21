@@ -102,8 +102,8 @@ publishing {
                     }
                 }
                 scm {
-                    url.set("https://github.com/fishaudio/fish-agent-sdk-web")
-                    connection.set("scm:git:https://github.com/fishaudio/fish-agent-sdk-web.git")
+                    url.set("https://github.com/fishaudio/fish-agent-sdk")
+                    connection.set("scm:git:https://github.com/fishaudio/fish-agent-sdk.git")
                 }
             }
         }

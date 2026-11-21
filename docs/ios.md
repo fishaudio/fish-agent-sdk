@@ -19,10 +19,10 @@ Add the package in Xcode (File › Add Package Dependencies) with the repository
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/fishaudio/fish-agent-sdk-web.git", from: "<version>"),
+    .package(url: "https://github.com/fishaudio/fish-agent-sdk.git", from: "<version>"),
 ],
 targets: [
-    .target(name: "YourApp", dependencies: [.product(name: "FishAgent", package: "fish-agent-sdk-web")]),
+    .target(name: "YourApp", dependencies: [.product(name: "FishAgent", package: "fish-agent-sdk")]),
 ]
 ```
 
