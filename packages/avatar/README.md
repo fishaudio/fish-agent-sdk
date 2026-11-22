@@ -114,7 +114,7 @@ avatar.destroy();
 - Drawing pauses when an avatar is off screen or the tab is in the background.
 - With reduced motion, everything stops: no flow, blinks, breathing or bars. The state stays readable from the eye shapes, the bars and the error fade.
 - Without WebGL the body is drawn flat in the same outline and colours, with the same eyes and states.
-- `avatarSvg(seed, { size, state, expression, variant })` returns still SVG markup with the outline and eyes, for server rendering. The React component renders it on the server and until the first canvas frame, so an avatar never flashes empty.
+- `avatarSvg(seed, { size, state, expression, variant, idPrefix })` returns still SVG markup with the outline and eyes, for server rendering. Its gradient ids are page-global: when one seed can appear more than once on a page, give each copy its own `idPrefix`, or a copy inside a hidden container can break the others. The React component renders it on the server and until the first canvas frame, so an avatar never flashes empty, and gives each instance its own ids.
 - `avatarBackground(look)` returns a CSS gradient in the avatar's colours, for places that can only take a background.
 
 ## Demo

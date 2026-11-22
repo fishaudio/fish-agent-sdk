@@ -2,6 +2,7 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -90,9 +91,11 @@ export const AgentAvatar = forwardRef<AgentAvatarHandle, AgentAvatarProps>(funct
     handle.current?.update({ id: agentId, size, animated, state, expression, getVolume, interactive, variant, reducedMotion });
   }, [agentId, size, animated, state, expression, getVolume, interactive, variant, reducedMotion]);
 
+  // Ids inside the SVG are page-global: each instance gets its own, stable across server and client.
+  const idPrefix = useId();
   const svg = useMemo(
-    () => (painted ? "" : avatarSvg(agentId, { size, state, expression, variant })),
-    [painted, agentId, size, state, expression, variant],
+    () => (painted ? "" : avatarSvg(agentId, { size, state, expression, variant, idPrefix })),
+    [painted, agentId, size, state, expression, variant, idPrefix],
   );
 
   const css = variant === "enlarged" ? size * ENLARGED_CANVAS : size;

@@ -71,6 +71,18 @@ describe("avatarSvg", () => {
     expect(avatarSvg("agent-1", { size: 40, variant: "enlarged" })).toContain('width="50"');
   });
 
+  it("scopes its ids with idPrefix", () => {
+    const a = avatarSvg("agent-1", { idPrefix: ":r1:" });
+    const b = avatarSvg("agent-1", { idPrefix: ":r2:" });
+    const ids = (svg: string) => [...svg.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]);
+    expect(ids(a).length).toBeGreaterThan(0);
+    expect(ids(a).some((id) => ids(b).includes(id))).toBe(false);
+    // every reference resolves inside the same SVG
+    for (const svg of [a, b]) {
+      for (const [, ref] of svg.matchAll(/(?:url\(#|href="#)([^)"]+)/g)) expect(ids(svg)).toContain(ref);
+    }
+  });
+
   it("keeps the gradient fallback", () => {
     const look = agentAvatar("agent-1");
     expect(avatarBackground(look)).toContain(look.palette[1]);
@@ -116,6 +128,31 @@ describe("AgentAvatar", () => {
     expect(html).toContain("<svg");
     expect(html.match(/<ellipse/g)).toHaveLength(2);
     expect(html).toContain('data-state="listening"');
+  });
+
+  it("gives each copy of the same seed its own ids, so a hidden copy cannot break the others", () => {
+    const html = renderToString(
+      <div>
+        <div style={{ display: "none" }}>
+          <AgentAvatar agentId="agent-1" size={24} />
+        </div>
+        <AgentAvatar agentId="agent-1" size={24} />
+      </div>,
+    );
+    const host = document.createElement("div");
+    host.innerHTML = html;
+    document.body.append(host);
+    const svgs = host.querySelectorAll("svg");
+    expect(svgs).toHaveLength(2);
+    const all = [...host.querySelectorAll("[id]")].map((el) => el.id);
+    expect(new Set(all).size).toBe(all.length);
+    // the visible copy's references resolve to elements inside that copy, not the hidden one
+    const visible = svgs[1]!;
+    for (const el of visible.querySelectorAll("[fill^='url(#'], use")) {
+      const ref = (el.getAttribute("href") ?? el.getAttribute("fill")!).replace(/^url\(#|\)$/g, "").replace(/^#/, "");
+      expect(visible.contains(document.getElementById(ref))).toBe(true);
+    }
+    host.remove();
   });
 
   it("is decorative unless labelled", () => {

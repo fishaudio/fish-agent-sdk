@@ -23,6 +23,14 @@ export interface AvatarSvgOptions {
   state?: AvatarState;
   expression?: AvatarExpression;
   variant?: "slot" | "enlarged";
+  /**
+   * Prefix for the gradient and outline ids inside the SVG. Ids are global
+   * to the page, so give each copy of the same seed its own prefix (for
+   * example from React's `useId`). Otherwise a copy inside a hidden
+   * (`display: none`) container can break the others' gradients. Defaults to
+   * an id derived from the seed.
+   */
+  idPrefix?: string;
 }
 
 const f = (x: number) => +x.toFixed(4);
@@ -40,10 +48,11 @@ function eyeMarkup(e: EyePose, color: string): string {
 
 /**
  * The avatar as SVG markup, still. Pure and SSR-safe: the same seed and
- * options always give the same string. Gradient ids derive from the seed.
+ * options always give the same string. Pass a unique `idPrefix` per copy
+ * when one seed can appear more than once on a page.
  */
 export function avatarSvg(seed: string, options: AvatarSvgOptions = {}): string {
-  const { size = 40, state = "idle", expression, variant = "slot" } = options;
+  const { size = 40, state = "idle", expression, variant = "slot", idPrefix } = options;
   const look = avatarLook(seed);
   const shape = avatarShape(look.shape);
   const enlarged = variant === "enlarged";
@@ -58,7 +67,7 @@ export function avatarSvg(seed: string, options: AvatarSvgOptions = {}): string 
     interactive: false,
   }).step(0);
   const [edge, main, light] = look.palette;
-  const id = `fa-av-${look.n}`;
+  const id = idPrefix ? `fa-av-${idPrefix.replace(/[^A-Za-z0-9_-]/g, "_")}` : `fa-av-${look.n}`;
   const out: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-half} ${-half} ${2 * half} ${2 * half}" width="${css}" height="${css}" aria-hidden="true" focusable="false">`,
     `<defs><radialGradient id="${id}-a" cx=".32" cy=".28" r=".85"><stop offset="0" stop-color="${light}"/><stop offset=".7" stop-color="${main}"/></radialGradient>`,
