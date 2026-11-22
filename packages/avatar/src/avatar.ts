@@ -54,7 +54,12 @@ interface Mounted {
   face: Face;
   px: number;
   half: number;
+  /** In the viewport (IntersectionObserver). */
   visible: boolean;
+  /** Laid out with a size: false while it or an ancestor is display: none (ResizeObserver). */
+  sized: boolean;
+  /** When the avatar left the frame loop because it could not be seen, so hidden time can be skipped on return. */
+  hiddenAt: number | null;
   painted: boolean;
 }
 
@@ -89,6 +94,17 @@ function faceOptions(o: AvatarOptions): FaceOptions {
   };
 }
 
+const pageHidden = () => typeof document !== "undefined" && document.hidden === true;
+
+/** Whether drawing it would show anything: on screen, laid out, and the tab in front. */
+const shown = (m: Mounted) => m.visible && m.sized && !pageHidden();
+
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (!pageHidden()) for (const m of mounted) wake(m);
+  });
+}
+
 /** Time-based motion keeps running (blinks, flow); otherwise frames stop once everything settles. */
 const runs = (m: Mounted) => {
   const f = faceOptions(m.options);
@@ -113,7 +129,12 @@ function tick(now: number) {
   const dt = Math.min(0.05, Math.max(0, (now - lastFrame) / 1000));
   lastFrame = now;
   for (const m of active) {
-    if (!m.visible) continue;
+    // Hidden avatars leave the loop; wake() brings them back when they can be seen again.
+    if (!shown(m)) {
+      active.delete(m);
+      m.hiddenAt ??= now;
+      continue;
+    }
     paint(m, dt);
     if (!runs(m) && !m.face.busy) active.delete(m);
   }
@@ -121,6 +142,17 @@ function tick(now: number) {
 }
 
 function wake(m: Mounted) {
+  if (!mounted.has(m)) return;
+  const now = typeof performance !== "undefined" ? performance.now() : 0;
+  if (!shown(m)) {
+    m.hiddenAt ??= now;
+    return;
+  }
+  if (m.hiddenAt !== null) {
+    // Time passed while hidden: finish what would have finished, without replaying it.
+    m.face.fastForward((now - m.hiddenAt) / 1000);
+    m.hiddenAt = null;
+  }
   active.add(m);
   if (frameId || typeof requestAnimationFrame !== "function") return;
   lastFrame = performance.now();
@@ -163,6 +195,8 @@ export function mountAvatar(canvas: HTMLCanvasElement, options: AvatarOptions): 
     px: 0,
     half: SLOT_HALF,
     visible: true,
+    sized: true,
+    hiddenAt: null,
     painted: false,
   };
   layout(m);
@@ -176,6 +210,16 @@ export function mountAvatar(canvas: HTMLCanvasElement, options: AvatarOptions): 
         })
       : null;
   observer?.observe(canvas);
+  // display: none on the canvas or an ancestor gives it a zero size.
+  const resizer =
+    typeof ResizeObserver === "function"
+      ? new ResizeObserver(([entry]) => {
+          const box = entry?.contentRect;
+          m.sized = !box || (box.width > 0 && box.height > 0);
+          if (m.sized) wake(m);
+        })
+      : null;
+  resizer?.observe(canvas);
 
   const pointer = () => {
     const f = faceOptions(m.options);
@@ -235,6 +279,7 @@ export function mountAvatar(canvas: HTMLCanvasElement, options: AvatarOptions): 
       active.delete(m);
       mounted.delete(m);
       observer?.disconnect();
+      resizer?.disconnect();
       canvas.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("pointerenter", onMove);
       canvas.removeEventListener("pointerleave", onLeave);

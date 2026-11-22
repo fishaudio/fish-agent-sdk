@@ -358,6 +358,23 @@ export class Face {
     this.s.ly.snap();
   }
 
+  /**
+   * Skips `seconds` without drawing, for an avatar that was hidden: event
+   * expressions that ended meanwhile are over, and everything lands where it
+   * would have settled. State and lasting expressions are kept.
+   */
+  fastForward(seconds: number) {
+    if (!(seconds > 0)) return;
+    this.T += seconds;
+    const due = this.timers.filter((t) => t.at <= this.T);
+    this.timers = this.timers.filter((t) => t.at > this.T);
+    for (const t of due) t.fn();
+    this.blinkAt = -9;
+    this.nextBlink = this.T + rnd(0.5, 3);
+    this.nextLook = this.T + rnd(1, 3);
+    if (!this.timers.length) this.snap();
+  }
+
   /** True while something is still moving or scheduled, so frames are needed even when not animated. */
   get busy(): boolean {
     if (this.timers.length || this.hover || this.pressed) return true;

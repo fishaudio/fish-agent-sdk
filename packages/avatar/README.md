@@ -111,7 +111,7 @@ avatar.destroy();
 ## Rendering and fallbacks
 
 - All avatars on a page share one off-screen WebGL context. Each frame is copied into the avatar's own canvas, so avatars scroll and clip with the page natively. Still frames are cached by seed and size.
-- Drawing pauses when an avatar is off screen or the tab is in the background.
+- Drawing stops when an avatar is off screen, inside a `display: none` container, or in a background tab. When nothing visible is animating, no frames run at all. A hidden avatar picks up where it would have been: state changes made meanwhile apply, and event expressions that ended meanwhile do not replay.
 - With reduced motion, everything stops: no flow, blinks, breathing or bars. The state stays readable from the eye shapes, the bars and the error fade.
 - Without WebGL the body is drawn flat in the same outline and colours, with the same eyes and states.
 - `avatarSvg(seed, { size, state, expression, variant, idPrefix })` returns still SVG markup with the outline and eyes, for server rendering. Its gradient ids are page-global: when one seed can appear more than once on a page, give each copy its own `idPrefix`, or a copy inside a hidden container can break the others. The React component renders it on the server and until the first canvas frame, so an avatar never flashes empty, and gives each instance its own ids.
