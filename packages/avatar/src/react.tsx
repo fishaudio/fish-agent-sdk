@@ -16,7 +16,8 @@ import { mountAvatar, type AvatarHandle, type AvatarVariant } from "./avatar.js"
 import { ENLARGED_CANVAS } from "./draw.js";
 import { EMOTE_MS, type AvatarExpression, type AvatarState } from "./face.js";
 import { avatarSvg } from "./fallback.js";
-import { acquireAvatarImage } from "./image.js";
+import { startBlinking } from "./blink.js";
+import { acquireAvatarImage, canBlink } from "./image.js";
 
 export type { AvatarExpression, AvatarState, AvatarVariant };
 
@@ -135,6 +136,38 @@ export const AgentAvatar = forwardRef<AgentAvatarHandle, AgentAvatarProps>(funct
   }, [agentId, size, state, shownExpression, variant, imageKey]);
   const imageReady = shown?.key === imageKey;
 
+  // --- blinks for small avatars, by swapping in the shut-eye image ----------
+  const root = useRef<HTMLSpanElement>(null);
+  const img = useRef<HTMLImageElement>(null);
+  const blinks =
+    animated && !reduced && !enlarged && size < 32 && canBlink({ size, state, expression: shownExpression });
+  const shownUrl = imageReady ? shown!.url : null;
+  useEffect(() => {
+    if (!blinks || !shownUrl) return;
+    const shut = acquireAvatarImage(agentId, { size, state, expression: shownExpression, variant, blink: true });
+    let stop: (() => void) | null = null;
+    let current = true;
+    void shut.ready.then(async (url) => {
+      if (!current || !url || !root.current) return;
+      if (typeof Image === "function") {
+        const probe = new Image();
+        probe.src = url;
+        await probe.decode?.().catch(() => {});
+      }
+      if (!current || !root.current) return;
+      stop = startBlinking(root.current, agentId, {
+        set: (closed) => {
+          if (img.current) img.current.src = closed ? url : shownUrl;
+        },
+      });
+    });
+    return () => {
+      current = false;
+      stop?.();
+      shut.release();
+    };
+  }, [blinks, shownUrl, agentId, size, state, shownExpression, variant]);
+
   // Leave the canvas only once it has settled and the matching image is ready.
   useEffect(() => {
     if (engaged && settled && imageReady) setEngaged(false);
@@ -240,6 +273,7 @@ export const AgentAvatar = forwardRef<AgentAvatarHandle, AgentAvatarProps>(funct
       data-state={state}
       data-render={live ? "canvas" : shown ? "image" : "svg"}
       {...rest}
+      ref={root}
       onPointerEnter={(e) => {
         engage();
         onPointerEnter?.(e);
@@ -255,7 +289,7 @@ export const AgentAvatar = forwardRef<AgentAvatarHandle, AgentAvatarProps>(funct
       style={box}
     >
       {shown ? (
-        <img src={shown.url} alt="" draggable={false} decoding="async" style={under} />
+        <img ref={img} src={shown.url} alt="" draggable={false} decoding="async" style={under} />
       ) : (
         <span aria-hidden="true" style={under} dangerouslySetInnerHTML={{ __html: svg }} />
       )}

@@ -111,6 +111,7 @@ avatar.destroy();
 ## Rendering and fallbacks
 
 - Still avatars are images. `<AgentAvatar>` shows an `<img>` whenever the avatar is not moving: `animated` off, below 32 px, `enlarged`, reduced motion, or an interactive avatar nobody is touching. The image is the same frame the canvas would draw, rendered once by the shared WebGL context and shared by every copy with the same seed, size, state and expression. Long lists stay cheap to scroll.
+- Small animated avatars (16–31 px) blink without a canvas: the image briefly switches to a shut-eye frame from the same cache, for about 140 ms every 2–5.5 s. One timer serves the whole page, at most three avatars blink at once, and avatars that are hidden, in a background tab or under reduced motion do not blink.
 - A `<canvas>` is mounted only while the avatar moves: `animated`, hovered or pressed, or playing an event expression. It is drawn before it replaces the image, and swapped back once the avatar settles.
 - All avatars on a page share one off-screen WebGL context. Each moving frame is copied into the avatar's own canvas, so avatars scroll and clip with the page natively.
 - `acquireAvatarImage(seed, { size, state, expression, variant })` gives you the same shared image outside React. Call `release()` when it is no longer shown. Unused images are kept for reuse, up to 96, then freed; `clearAvatarImages()` frees them all.

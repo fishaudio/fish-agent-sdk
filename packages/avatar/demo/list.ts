@@ -1,4 +1,5 @@
-// A long list of still avatars, like a conversation list. ?rows=120&size=32&theme=dark
+// A long list of still avatars, like a conversation list. ?rows=120&size=32&animated=1&theme=dark
+// With animated=1, avatars under 32 px blink by swapping images.
 import { createElement as h } from "react";
 import { createRoot } from "react-dom/client";
 import { AgentAvatar } from "../src/react.js";
@@ -6,8 +7,9 @@ import { AgentAvatar } from "../src/react.js";
 const params = new URLSearchParams(location.search);
 const rows = Number(params.get("rows") ?? 120);
 const size = Number(params.get("size") ?? 32);
+const animated = params.get("animated") === "1";
 if (params.get("theme")) document.documentElement.dataset.theme = params.get("theme")!;
-document.getElementById("info")!.textContent = `${rows} rows, ${size} px still avatars (hover one to bring it to life)`;
+document.getElementById("info")!.textContent = `${rows} rows, ${size} px ${animated ? "animated" : "still"} avatars (hover one to bring it to life)`;
 
 const snippets = [
   "Thanks, I'd like to move my appointment to Thursday afternoon.",
@@ -20,7 +22,7 @@ const list = Array.from({ length: rows }, (_, i) =>
   h(
     "div",
     { className: "row", key: i },
-    h(AgentAvatar, { agentId: `agent-${i % 40}`, size }),
+    h(AgentAvatar, { agentId: `agent-${i % 40}`, size, animated }),
     h(
       "div",
       { className: "text" },

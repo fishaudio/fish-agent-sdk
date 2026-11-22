@@ -3,7 +3,7 @@
 // WebGL renderer into a PNG and shown with <img>. Every copy of the same
 // seed, size, state and expression shares one image.
 import { ENLARGED_CANVAS, ENLARGED_HALF, SLOT_HALF, drawPose } from "./draw.js";
-import { Face, type AvatarExpression, type AvatarState } from "./face.js";
+import { Face, type AvatarExpression, type AvatarState, type EyePose } from "./face.js";
 import { hasWebGL } from "./renderer.js";
 import { avatarLook } from "./rule.js";
 
@@ -12,6 +12,8 @@ export interface AvatarImageOptions {
   size?: number;
   state?: AvatarState;
   expression?: AvatarExpression;
+  /** The blink frame: same avatar with the eyes shut. Only differs where the eyes are open ovals. */
+  blink?: boolean;
   variant?: "slot" | "enlarged";
   /** Device pixel ratio to render at. Defaults to the screen's, capped at 2. */
   dpr?: number;
@@ -62,6 +64,25 @@ function trim(limit: number) {
   }
 }
 
+/** The deepest point of a blink, as the canvas draws it: squashed to 6%, a little wider and lower. */
+const BLINK_OPEN = 0.06;
+function closeEye(e: EyePose): EyePose {
+  return { ...e, blink: BLINK_OPEN, open: e.open * BLINK_OPEN, cy: e.cy + (1 - BLINK_OPEN) * e.rr * 0.5 };
+}
+
+/** Whether a still pose has eyes that can blink (open ovals, not happy or sleepy, not connecting). */
+export function canBlink(o: Pick<AvatarImageOptions, "size" | "state" | "expression">): boolean {
+  const pose = new Face(avatarLook("x"), {
+    size: o.size ?? 40,
+    state: o.state ?? "idle",
+    expression: o.expression,
+    animated: false,
+    reducedMotion: true,
+    interactive: false,
+  }).step(0);
+  return !pose.bodyHidden && pose.eyesOpacity > 0.5 && pose.eyes.every((e) => e.glyphs.oval > 0.5);
+}
+
 function render(seed: string, size: number, px: number, o: AvatarImageOptions): Promise<string | null> {
   if (typeof document === "undefined" || !hasWebGL()) return Promise.resolve(null);
   const enlarged = o.variant === "enlarged";
@@ -80,6 +101,7 @@ function render(seed: string, size: number, px: number, o: AvatarImageOptions): 
     reducedMotion: true,
     interactive: false,
   }).step(0);
+  if (o.blink) pose.eyes = pose.eyes.map((e) => closeEye(e)) as typeof pose.eyes;
   if (!drawPose({ ctx, px, half, size, live: false }, look, pose)) return Promise.resolve(null);
   renders++;
   return new Promise((resolve) => {
@@ -103,7 +125,7 @@ export function acquireAvatarImage(seed: string, options: AvatarImageOptions = {
   const cssSize = enlarged ? size * ENLARGED_CANVAS : size;
   const dpr = Math.min(2, options.dpr ?? ((typeof devicePixelRatio === "number" && devicePixelRatio) || 1));
   const px = Math.max(1, Math.round(cssSize * dpr));
-  const key = [seed, size, px, options.state ?? "idle", options.expression ?? "", enlarged ? "e" : "s"].join("\u0000");
+  const key = [seed, size, px, options.state ?? "idle", options.expression ?? "", enlarged ? "e" : "s", options.blink ? "b" : ""].join("\u0000");
   let entry = entries.get(key);
   if (!entry) {
     const created: Entry = { url: null, ready: Promise.resolve(null), refs: 0 };

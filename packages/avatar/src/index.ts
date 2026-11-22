@@ -28,6 +28,7 @@ export { mountAvatar, type AvatarHandle, type AvatarOptions, type AvatarVariant 
 export { avatarBackground, avatarSvg, type AvatarSvgOptions } from "./fallback.js";
 export {
   acquireAvatarImage,
+  canBlink,
   avatarImageStats,
   clearAvatarImages,
   IDLE_IMAGE_LIMIT,
@@ -35,3 +36,4 @@ export {
   type AvatarImageOptions,
 } from "./image.js";
 export { ENLARGED_BODY, ENLARGED_CANVAS, ERROR_FADE } from "./draw.js";
+export { BLINK_SHUT_MS, MAX_BLINKING, blinkStats, startBlinking, type Blinker } from "./blink.js";
