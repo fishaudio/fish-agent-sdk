@@ -53,7 +53,7 @@ avatar.current?.emote("happy"); // about 1.3 s, then back to the current state
 | `reducedMotion` | system setting | Force reduced motion on or off. |
 | `ref` | | `{ emote(expression, ms?) }`. |
 
-Other props go to the wrapping `<span>`. Without an `aria-label` the avatar is decorative and hidden from assistive technology.
+Other props go to the wrapping `<span>`, which holds an `<img>` while the avatar is still and a `<canvas>` while it moves. Without an `aria-label` the avatar is decorative and hidden from assistive technology.
 
 ## Size matrix
 
@@ -110,11 +110,14 @@ avatar.destroy();
 
 ## Rendering and fallbacks
 
-- All avatars on a page share one off-screen WebGL context. Each frame is copied into the avatar's own canvas, so avatars scroll and clip with the page natively. Still frames are cached by seed and size.
+- Still avatars are images. `<AgentAvatar>` shows an `<img>` whenever the avatar is not moving: `animated` off, below 32 px, `enlarged`, reduced motion, or an interactive avatar nobody is touching. The image is the same frame the canvas would draw, rendered once by the shared WebGL context and shared by every copy with the same seed, size, state and expression. Long lists stay cheap to scroll.
+- A `<canvas>` is mounted only while the avatar moves: `animated`, hovered or pressed, or playing an event expression. It is drawn before it replaces the image, and swapped back once the avatar settles.
+- All avatars on a page share one off-screen WebGL context. Each moving frame is copied into the avatar's own canvas, so avatars scroll and clip with the page natively.
+- `acquireAvatarImage(seed, { size, state, expression, variant })` gives you the same shared image outside React. Call `release()` when it is no longer shown. Unused images are kept for reuse, up to 96, then freed; `clearAvatarImages()` frees them all.
 - Drawing stops when an avatar is off screen, inside a `display: none` container, or in a background tab. When nothing visible is animating, no frames run at all. A hidden avatar picks up where it would have been: state changes made meanwhile apply, and event expressions that ended meanwhile do not replay.
 - With reduced motion, everything stops: no flow, blinks, breathing or bars. The state stays readable from the eye shapes, the bars and the error fade.
-- Without WebGL the body is drawn flat in the same outline and colours, with the same eyes and states.
-- `avatarSvg(seed, { size, state, expression, variant, idPrefix })` returns still SVG markup with the outline and eyes, for server rendering. Its gradient ids are page-global: when one seed can appear more than once on a page, give each copy its own `idPrefix`, or a copy inside a hidden container can break the others. The React component renders it on the server and until the first canvas frame, so an avatar never flashes empty, and gives each instance its own ids.
+- Without WebGL, `<AgentAvatar>` keeps the still SVG. A canvas from `mountAvatar` draws the body flat in the same outline and colours, with the same eyes and states.
+- `avatarSvg(seed, { size, state, expression, variant, idPrefix })` returns still SVG markup with the outline and eyes, for server rendering. Its gradient ids are page-global: when one seed can appear more than once on a page, give each copy its own `idPrefix`, or a copy inside a hidden container can break the others. The React component renders it on the server, until the still image is ready, and wherever WebGL is unavailable, so an avatar never flashes empty. It gives each instance its own ids.
 - `avatarBackground(look)` returns a CSS gradient in the avatar's colours, for places that can only take a background.
 
 ## Demo
@@ -123,7 +126,7 @@ avatar.destroy();
 pnpm --filter @fishaudio/agent-avatar demo
 ```
 
-Open http://localhost:5198. Add `?theme=dark` or `?reduce=1` to the URL to force a theme or reduced motion.
+Open http://localhost:5198. `/list.html?rows=120&size=32` is a long list of still avatars. On the main page, add `?theme=dark` or `?reduce=1` to the URL to force a theme or reduced motion.
 
 ## License
 

@@ -26,4 +26,12 @@ export {
 } from "./face.js";
 export { mountAvatar, type AvatarHandle, type AvatarOptions, type AvatarVariant } from "./avatar.js";
 export { avatarBackground, avatarSvg, type AvatarSvgOptions } from "./fallback.js";
+export {
+  acquireAvatarImage,
+  avatarImageStats,
+  clearAvatarImages,
+  IDLE_IMAGE_LIMIT,
+  type AvatarImage,
+  type AvatarImageOptions,
+} from "./image.js";
 export { ENLARGED_BODY, ENLARGED_CANVAS, ERROR_FADE } from "./draw.js";

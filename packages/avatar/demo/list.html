@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent avatar list demo</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root { --bg: #faf9f7; --card: #fff; --line: #e7e5e1; --text: #1c1b1a; --muted: #78716c; color-scheme: light; }
+      :root[data-theme="dark"] { --bg: #121110; --card: #1b1a19; --line: #2e2c2a; --text: #f3f1ee; --muted: #a29d97; color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 14px/1.4 system-ui, sans-serif; color: var(--text); background: var(--bg); }
+      header { padding: 16px 24px 8px; }
+      h1 { margin: 0; font-size: 18px; font-weight: 600; }
+      header p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+      #list { height: calc(100vh - 76px); overflow: auto; margin: 0 24px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
+      .row { display: flex; gap: 12px; align-items: center; height: 56px; padding: 0 16px; border-bottom: 1px solid var(--line); }
+      .row .text { min-width: 0; flex: 1; }
+      .row .name { font-weight: 500; }
+      .row .snippet { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .row time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Conversation list</h1>
+      <p id="info"></p>
+    </header>
+    <div id="list"></div>
+    <script type="module" src="./list.ts"></script>
+  </body>
+</html>

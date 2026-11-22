@@ -165,17 +165,18 @@ describe("AgentAvatar", () => {
     expect(labelled.container.firstElementChild!.getAttribute("role")).toBe("img");
   });
 
-  it("replaces the SVG with the canvas once painted", () => {
+  it("stays a still SVG without WebGL, with no canvas", () => {
     const { container } = render(<AgentAvatar agentId="agent-1" size={40} />);
-    expect(container.querySelector("canvas")).not.toBeNull();
-    expect(container.querySelector("svg")).toBeNull();
+    expect(container.querySelector("canvas")).toBeNull();
+    expect(container.querySelector("svg")).not.toBeNull();
+    expect(container.firstElementChild!.getAttribute("data-render")).toBe("svg");
   });
 
   it("keeps the slot size when enlarged", () => {
     const { container } = render(<AgentAvatar agentId="agent-1" size={40} variant="enlarged" />);
     const root = container.firstElementChild as HTMLElement;
     expect(root.style.width).toBe("40px");
-    expect(container.querySelector("canvas")!.style.width).toBe("50px");
+    expect((root.firstElementChild as HTMLElement).style.width).toBe("50px");
   });
 
   it("plays an event expression through its ref", () => {

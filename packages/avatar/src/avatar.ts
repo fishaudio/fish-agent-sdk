@@ -35,11 +35,17 @@ export interface AvatarOptions {
   reducedMotion?: boolean;
   /** Called after the first frame is painted. */
   onPaint?: () => void;
+  /**
+   * Called when the avatar stops needing frames: not animated, and every
+   * hover, press, emote and transition has settled. A good moment to swap
+   * the canvas for a still image (see {@link acquireAvatarImage}).
+   */
+  onSettle?: () => void;
 }
 
 export interface AvatarHandle {
   /** Applies changed options. Unchanged ones are kept. */
-  update(options: Partial<Omit<AvatarOptions, "onPaint">>): void;
+  update(options: Partial<Omit<AvatarOptions, "onPaint" | "onSettle">>): void;
   /** Plays an event expression for `ms` (about 1.3 s by default), then returns to the current state. */
   emote(expression: AvatarExpression, ms?: number): void;
   /** Stops drawing. The canvas keeps its last frame. */
@@ -136,7 +142,10 @@ function tick(now: number) {
       continue;
     }
     paint(m, dt);
-    if (!runs(m) && !m.face.busy) active.delete(m);
+    if (!runs(m) && !m.face.busy) {
+      active.delete(m);
+      m.options.onSettle?.();
+    }
   }
   frameId = active.size > 0 ? requestAnimationFrame(tick) : 0;
 }
@@ -258,7 +267,8 @@ export function mountAvatar(canvas: HTMLCanvasElement, options: AvatarOptions): 
   canvas.addEventListener("pointercancel", onUp);
 
   paint(m, 0);
-  if (runs(m)) wake(m);
+  // One pass through the loop even when still, so onSettle reports once things are at rest.
+  wake(m);
 
   return {
     update(next) {
