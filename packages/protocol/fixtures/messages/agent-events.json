@@ -1,0 +1,275 @@
+{
+  "description": "Messages received on the agent-event topic and what the session does with each.",
+  "cases": [
+    {
+      "name": "tool.started becomes toolCallStarted and drops nodeId",
+      "message": {
+        "type": "tool.started",
+        "callId": "call-1",
+        "toolName": "lookup_order",
+        "toolSource": "webhook",
+        "nodeId": "node-7",
+        "input": "{\"orderId\":\"A-100\"}"
+      },
+      "expect": {
+        "event": "toolCallStarted",
+        "payload": {
+          "callId": "call-1",
+          "toolName": "lookup_order",
+          "source": "webhook",
+          "input": "{\"orderId\":\"A-100\"}",
+          "inputTruncated": false
+        }
+      }
+    },
+    {
+      "name": "tool.started carries inputTruncated true",
+      "message": {
+        "type": "tool.started",
+        "callId": "call-2",
+        "toolName": "search",
+        "toolSource": "mcp",
+        "nodeId": "",
+        "input": "{\"q\":\"very long",
+        "inputTruncated": true
+      },
+      "expect": {
+        "event": "toolCallStarted",
+        "payload": {
+          "callId": "call-2",
+          "toolName": "search",
+          "source": "mcp",
+          "input": "{\"q\":\"very long",
+          "inputTruncated": true
+        }
+      }
+    },
+    {
+      "name": "a truncation flag that is not the boolean true counts as false",
+      "message": {
+        "type": "tool.started",
+        "callId": "call-3",
+        "toolName": "search",
+        "toolSource": "builtin",
+        "nodeId": "",
+        "input": "{}",
+        "inputTruncated": "yes"
+      },
+      "expect": {
+        "event": "toolCallStarted",
+        "payload": {
+          "callId": "call-3",
+          "toolName": "search",
+          "source": "builtin",
+          "input": "{}",
+          "inputTruncated": false
+        }
+      }
+    },
+    {
+      "name": "unknown fields on a known message are ignored",
+      "message": {
+        "type": "tool.started",
+        "callId": "call-4",
+        "toolName": "search",
+        "toolSource": "client",
+        "nodeId": "",
+        "input": "{}",
+        "priority": 3,
+        "trace": { "span": "abc" }
+      },
+      "expect": {
+        "event": "toolCallStarted",
+        "payload": {
+          "callId": "call-4",
+          "toolName": "search",
+          "source": "client",
+          "input": "{}",
+          "inputTruncated": false
+        }
+      }
+    },
+    {
+      "name": "a tool source this SDK does not know is passed through",
+      "message": {
+        "type": "tool.started",
+        "callId": "call-5",
+        "toolName": "search",
+        "toolSource": "plugin",
+        "nodeId": "",
+        "input": "{}"
+      },
+      "expect": {
+        "event": "toolCallStarted",
+        "payload": {
+          "callId": "call-5",
+          "toolName": "search",
+          "source": "plugin",
+          "input": "{}",
+          "inputTruncated": false
+        }
+      }
+    },
+    {
+      "name": "tool.completed becomes toolCallCompleted",
+      "message": {
+        "type": "tool.completed",
+        "callId": "call-1",
+        "toolName": "lookup_order",
+        "toolSource": "webhook",
+        "nodeId": "node-7",
+        "output": "{\"status\":\"shipped\"}"
+      },
+      "expect": {
+        "event": "toolCallCompleted",
+        "payload": {
+          "callId": "call-1",
+          "toolName": "lookup_order",
+          "source": "webhook",
+          "output": "{\"status\":\"shipped\"}",
+          "outputTruncated": false
+        }
+      }
+    },
+    {
+      "name": "tool.completed carries outputTruncated true",
+      "message": {
+        "type": "tool.completed",
+        "callId": "call-2",
+        "toolName": "search",
+        "toolSource": "background",
+        "nodeId": "",
+        "output": "[{\"title\":",
+        "outputTruncated": true
+      },
+      "expect": {
+        "event": "toolCallCompleted",
+        "payload": {
+          "callId": "call-2",
+          "toolName": "search",
+          "source": "background",
+          "output": "[{\"title\":",
+          "outputTruncated": true
+        }
+      }
+    },
+    {
+      "name": "tool.failed with an HTTP status",
+      "message": {
+        "type": "tool.failed",
+        "callId": "call-1",
+        "toolName": "lookup_order",
+        "toolSource": "webhook",
+        "nodeId": "node-7",
+        "error": "Bad gateway",
+        "httpStatus": 502
+      },
+      "expect": {
+        "event": "toolCallFailed",
+        "payload": {
+          "callId": "call-1",
+          "toolName": "lookup_order",
+          "source": "webhook",
+          "error": "Bad gateway",
+          "httpStatus": 502
+        }
+      }
+    },
+    {
+      "name": "tool.failed without an HTTP status leaves the field out",
+      "message": {
+        "type": "tool.failed",
+        "callId": "call-6",
+        "toolName": "mystery",
+        "toolSource": "unknown",
+        "nodeId": "",
+        "error": "Tool not found"
+      },
+      "expect": {
+        "event": "toolCallFailed",
+        "payload": {
+          "callId": "call-6",
+          "toolName": "mystery",
+          "source": "unknown",
+          "error": "Tool not found"
+        }
+      }
+    },
+    {
+      "name": "an HTTP status that is not a number is dropped",
+      "message": {
+        "type": "tool.failed",
+        "callId": "call-7",
+        "toolName": "lookup_order",
+        "toolSource": "webhook",
+        "nodeId": "",
+        "error": "Bad gateway",
+        "httpStatus": "502"
+      },
+      "expect": {
+        "event": "toolCallFailed",
+        "payload": {
+          "callId": "call-7",
+          "toolName": "lookup_order",
+          "source": "webhook",
+          "error": "Bad gateway"
+        }
+      }
+    },
+    {
+      "name": "a recovered provider error with its stage",
+      "message": { "type": "error", "code": "provider_error", "stage": "llm", "recovered": true },
+      "expect": { "error": { "code": "provider_error", "stage": "llm", "recovered": true } }
+    },
+    {
+      "name": "an unrecovered provider error",
+      "message": { "type": "error", "code": "provider_error", "stage": "tts", "recovered": false },
+      "expect": { "error": { "code": "provider_error", "stage": "tts", "recovered": false } }
+    },
+    {
+      "name": "an error from an older runtime has no stage and no recovered",
+      "message": { "type": "error", "code": "internal_error" },
+      "expect": { "error": { "code": "internal_error" } }
+    },
+    {
+      "name": "an error code this SDK does not know becomes internal_error",
+      "message": { "type": "error", "code": "rate_limited", "stage": "stt" },
+      "expect": { "error": { "code": "internal_error", "stage": "stt" } }
+    },
+    {
+      "name": "an error stage this SDK does not know is dropped",
+      "message": { "type": "error", "code": "provider_error", "stage": "vad", "recovered": true },
+      "expect": { "error": { "code": "provider_error", "recovered": true } }
+    },
+    {
+      "name": "a recovered flag that is not a boolean is dropped",
+      "message": { "type": "error", "code": "internal_error", "stage": "runtime", "recovered": "true" },
+      "expect": { "error": { "code": "internal_error", "stage": "runtime" } }
+    },
+    {
+      "name": "a message type this SDK does not know is ignored",
+      "message": { "type": "agent.mood", "mood": "cheerful" },
+      "expect": { "ignored": true }
+    },
+    {
+      "name": "session.ended sets the end reason for the disconnect that follows",
+      "message": { "type": "session.ended", "reason": "escalated" },
+      "expect": { "endReasonAfterDisconnect": "escalated" }
+    },
+    {
+      "name": "session.ended with conversation_timeout",
+      "message": { "type": "session.ended", "reason": "conversation_timeout" },
+      "expect": { "endReasonAfterDisconnect": "conversation_timeout" }
+    },
+    {
+      "name": "session.ended with llm_endpoint_failure",
+      "message": { "type": "session.ended", "reason": "llm_endpoint_failure" },
+      "expect": { "endReasonAfterDisconnect": "llm_endpoint_failure" }
+    },
+    {
+      "name": "session.ended with a reason this SDK does not know leaves the transport to decide",
+      "message": { "type": "session.ended", "reason": "billing_hold" },
+      "expect": { "endReasonAfterDisconnect": "connection_lost" }
+    }
+  ]
+}

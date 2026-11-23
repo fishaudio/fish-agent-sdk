@@ -1,0 +1,175 @@
+{
+  "description": "Start options for a public agent and the session-creation request they produce.",
+  "cases": [
+    {
+      "name": "the smallest request",
+      "options": { "agentId": "agent-1" },
+      "expect": {
+        "url": "https://api.fish.audio/v1/agent/sessions",
+        "headers": { "Content-Type": "application/json", "X-Fish-SDK": "{{sdk}}" },
+        "absentHeaders": ["Origin"],
+        "body": { "agent_id": "agent-1", "client_timezone": "{{client_timezone}}" }
+      }
+    },
+    {
+      "name": "every option",
+      "options": {
+        "agentId": "agent-1",
+        "language": "en",
+        "timezone": "Asia/Tokyo",
+        "context": { "currentTime": true },
+        "overrides": { "first_message": "Hi {{user_name}}!", "voice_id": "voice-9" },
+        "dynamicVariables": { "user_name": "Ada" },
+        "endUserId": "u-1",
+        "metadata": { "plan": "pro" },
+        "toolEvents": false
+      },
+      "expect": {
+        "url": "https://api.fish.audio/v1/agent/sessions",
+        "headers": { "Content-Type": "application/json", "X-Fish-SDK": "{{sdk}}" },
+        "absentHeaders": ["Origin"],
+        "body": {
+          "agent_id": "agent-1",
+          "timezone": "Asia/Tokyo",
+          "client_timezone": "{{client_timezone}}",
+          "context": { "current_time": true },
+          "overrides": { "language": "en", "first_message": "Hi {{user_name}}!", "voice_id": "voice-9" },
+          "dynamic_variables": { "user_name": "Ada" },
+          "end_user_id": "u-1",
+          "metadata": { "plan": "pro" },
+          "tool_events": false
+        }
+      }
+    },
+    {
+      "name": "language alone becomes overrides.language",
+      "options": { "agentId": "agent-1", "language": "ja" },
+      "expect": {
+        "url": "https://api.fish.audio/v1/agent/sessions",
+        "headers": {},
+        "absentHeaders": [],
+        "body": {
+          "agent_id": "agent-1",
+          "client_timezone": "{{client_timezone}}",
+          "overrides": { "language": "ja" }
+        }
+      }
+    },
+    {
+      "name": "an explicit overrides.language wins over language",
+      "options": {
+        "agentId": "agent-1",
+        "language": "en",
+        "overrides": { "language": "fr", "system_prompt": "Be brief." }
+      },
+      "expect": {
+        "url": "https://api.fish.audio/v1/agent/sessions",
+        "headers": {},
+        "absentHeaders": [],
+        "body": {
+          "agent_id": "agent-1",
+          "client_timezone": "{{client_timezone}}",
+          "overrides": { "language": "fr", "system_prompt": "Be brief." }
+        }
+      }
+    },
+    {
+      "name": "a custom server URL, with its trailing slash removed",
+      "options": { "agentId": "agent-1", "serverUrl": "https://staging.example.com/" },
+      "expect": {
+        "url": "https://staging.example.com/v1/agent/sessions",
+        "headers": {},
+        "absentHeaders": [],
+        "body": { "agent_id": "agent-1", "client_timezone": "{{client_timezone}}" }
+      }
+    },
+    {
+      "name": "origin is sent as the Origin header and stays out of the body",
+      "options": { "agentId": "agent-1", "origin": "https://www.example.com" },
+      "expect": {
+        "url": "https://api.fish.audio/v1/agent/sessions",
+        "headers": { "Origin": "https://www.example.com" },
+        "absentHeaders": [],
+        "body": { "agent_id": "agent-1", "client_timezone": "{{client_timezone}}" }
+      }
+    },
+    {
+      "name": "currentTime false is sent, not dropped",
+      "options": { "agentId": "agent-1", "context": { "currentTime": false } },
+      "expect": {
+        "url": "https://api.fish.audio/v1/agent/sessions",
+        "headers": {},
+        "absentHeaders": [],
+        "body": {
+          "agent_id": "agent-1",
+          "client_timezone": "{{client_timezone}}",
+          "context": { "current_time": false }
+        }
+      }
+    },
+    {
+      "name": "an empty context sends no context",
+      "options": { "agentId": "agent-1", "context": {} },
+      "expect": {
+        "url": "https://api.fish.audio/v1/agent/sessions",
+        "headers": {},
+        "absentHeaders": [],
+        "body": { "agent_id": "agent-1", "client_timezone": "{{client_timezone}}" }
+      }
+    },
+    {
+      "name": "toolEvents true is sent, not dropped",
+      "options": { "agentId": "agent-1", "toolEvents": true },
+      "expect": {
+        "url": "https://api.fish.audio/v1/agent/sessions",
+        "headers": {},
+        "absentHeaders": [],
+        "body": { "agent_id": "agent-1", "client_timezone": "{{client_timezone}}", "tool_events": true }
+      }
+    },
+    {
+      "name": "empty strings are left out",
+      "options": { "agentId": "agent-1", "timezone": "", "endUserId": "" },
+      "expect": {
+        "url": "https://api.fish.audio/v1/agent/sessions",
+        "headers": {},
+        "absentHeaders": [],
+        "body": { "agent_id": "agent-1", "client_timezone": "{{client_timezone}}" }
+      }
+    },
+    {
+      "name": "dynamic variables keep their string, number and boolean types",
+      "options": {
+        "agentId": "agent-1",
+        "dynamicVariables": { "name": "Ada", "age": 36, "vip": true, "balance": 12.5 }
+      },
+      "expect": {
+        "url": "https://api.fish.audio/v1/agent/sessions",
+        "headers": {},
+        "absentHeaders": [],
+        "body": {
+          "agent_id": "agent-1",
+          "client_timezone": "{{client_timezone}}",
+          "dynamic_variables": { "name": "Ada", "age": 36, "vip": true, "balance": 12.5 }
+        }
+      }
+    },
+    {
+      "name": "metadata is passed through with nesting, arrays and null",
+      "options": {
+        "agentId": "agent-1",
+        "metadata": { "ticket": { "id": 42, "tags": ["billing", "urgent"] }, "campaign": null }
+      },
+      "expect": {
+        "url": "https://api.fish.audio/v1/agent/sessions",
+        "headers": {},
+        "absentHeaders": [],
+        "body": {
+          "agent_id": "agent-1",
+          "client_timezone": "{{client_timezone}}",
+          "metadata": { "ticket": { "id": 42, "tags": ["billing", "urgent"] }, "campaign": null }
+        }
+      }
+    }
+  ]
+}
