@@ -2,7 +2,7 @@
 
 This page is for building a client without `@fishaudio/agent-client`: a native app, a React Native app that does not use the SDK, or another language. It spells out the behavior the SDK implements on top of the types in [`@fishaudio/agent-protocol`](../packages/protocol/README.md), so you can match it without reading the SDK source.
 
-If you are on the web or React Native, use the SDK instead. It already does all of this.
+If you are on the web, React Native, iOS or Android, use the SDK instead. It already does all of this. The native SDKs are in their own repositories, `fishaudio/fish-agent-ios` and `fishaudio/fish-agent-android`. [`packages/protocol/fixtures`](../packages/protocol/fixtures/README.md) holds the test cases every SDK here runs; a client of your own can run them too.
 
 The transport today is LiveKit (WebRTC). Media goes over audio tracks, control messages over data packets on two topics, readiness over participant attributes, and transcripts over LiveKit text streams.
 
@@ -40,6 +40,8 @@ client                                   room / agent
 Send the ready value both as the attribute and as a `client.audio_ready` message. LiveKit delays attribute updates from a participant with no published track for several seconds; the data message arrives at once. Report only once. The runtime's wait is bounded, so a report that never arrives only delays the opening line.
 
 Setting attributes requires a join token that allows it. Treat a failed `setAttributes` as non-fatal, and catch its rejection.
+
+**On Android, wait for the room to be connected first.** LiveKit's Android `connect()` returns while the room is still connecting, and an attribute set then is dropped without an error. Set `"pending"` after the `Connected` event. LiveKit's Swift and JavaScript SDKs return from `connect` already connected.
 
 ## 3. Wait for the agent before sending
 
@@ -93,8 +95,10 @@ LiveKit recovers from network drops on its own, in two ways:
 
 Show "reconnecting" for **both** events; nothing flows in between. After `Reconnected`:
 - Set `fish.client.audio_ready` again with the same value as before (or `"pending"` if you never reported ready). A full reconnect drops your attributes.
-- If no remote participant is in the room, the agent hung up while you were away. End the session.
+- If no remote participant is in the room, the agent hung up while you were away. End the session. **On native LiveKit SDKs, wait a moment before deciding:** `Reconnected` can arrive before the roster is rebuilt (41 ms earlier was measured on Android).
 - Otherwise read the agent's attributes again.
+
+On Android and iOS the roster is also cleared while reconnecting, and your own reliable packets can come back to you on `client-event` afterwards. Handle only `agent-event`.
 
 Messages and transcript chunks sent during the gap are lost, not replayed.
 
@@ -110,9 +114,14 @@ The call ends in one of these ways, in order of priority:
 
 Case 3 is a guess. A runtime crash, a network failure, and some server-side ends look the same from the client.
 
+The order of these signals differs by LiveKit SDK. On iOS the agent's departure is reported while the room still reads connected, a millisecond before the disconnect that explains it, so "the agent left while the room is still connected" needs a short wait before it is believed. On iOS a departing participant's attributes are also reported once more with empty values; treat an empty value as no value. The recordings these notes come from are kept with the native SDKs' tests.
+
 ## Known gaps
 
 These are open on the runtime side. Clients cannot fix them yet:
 
 - There is no signal that media is flowing both ways. A client can be "connected" and have an agent that is "ready" while the audio path never came up. Consider showing "connecting audio…" until the agent's audio track is subscribed.
 - `client_tool.call` carries `timeoutMs` only on newer runtimes.
+- The agent can speak its opening line to a client that is not connected yet. When LiveKit's first connection attempt fails and is retried, the server has already counted the client as in the room; the opening line is then spoken before the client can announce `"pending"`, and is lost. Seen in 5 of 25 calls on an iOS simulator.
+- An end forced through `POST /v1/agent/sessions/{id}/end` is announced as `session.ended` with reason `user_hangup`, and the announcement does not always arrive.
+- After a long network outage, an agent hangup was not announced: only the deleted room was seen.

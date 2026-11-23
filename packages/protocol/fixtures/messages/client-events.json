@@ -1,0 +1,55 @@
+{
+  "description": "Calls on a connected session whose agent is ready, and the messages sent on the client-event topic.",
+  "cases": [
+    {
+      "name": "a typed message asks for a text-only reply by default",
+      "call": { "method": "sendUserMessage", "text": "Hello" },
+      "sent": [{ "type": "user.message", "text": "Hello", "audio": false }]
+    },
+    {
+      "name": "audio false is the same as the default",
+      "call": { "method": "sendUserMessage", "text": "Hello", "audio": false },
+      "sent": [{ "type": "user.message", "text": "Hello", "audio": false }]
+    },
+    {
+      "name": "audio true leaves the audio field out",
+      "call": { "method": "sendUserMessage", "text": "Hello", "audio": true },
+      "sent": [{ "type": "user.message", "text": "Hello" }]
+    },
+    {
+      "name": "the text is trimmed",
+      "call": { "method": "sendUserMessage", "text": "  where is my order?\n" },
+      "sent": [{ "type": "user.message", "text": "where is my order?", "audio": false }]
+    },
+    {
+      "name": "text with non-ASCII characters and a slash is sent as is",
+      "call": { "method": "sendUserMessage", "text": "订单 A/100 在哪里？" },
+      "sent": [{ "type": "user.message", "text": "订单 A/100 在哪里？", "audio": false }]
+    },
+    {
+      "name": "an empty message is not sent",
+      "call": { "method": "sendUserMessage", "text": "" },
+      "sent": []
+    },
+    {
+      "name": "a message of only whitespace is not sent",
+      "call": { "method": "sendUserMessage", "text": " \t\n " },
+      "sent": []
+    },
+    {
+      "name": "user activity",
+      "call": { "method": "sendUserActivity" },
+      "sent": [{ "type": "user.activity" }]
+    },
+    {
+      "name": "interrupt",
+      "call": { "method": "interrupt" },
+      "sent": [{ "type": "user.interrupt" }]
+    },
+    {
+      "name": "ending the call sends a hangup",
+      "call": { "method": "end" },
+      "sent": [{ "type": "user.hangup" }]
+    }
+  ]
+}

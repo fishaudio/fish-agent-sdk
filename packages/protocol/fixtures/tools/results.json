@@ -1,0 +1,182 @@
+{
+  "description": "A client_tool.call, the tool handler it reaches, and the reply sent back.",
+  "cases": [
+    {
+      "name": "an object result is sent back",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-1",
+        "toolName": "get_weather",
+        "params": { "city": "Tokyo" },
+        "expectsResponse": true
+      },
+      "handler": { "kind": "returns", "value": { "tempC": 21, "sky": "clear" } },
+      "expect": { "reply": "result", "result": { "tempC": 21, "sky": "clear" }, "errorCode": null }
+    },
+    {
+      "name": "a string result is sent back",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-2",
+        "toolName": "get_weather",
+        "params": {},
+        "expectsResponse": true
+      },
+      "handler": { "kind": "returns", "value": "21°C and clear" },
+      "expect": { "reply": "result", "result": "21°C and clear", "errorCode": null }
+    },
+    {
+      "name": "false and zero are results, not missing values",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-3",
+        "toolName": "is_open",
+        "params": {},
+        "expectsResponse": true
+      },
+      "handler": { "kind": "returns", "value": { "open": false, "queue": 0 } },
+      "expect": { "reply": "result", "result": { "open": false, "queue": 0 }, "errorCode": null }
+    },
+    {
+      "name": "a tool that returns nothing is answered without a result field",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-4",
+        "toolName": "show_card",
+        "params": { "id": 7 },
+        "expectsResponse": true
+      },
+      "handler": { "kind": "returnsNothing" },
+      "expect": { "reply": "result", "resultAbsent": true, "errorCode": null }
+    },
+    {
+      "name": "the handler receives the params",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-5",
+        "toolName": "echo",
+        "params": { "text": "hi", "count": 2, "nested": { "ok": true, "list": [1, "two", null] } },
+        "expectsResponse": true
+      },
+      "handler": { "kind": "echoesParams" },
+      "expect": {
+        "reply": "result",
+        "result": { "text": "hi", "count": 2, "nested": { "ok": true, "list": [1, "two", null] } },
+        "errorCode": null
+      }
+    },
+    {
+      "name": "the handler receives the call id and tool name",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-6",
+        "toolName": "whoami",
+        "params": {},
+        "expectsResponse": true
+      },
+      "handler": { "kind": "echoesContext" },
+      "expect": {
+        "reply": "result",
+        "result": { "callId": "call-6", "toolName": "whoami" },
+        "errorCode": null
+      }
+    },
+    {
+      "name": "no reply when the agent does not expect one",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-7",
+        "toolName": "show_card",
+        "params": {},
+        "expectsResponse": false
+      },
+      "handler": { "kind": "returns", "value": "shown" },
+      "expect": { "reply": "none", "errorCode": null }
+    },
+    {
+      "name": "an unregistered tool is answered with an error",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-8",
+        "toolName": "missing_tool",
+        "params": {},
+        "expectsResponse": true
+      },
+      "handler": { "kind": "unregistered" },
+      "expect": { "reply": "error", "result": "Tool is not registered", "errorCode": "tool_failed" }
+    },
+    {
+      "name": "an unregistered tool that expects no reply is only reported locally",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-9",
+        "toolName": "missing_tool",
+        "params": {},
+        "expectsResponse": false
+      },
+      "handler": { "kind": "unregistered" },
+      "expect": { "reply": "none", "errorCode": "tool_failed" }
+    },
+    {
+      "name": "a tool that fails is answered with an error",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-10",
+        "toolName": "get_weather",
+        "params": {},
+        "expectsResponse": true
+      },
+      "handler": { "kind": "throws", "message": "weather service is down" },
+      "expect": { "reply": "error", "errorCode": "tool_failed" }
+    },
+    {
+      "name": "a tool that fails and expects no reply is only reported locally",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-11",
+        "toolName": "show_card",
+        "params": {},
+        "expectsResponse": false
+      },
+      "handler": { "kind": "throws", "message": "no such card" },
+      "expect": { "reply": "none", "errorCode": "tool_failed" }
+    },
+    {
+      "name": "a tool that never returns is answered with an error at the timeout",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-12",
+        "toolName": "slow_tool",
+        "params": {},
+        "expectsResponse": true,
+        "timeoutMs": 2000
+      },
+      "handler": { "kind": "hangs" },
+      "expect": { "reply": "error", "errorCode": "tool_timeout" }
+    },
+    {
+      "name": "a large result under the limit is sent",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-13",
+        "toolName": "read_page",
+        "params": {},
+        "expectsResponse": true
+      },
+      "handler": { "kind": "returnsStringOfLength", "length": 50000 },
+      "expect": { "reply": "result", "errorCode": null }
+    },
+    {
+      "name": "a result over the limit is replaced with an error",
+      "call": {
+        "type": "client_tool.call",
+        "callId": "call-14",
+        "toolName": "read_page",
+        "params": {},
+        "expectsResponse": true
+      },
+      "handler": { "kind": "returnsStringOfLength", "length": 70000 },
+      "expect": { "reply": "error", "errorCode": "tool_failed" }
+    }
+  ]
+}
