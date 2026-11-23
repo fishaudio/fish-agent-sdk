@@ -50,7 +50,9 @@ class FishCallService : Service() {
     val text = intent?.getStringExtra(EXTRA_TEXT) ?: ""
     val notification = buildNotification(title, text)
     try {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      // The microphone type exists from Android 11 (API 30). Before that a
+      // plain foreground service is enough to keep capturing.
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
         startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
       } else {
         startForeground(NOTIFICATION_ID, notification)

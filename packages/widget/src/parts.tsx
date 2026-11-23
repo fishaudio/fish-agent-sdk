@@ -3,7 +3,7 @@ import type { JSX } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { WidgetTextContents } from "./config.js";
 import { IconChevronDown, IconSend } from "./icons.js";
-import type { ToolEntry, TranscriptEntry } from "./messages.js";
+import { formatToolPayload, type ToolEntry, type TranscriptEntry } from "@fishaudio/agent-widget-shared";
 
 function reducedMotion(): boolean {
   return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -126,17 +126,6 @@ export function Waveform({
       aria-hidden="true"
     />
   );
-}
-
-function formatToolPayload(payload: string, truncated: boolean | undefined): string {
-  if (!truncated) {
-    try {
-      return JSON.stringify(JSON.parse(payload), null, 1);
-    } catch {
-      // fall through to the raw string
-    }
-  }
-  return payload;
 }
 
 function ToolChip({ entry, texts }: { entry: ToolEntry; texts: WidgetTextContents }) {

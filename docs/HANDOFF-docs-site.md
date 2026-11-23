@@ -18,6 +18,12 @@ For whoever maintains docs.fish.audio. The pages in this folder are the source; 
   | `client-tools.md` | `/agents/build/client-tools` |
   | `errors.md` | `/agents/deploy/web-sdk#errors` |
 
+## 1b. New page: React Native widget
+
+- **Source:** [`docs/react-native-widget.md`](react-native-widget.md), for the new `@fishaudio/agent-widget-react-native` package.
+- **Suggested URL:** a section of the React Native page or its own page next to `/agents/deploy/widget`. The package's `homepage` currently points at `/agents/deploy/react-native`.
+- It links to `widget.md` (`/agents/deploy/widget`), `react-native.md` and the pages in the table above.
+
 ## 2. Existing page: Wire Protocol (`/agents/deploy/protocol`)
 
 The live page covers the channels and messages but not the behavior a working client needs. [`docs/protocol.md`](protocol.md) has it; suggested additions to the live page:

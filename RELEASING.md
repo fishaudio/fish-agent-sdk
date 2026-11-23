@@ -1,6 +1,6 @@
 # Releasing
 
-All packages share one version: the six npm packages and the iOS SDK. Changesets bumps them together (`fixed` in `.changeset/config.json`). `ios/package.json` is a private marker that carries the iOS SDK's version; it is never published to npm.
+All packages share one version: the npm packages and the iOS SDK. Changesets bumps them together (`fixed` in `.changeset/config.json`). `ios/package.json` is a private marker that carries the iOS SDK's version; it is never published to npm.
 
 npm cannot take a release back. The order below puts every step that can fail before it.
 

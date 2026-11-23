@@ -8,4 +8,4 @@ export {
   type WidgetSettings,
   type WidgetTextContents,
 } from "./config.js";
-export type { SpeechEntry, ToolEntry, TranscriptEntry } from "./messages.js";
+export type { SpeechEntry, ToolEntry, TranscriptEntry } from "@fishaudio/agent-widget-shared";
