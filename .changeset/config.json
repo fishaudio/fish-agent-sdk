@@ -10,6 +10,7 @@
       "@fishaudio/agent-react-native",
       "@fishaudio/agent-widget",
       "@fishaudio/agent-widget-embed",
+      "@fishaudio/agent-widget-react-native",
       "@fishaudio/agent-ios",
       "@fishaudio/agent-android"
     ]

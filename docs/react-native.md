@@ -14,7 +14,7 @@ It works in Expo apps and in bare React Native apps; Expo is not required.
 - **A native build.** WebRTC is a native module. In Expo, build with `npx expo run:ios` / `run:android` or EAS Build; Expo Go cannot run it (`expo-dev-client` is optional). Bare React Native apps build as usual, see [Bare React Native](#bare-react-native).
 - **A physical device** for anything involving the microphone.
 - **Your own backend** to create session tokens, or a public agent (see [Starting a session](#starting-a-session)). Do not ship an API key inside an app.
-- **Tested with** Expo SDK 58 and bare React Native 0.88, `@livekit/react-native` 3.1, `@livekit/react-native-webrtc` 150.1 and `livekit-client` 2.20–2.23, on iOS 26 and Android 17. Other versions may work but are untested.
+- **Tested with** Expo SDK 58 and bare React Native 0.88, `@livekit/react-native` 3.2, `@livekit/react-native-webrtc` 150.2, `@livekit/react-native-expo-plugin` 1.2 and `livekit-client` 2.20–2.23, on iOS 26–27 and Android 17, in debug and release builds. Other versions may work but are untested.
 
 ## Install (Expo)
 
@@ -224,6 +224,10 @@ Everything else (`status`, `mode`, `micMuted` / `setMicMuted`, `sendUserMessage`
 
 Not on React Native: the browser-only members of the React hook (`startAudio`, `setOutputVolume`, `setInputDevice`, `setOutputDevice`) are left out of the return value, and `useAudioLevels` and `AgentAudioVisualizer` are not exported (see [Limitations](#limitations)). `AgentSession` is exported as a type only, for `conversation.session`: start calls through `useConversation`, which also handles the permission, audio session and call service.
 
+## Ready-made widget
+
+For a call UI without building one, `@fishaudio/agent-widget-react-native` renders a floating button and a call panel with transcript, text input, mute and consent, like the web `<fish-agent>` widget. See [React Native widget](react-native-widget.md).
+
 ## Background calls
 
 - **iOS:** with the `audio` background mode (on by default in the plugin), a call continues when the app goes to the background or the screen locks: the user can keep talking and hear the agent.
@@ -261,4 +265,5 @@ Not on React Native: the browser-only members of the React hook (`startAudio`, `
 | A permission prompt about local networks or nearby devices at first launch | Debug builds look for the development server on the local network. It does not come from the call. |
 | On iPhones sold in mainland China, an "Allow to use wireless data" prompt at first network use | The system asks for every new app. Choose WLAN & Cellular. |
 | `ping timeout triggered` or `not found in senderGetStats()` warnings after hanging up | Harmless messages from LiveKit's teardown. To quiet LiveKit's logging: `import { setLogLevel } from "livekit-client"; setLogLevel("warn");` |
-| In a monorepo, odd failures after installing | Make sure only one copy of `@livekit/react-native` and `livekit-client` is installed (`npm ls @livekit/react-native livekit-client`). |
+| Android release build fails in `minifyReleaseWithR8` with `Missing class livekit.org.jni_zero.JniZeroJni` | `@livekit/react-native-webrtc` before 150.2 lacks a keep rule. Upgrade together to `@livekit/react-native` 3.2, `@livekit/react-native-webrtc` 150.2 and (Expo) `@livekit/react-native-expo-plugin` 1.2; mixing the 3.1 and 150.2 lines does not compile. Expo SDK 58 turns on R8 for release builds by default. |
+| In a monorepo, odd failures after installing | Make sure only one copy of `@livekit/react-native`, `@livekit/react-native-webrtc` and `livekit-client` is installed (`npm ls @livekit/react-native @livekit/react-native-webrtc livekit-client`). A release build that crashes with `WebRTC native module not found` usually means two versions of `@livekit/react-native-webrtc`. |

@@ -6,6 +6,9 @@
     "fish-audio",
     "voice",
     "agent",
+    "voice-agent",
+    "voice-ai",
+    "conversational-ai",
     "widget",
     "web-component",
     "custom-element"
@@ -85,6 +88,7 @@
     }
   },
   "devDependencies": {
+    "@fishaudio/agent-widget-shared": "workspace:*",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.0",
     "jsdom": "^26.1.0",

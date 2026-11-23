@@ -1,6 +1,6 @@
 # Releasing
 
-All packages share one version: the six npm packages, the iOS SDK and the Android SDK. Changesets bumps them together (`fixed` in `.changeset/config.json`). `ios/package.json` and `android/package.json` are private markers that carry the native SDKs' version; they are never published to npm.
+All packages share one version: the npm packages, the iOS SDK and the Android SDK. Changesets bumps them together (`fixed` in `.changeset/config.json`). `ios/package.json` and `android/package.json` are private markers that carry the native SDKs' version; they are never published to npm.
 
 npm and Maven Central cannot take a release back. The order below puts every step that can fail before the first step that cannot be undone.
 

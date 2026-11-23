@@ -13,8 +13,12 @@ import {
   type WidgetAttributes,
   type WidgetSettings,
 } from "./config.js";
-import { TranscriptStore } from "./messages.js";
-import { fetchRemoteConfig } from "./remoteConfig.js";
+import {
+  errorText as sharedErrorText,
+  showsErrorBanner,
+  fetchRemoteConfig,
+  TranscriptStore,
+} from "@fishaudio/agent-widget-shared";
 import {
   CallView,
   ConsentView,
@@ -166,19 +170,7 @@ export function FishAgentWidget({ host, attributes }: FishAgentWidgetProps) {
     );
   };
 
-  const errorText = (code: string | undefined): string => {
-    switch (code) {
-      case "mic_permission_denied":
-        return texts.errorMicDenied;
-      case "origin_forbidden":
-      case "agent_not_public":
-        return texts.errorOrigin;
-      case "insufficient_credit":
-        return texts.errorUnavailable;
-      default:
-        return texts.errorConnection;
-    }
-  };
+  const errorText = (code: string | undefined): string => sharedErrorText(texts, code);
 
   const needsConsent = (): boolean => {
     if (!settings.consent || consentAcceptedRef.current) {
@@ -261,9 +253,9 @@ export function FishAgentWidget({ host, attributes }: FishAgentWidgetProps) {
         emit("disconnect", { reason });
       });
       session.on("error", (sessionError) => {
-        // A failure the agent is already recovering from on its own is not a
-        // broken call, so no banner for it. The host page still hears about it.
-        if (sessionError.recovered !== true) {
+        // Recovering failures and client tool failures leave the call running,
+        // so no banner for them. The host page still hears about them.
+        if (showsErrorBanner(sessionError)) {
           setError(
             sessionError.code === "mic_permission_denied"
               ? texts.errorMicDenied
