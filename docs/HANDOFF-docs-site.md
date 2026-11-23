@@ -39,3 +39,23 @@ The live page covers the channels and messages but not the behavior a working cl
 
 - Add a line pointing React Native developers to the new page.
 - `clientToolTimeoutMs`: the SDK now uses the agent's own wait, less a margin of up to 1 s, when the runtime sends `timeoutMs`, and falls back to `clientToolTimeoutMs` (default 15 s) otherwise. The source wording is in [`client-tools.md`](client-tools.md) and [`errors.md`](errors.md).
+
+## 4. New pages: iOS SDK and Android SDK
+
+The native SDKs are in their own repositories, and so are the sources of their pages.
+
+- **Sources:** [`docs/ios.md`](https://github.com/fishaudio/fish-agent-ios/blob/main/docs/ios.md) in fish-agent-ios and [`docs/android.md`](https://github.com/fishaudio/fish-agent-android/blob/main/docs/android.md) in fish-agent-android.
+- **Suggested URLs:** `/agents/deploy/ios` and `/agents/deploy/android`, next to `react-native` in the Deploy section.
+- Both pages open with a status note saying what was checked on a phone and what was not. Keep it until the open items are done; the lists are in each repository's example README.
+- The iOS page lists a known problem under Limitations (the opening line can be missed). It is real and should be published as written.
+- Links from the two pages to pages here are absolute GitHub URLs under `docs/`; map them to the site URLs in the table in section 1.
+- The Web SDK, React SDK and React Native pages should each point native developers to the two new pages.
+
+## 5. Wire Protocol page: notes for native clients
+
+[`docs/protocol.md`](protocol.md) gained notes that came out of recording real calls with LiveKit's Android and Swift SDKs:
+
+- Section 2: on Android, set `"pending"` only after the room is connected.
+- Section 6: after `Reconnected`, wait a moment before treating an empty roster as a hangup; handle only `agent-event`.
+- Section 7: on iOS, a short wait before believing the agent left; empty attribute values are no values.
+- Known gaps: the opening line spoken before the client is connected, the reason announced for a backend-forced end, and an unannounced hangup after a long outage. These three are for the runtime team as much as for the page.
