@@ -1,6 +1,6 @@
 # Fish Agent SDK
 
-Embed [Fish Audio](https://fish.audio) voice agents into websites, web apps, and React Native apps: realtime voice over WebRTC, live transcripts, text chat, and client tools. The API is small and event-driven.
+Embed [Fish Audio](https://fish.audio) voice agents into websites, web apps, and React Native apps (native iOS and Android apps have their own SDKs, below): realtime voice over WebRTC, live transcripts, text chat, and client tools. The API is small and event-driven.
 
 Public documentation: [Web SDK](https://docs.fish.audio/agents/deploy/web-sdk), [React SDK](https://docs.fish.audio/agents/deploy/react-sdk), [React Native SDK](https://docs.fish.audio/agents/deploy/react-native), [Widget](https://docs.fish.audio/agents/deploy/widget). The in-repo notes under [`docs/`](docs/README.md) track the source.
 
@@ -9,6 +9,8 @@ Public documentation: [Web SDK](https://docs.fish.audio/agents/deploy/web-sdk), 
 | `@fishaudio/agent-client` | [docs](docs/README.md#fishaudioagent-client) | Framework-agnostic JS SDK. Sessions, realtime audio, transcripts, client tools. |
 | `@fishaudio/agent-react` | [docs](docs/react/README.md) | React hooks (`useConversation`), provider, chat-log and visualizer components. |
 | `@fishaudio/agent-react-native` | [docs](docs/react-native.md) | React Native hook (`useConversation`) with the microphone permission, audio routing, and background calls. Expo or bare React Native. |
+| iOS SDK (Swift package `FishAgent`) | [fish-agent-ios](https://github.com/fishaudio/fish-agent-ios) | Native iOS, in its own repository: a `Conversation` object with published state, the microphone permission and audio routing. |
+| Android SDK (`com.fishaudio.agent:agent-android`) | [fish-agent-android](https://github.com/fishaudio/fish-agent-android) | Native Android, in its own repository: a `Conversation` object with `StateFlow` state, audio routing and a foreground service for background calls. |
 | `@fishaudio/agent-widget` | [docs](docs/widget.md) | `<fish-agent>` custom element (plus a `<FishAgentWidget>` React component): voice-first chat card with transcript, tool chips, consent, theming. |
 | `@fishaudio/agent-widget-embed` | [docs](docs/widget.md) | The widget as one CDN script. Loading it registers `<fish-agent>`. |
 | `@fishaudio/agent-widget-react-native` | [docs](docs/react-native-widget.md) | The widget for React Native apps: floating button and call panel, built on `@fishaudio/agent-react-native`. |
@@ -154,6 +156,10 @@ export function CallButton() {
 ```
 
 See the [React Native docs](https://docs.fish.audio/agents/deploy/react-native) for bare React Native setup, background calls, audio routes, and troubleshooting.
+
+## iOS and Android
+
+The native SDKs live in their own repositories: [fish-agent-ios](https://github.com/fishaudio/fish-agent-ios) (Swift) and [fish-agent-android](https://github.com/fishaudio/fish-agent-android) (Kotlin). They follow the same session options, events, error codes and end reasons as the SDKs here, and run the same conformance fixtures ([`packages/protocol/fixtures`](packages/protocol/fixtures/README.md)).
 
 ## License
 

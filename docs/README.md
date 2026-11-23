@@ -21,6 +21,13 @@ Framework-agnostic JavaScript/TypeScript SDK.
 
 - [React Native SDK](react-native.md) covers installation in Expo and bare React Native, the entry file, session tokens from a mobile app, `useConversation` additions, background calls, limitations, and troubleshooting.
 
+## Native SDKs
+
+The native SDKs and their docs are in their own repositories.
+
+- [iOS SDK](https://github.com/fishaudio/fish-agent-ios/blob/main/docs/ios.md), a Swift package.
+- [Android SDK](https://github.com/fishaudio/fish-agent-android/blob/main/docs/android.md), a Kotlin library.
+
 ## Building your own client
 
 - [Realtime protocol](protocol.md) spells out the join handshake, readiness, messages, transcripts, reconnection, and end rules, for clients that do not use the SDK.
