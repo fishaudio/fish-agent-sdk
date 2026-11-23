@@ -32,6 +32,8 @@ export {
   avatarImageStats,
   clearAvatarImages,
   IDLE_IMAGE_LIMIT,
+  peekAvatarImage,
+  DRAW_BUDGET_MS,
   type AvatarImage,
   type AvatarImageOptions,
 } from "./image.js";

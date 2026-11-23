@@ -1,3 +1,4 @@
+import { makeCanvas, type AnyCanvas, type Ctx2D } from "./surface.js";
 // Draws a pose into a 2D canvas: the body (live WebGL, a cached frozen frame,
 // or a flat 2D fallback), then eyes, connecting bars and the sleepy "z".
 import type { EyePose, Pose } from "./face.js";
@@ -16,7 +17,7 @@ export const ENLARGED_HALF = (ENLARGED_CANVAS * 1.84) / (2 * ENLARGED_BODY);
 export const ERROR_FADE = 0.42;
 
 const MAX_CACHE = 300;
-const frozen = new Map<string, HTMLCanvasElement | null>();
+const frozen = new Map<string, AnyCanvas | null>();
 
 const hasPath2D = () => typeof Path2D === "function";
 const paths = new Map<number, Path2D>();
@@ -31,7 +32,7 @@ function shapePath(index: number): Path2D | null {
 }
 
 /** A still frame of the body (no motion), cached by seed, size and pixel size. Null without WebGL. */
-function frozenBody(look: AvatarLook, size: number, px: number, half: number): HTMLCanvasElement | null {
+function frozenBody(look: AvatarLook, size: number, px: number, half: number): AnyCanvas | null {
   const key = `${look.id}\u0000${size}\u0000${px}\u0000${half}`;
   if (frozen.has(key)) {
     const hit = frozen.get(key)!;
@@ -39,9 +40,8 @@ function frozenBody(look: AvatarLook, size: number, px: number, half: number): H
     frozen.set(key, hit);
     return hit;
   }
-  const c = document.createElement("canvas");
-  c.width = c.height = px;
-  const ctx = c.getContext("2d");
+  const c = makeCanvas(px, px);
+  const ctx = c?.getContext("2d") as Ctx2D | null | undefined;
   const ok =
     !!ctx &&
     drawBody(ctx, px, 0, 0, { look, size, half, tx: 0, ty: 0, rot: 0, sx: 1, sy: 1, clock: 0, energy: 0, listen: 0 });
@@ -51,7 +51,7 @@ function frozenBody(look: AvatarLook, size: number, px: number, half: number): H
   return value;
 }
 
-function flatBody(ctx: CanvasRenderingContext2D, look: AvatarLook) {
+function flatBody(ctx: Ctx2D, look: AvatarLook) {
   const path = shapePath(look.shape);
   if (!path) return;
   const [edge, main, light] = look.palette;
@@ -71,7 +71,7 @@ function flatBody(ctx: CanvasRenderingContext2D, look: AvatarLook) {
 const HAPPY = "M-1.1 .45Q0 -1.25 1.1 .45";
 const CLOSED = "M-1.15 0Q0 .75 1.15 0";
 
-function drawEye(ctx: CanvasRenderingContext2D, e: EyePose, color: string, alpha: number) {
+function drawEye(ctx: Ctx2D, e: EyePose, color: string, alpha: number) {
   const d2r = Math.PI / 180;
   ctx.save();
   ctx.translate(e.cx, e.cy);
@@ -110,7 +110,7 @@ function drawEye(ctx: CanvasRenderingContext2D, e: EyePose, color: string, alpha
 }
 
 export interface DrawTarget {
-  ctx: CanvasRenderingContext2D;
+  ctx: Ctx2D;
   /** Canvas size in device pixels (square). */
   px: number;
   /** Half the box in outline units. */

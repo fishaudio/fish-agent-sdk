@@ -2,9 +2,9 @@ import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // WebGL is "available": the body draw succeeds without a GPU.
-vi.mock("../renderer.js", () => ({ hasWebGL: () => true, drawBody: () => true }));
+vi.mock("../renderer.js", () => ({ hasWebGL: () => true, prepareRenderer: () => Promise.resolve(true), drawBody: () => true }));
 
-const { acquireAvatarImage, avatarImageStats, clearAvatarImages, IDLE_IMAGE_LIMIT } = await import("../image.js");
+const { acquireAvatarImage, avatarImageStats, clearAvatarImages, resetAvatarImages, IDLE_IMAGE_LIMIT } = await import("../image.js");
 const { AgentAvatar } = await import("../react.js");
 
 let frames: FrameRequestCallback[] = [];
@@ -20,9 +20,11 @@ function step(n = 1) {
     for (const cb of run) cb(clock);
   }
 }
-const flush = () => act(async () => {
-  for (let i = 0; i < 5; i++) await Promise.resolve();
-});
+// The queue runs in idle slices (setTimeout here) and encodes on the main thread fallback (no Worker in jsdom).
+const flush = () =>
+  act(async () => {
+    for (let i = 0; i < 12; i++) await new Promise((r) => setTimeout(r, 20));
+  });
 
 beforeEach(() => {
   frames = [];
@@ -53,6 +55,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   clearAvatarImages();
+  resetAvatarImages();
   revoked.length = 0;
   vi.unstubAllGlobals();
   vi.restoreAllMocks();

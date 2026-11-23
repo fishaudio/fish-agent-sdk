@@ -19,8 +19,12 @@ const SCROLL_QUIET_MS = 300;
 const TICK_MS = 40;
 
 export interface Blinker {
-  /** Shut (true) or open (false) the eyes. */
-  set(shut: boolean): void;
+  /**
+   * Shut (true) or open (false) the eyes. Return false from a shut call when
+   * the shut-eye frame is not ready yet (for example, it is made lazily on
+   * the first blink): this blink is skipped and tried again shortly.
+   */
+  set(shut: boolean): boolean | void;
 }
 
 interface Entry {
@@ -125,7 +129,10 @@ function run() {
       e.next = t + rnd(300, 900);
       continue;
     }
-    e.blinker.set(true);
+    if (e.blinker.set(true) === false) {
+      e.next = t + rnd(400, 1200);
+      continue;
+    }
     e.openAt = t + BLINK_SHUT_MS;
     if (!e.second) e.again = Math.random() < DOUBLE_CHANCE;
     blinking++;

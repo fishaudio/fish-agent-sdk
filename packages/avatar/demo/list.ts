@@ -8,6 +8,8 @@ const params = new URLSearchParams(location.search);
 const rows = Number(params.get("rows") ?? 120);
 const size = Number(params.get("size") ?? 32);
 const animated = params.get("animated") === "1";
+// avatars=0: the same list with plain grey circles, as a baseline
+const withAvatars = params.get("avatars") !== "0";
 if (params.get("theme")) document.documentElement.dataset.theme = params.get("theme")!;
 document.getElementById("info")!.textContent = `${rows} rows, ${size} px ${animated ? "animated" : "still"} avatars (hover one to bring it to life)`;
 
@@ -22,7 +24,9 @@ const list = Array.from({ length: rows }, (_, i) =>
   h(
     "div",
     { className: "row", key: i },
-    h(AgentAvatar, { agentId: `agent-${i % 40}`, size, animated }),
+    withAvatars
+      ? h(AgentAvatar, { agentId: `agent-${i % 40}`, size, animated })
+      : h("span", { style: { width: size, height: size, borderRadius: "50%", background: "#ddd", flex: "none" } }),
     h(
       "div",
       { className: "text" },
@@ -32,4 +36,14 @@ const list = Array.from({ length: rows }, (_, i) =>
     h("time", null, `${(i % 12) + 1}:${String((i * 7) % 60).padStart(2, "0")} pm`),
   ),
 );
-createRoot(document.getElementById("list")!).render(list);
+const root = createRoot(document.getElementById("list")!);
+root.render(list);
+// Leave and come back, like switching pages in an app: window.remountList()
+(window as unknown as { remountList: () => Promise<void> }).remountList = () =>
+  new Promise((done) => {
+    root.render(null);
+    setTimeout(() => {
+      root.render(list);
+      done();
+    }, 100);
+  });

@@ -63,12 +63,12 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "node scripts/build-worker.mjs && tsup",
     "prepack": "node ../../scripts/assert-pnpm.mjs",
     "prepublishOnly": "node ../../scripts/assert-built.mjs",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "demo": "vite -c demo/vite.config.ts"
+    "test": "node scripts/build-worker.mjs && vitest run",
+    "typecheck": "node scripts/build-worker.mjs && tsc --noEmit",
+    "demo": "node scripts/build-worker.mjs && vite -c demo/vite.config.ts"
   },
   "peerDependencies": {
     "react": ">=18"

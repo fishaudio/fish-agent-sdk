@@ -16,8 +16,20 @@ import { mountAvatar, type AvatarHandle, type AvatarVariant } from "./avatar.js"
 import { ENLARGED_CANVAS } from "./draw.js";
 import { EMOTE_MS, type AvatarExpression, type AvatarState } from "./face.js";
 import { avatarSvg } from "./fallback.js";
+import { avatarLook } from "./rule.js";
 import { startBlinking } from "./blink.js";
-import { acquireAvatarImage, canBlink } from "./image.js";
+import { acquireAvatarImage, canBlink, peekAvatarImage, type AvatarImage } from "./image.js";
+import { watchVisible } from "./visibility.js";
+
+let emoteIds = 0;
+
+const noopSubscribe = () => () => {};
+const hasObserver = () => typeof IntersectionObserver === "function";
+/** A soft dot in the avatar's main colour, the size of its body: the cheapest stand-in. */
+function dotStyle(seed: string): CSSProperties {
+  const { palette } = avatarLook(seed);
+  return { borderRadius: "50%", background: `radial-gradient(circle at 36% 32%, ${palette[2]}, ${palette[1]} 70%)`, transform: "scale(0.82)" };
+}
 
 export type { AvatarExpression, AvatarState, AvatarVariant };
 
@@ -100,9 +112,29 @@ export const AgentAvatar = forwardRef<AgentAvatarHandle, AgentAvatarProps>(funct
   const canMove = !enlarged && !reduced && size >= 32;
   const pointer = canMove && (interactive ?? true);
 
-  // A short expression shown as an image where the avatar cannot move.
-  const [stillEmote, setStillEmote] = useState<AvatarExpression | null>(null);
-  const shownExpression = stillEmote ?? expression;
+  const root = useRef<HTMLSpanElement>(null);
+  const img = useRef<HTMLImageElement>(null);
+
+  // Images are only made for avatars on (or near) the screen.
+  // Once near, an avatar keeps its image: scrolling back and forth costs nothing more.
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    if (!root.current) return;
+    let stop: (() => void) | null = null;
+    stop = watchVisible(root.current, (visible) => {
+      if (!visible) return;
+      setNear(true);
+      stop?.();
+      stop = null;
+    });
+    return () => stop?.();
+  }, []);
+  const [imageMissing, setImageMissing] = useState(false);
+
+  // A short expression shown as an image where the avatar cannot move. Its time starts once it is on screen.
+  const [stillEmote, setStillEmote] = useState<{ expr: AvatarExpression; ms: number; id: number } | null>(null);
+  const [emoteSvg, setEmoteSvg] = useState(false);
+  const shownExpression = stillEmote?.expr ?? expression;
 
   // engaged: a hover, press or event expression is playing on the canvas
   const [engaged, setEngaged] = useState(false);
@@ -110,61 +142,115 @@ export const AgentAvatar = forwardRef<AgentAvatarHandle, AgentAvatarProps>(funct
   const live = canMove && (animated || engaged);
 
   // --- still image ---------------------------------------------------------
-  const [shown, setShown] = useState<Shown | null>(null);
-  const imageKey = useMemo(
-    () => [agentId, size, state, shownExpression ?? "", variant].join("|"),
-    [agentId, size, state, shownExpression, variant],
-  );
+  const imageKey = [agentId, size, state, shownExpression ?? "", variant].join("|");
+  // An image made earlier (say, before navigating away and back) shows on the very first render.
+  const [shown, setShown] = useState<Shown | null>(() => {
+    const url = peekAvatarImage(agentId, { size, state, expression: shownExpression, variant });
+    return url ? { key: imageKey, url } : null;
+  });
+  const wanted = near || stillEmote !== null;
   useEffect(() => {
-    const image = acquireAvatarImage(agentId, { size, state, expression: shownExpression, variant });
+    if (!wanted) return;
+    const image = acquireAvatarImage(agentId, {
+      size,
+      state,
+      expression: shownExpression,
+      variant,
+      urgent: stillEmote !== null,
+    });
     let current = true;
-    void image.ready.then(async (url) => {
-      if (!current || !url) return;
+    const show = async (url: string | null) => {
+      if (!current) return;
+      if (!url) {
+        // No WebGL: the SVG stands in for good.
+        setImageMissing(true);
+        return;
+      }
       // Decode first, so swapping images (or the canvas for an image) never flashes.
       if (typeof Image === "function") {
         const probe = new Image();
         probe.src = url;
         await probe.decode?.().catch(() => {});
       }
-      if (current) setShown({ key: imageKey, url });
-    });
+      if (current) setShown((s) => (s?.key === imageKey && s.url === url ? s : { key: imageKey, url }));
+    };
+    if (image.url) void show(image.url);
+    else void image.ready.then(show);
     return () => {
       current = false;
       // Keep the image alive until the next one replaces it on screen.
       queueMicrotask(() => image.release());
     };
-  }, [agentId, size, state, shownExpression, variant, imageKey]);
+  }, [wanted, agentId, size, state, shownExpression, variant, imageKey, stillEmote]);
   const imageReady = shown?.key === imageKey;
 
+  // Event expressions on still avatars: the time starts when the expression is actually showing. If its image
+  // is slow (over 300 ms), the SVG shows the expression meanwhile.
+  const startEmoteClock = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    if (!stillEmote) return;
+    let end: ReturnType<typeof setTimeout> | null = null;
+    const start = () => {
+      if (end) return;
+      end = setTimeout(() => {
+        setStillEmote((e) => (e?.id === stillEmote.id ? null : e));
+        setEmoteSvg(false);
+      }, stillEmote.ms);
+    };
+    startEmoteClock.current = start;
+    const fallback = setTimeout(() => {
+      if (end) return;
+      setEmoteSvg(true);
+      start();
+    }, 300);
+    return () => {
+      clearTimeout(fallback);
+      if (end) clearTimeout(end);
+      startEmoteClock.current = null;
+    };
+  }, [stillEmote]);
+  useEffect(() => {
+    if (stillEmote && imageReady) startEmoteClock.current?.();
+  }, [stillEmote, imageReady]);
+
   // --- blinks for small avatars, by swapping in the shut-eye image ----------
-  const root = useRef<HTMLSpanElement>(null);
-  const img = useRef<HTMLImageElement>(null);
   const blinks =
     animated && !reduced && !enlarged && size < 32 && canBlink({ size, state, expression: shownExpression });
   const shownUrl = imageReady ? shown!.url : null;
   useEffect(() => {
-    if (!blinks || !shownUrl) return;
-    const shut = acquireAvatarImage(agentId, { size, state, expression: shownExpression, variant, blink: true });
-    let stop: (() => void) | null = null;
+    if (!blinks || !shownUrl || !root.current) return;
+    let shut: AvatarImage | null = null;
+    let shutUrl: string | null = null;
     let current = true;
-    void shut.ready.then(async (url) => {
-      if (!current || !url || !root.current) return;
-      if (typeof Image === "function") {
-        const probe = new Image();
-        probe.src = url;
-        await probe.decode?.().catch(() => {});
-      }
-      if (!current || !root.current) return;
-      stop = startBlinking(root.current, agentId, {
-        set: (closed) => {
-          if (img.current) img.current.src = closed ? url : shownUrl;
-        },
-      });
+    const stop = startBlinking(root.current, agentId, {
+      set: (closed) => {
+        if (!closed) {
+          if (img.current) img.current.src = shownUrl;
+          return;
+        }
+        if (!shutUrl) {
+          // The shut-eye frame is made just before the first blink, not up front.
+          if (!shut) {
+            shut = acquireAvatarImage(agentId, { size, state, expression: shownExpression, variant, blink: true });
+            void shut.ready.then(async (url) => {
+              if (!current || !url) return;
+              if (typeof Image === "function") {
+                const probe = new Image();
+                probe.src = url;
+                await probe.decode?.().catch(() => {});
+              }
+              shutUrl = url;
+            });
+          }
+          return false;
+        }
+        if (img.current) img.current.src = shutUrl;
+      },
     });
     return () => {
       current = false;
-      stop?.();
-      shut.release();
+      stop();
+      shut?.release();
     };
   }, [blinks, shownUrl, agentId, size, state, shownExpression, variant]);
 
@@ -219,8 +305,8 @@ export const AgentAvatar = forwardRef<AgentAvatarHandle, AgentAvatarProps>(funct
     () => ({
       emote: (expr, ms = EMOTE_MS) => {
         if (!canMove) {
-          setStillEmote(expr);
-          setTimeout(() => setStillEmote((e) => (e === expr ? null : e)), ms);
+          setEmoteSvg(false);
+          setStillEmote({ expr, ms, id: ++emoteIds });
           return;
         }
         setSettled(false);
@@ -236,9 +322,16 @@ export const AgentAvatar = forwardRef<AgentAvatarHandle, AgentAvatarProps>(funct
 
   // --- markup --------------------------------------------------------------
   const idPrefix = useId();
+  // Server render and hydration always use the full SVG, so the markup matches. A client-side mount
+  // (opening a page in an app) shows a light dot in the avatar's colour until its image is ready, so
+  // long lists cost little to mount and scroll. The SVG also stands in where there is no WebGL, and
+  // for an event expression whose image is slow.
+  const hydrating = useSyncExternalStore(noopSubscribe, () => false, () => true);
+  const showSvg = emoteSvg || (!shown && (hydrating || imageMissing || !hasObserver()));
+  const showDot = !shown && !showSvg;
   const svg = useMemo(
-    () => (shown ? "" : avatarSvg(agentId, { size, state, expression: shownExpression, variant, idPrefix })),
-    [shown, agentId, size, state, shownExpression, variant, idPrefix],
+    () => (showSvg ? avatarSvg(agentId, { size, state, expression: shownExpression, variant, idPrefix }) : ""),
+    [showSvg, agentId, size, state, shownExpression, variant, idPrefix],
   );
   const css = enlarged ? size * ENLARGED_CANVAS : size;
   const offset = -(css - size) / 2;
@@ -271,7 +364,7 @@ export const AgentAvatar = forwardRef<AgentAvatarHandle, AgentAvatarProps>(funct
       aria-hidden={labelled ? undefined : true}
       data-agent-avatar=""
       data-state={state}
-      data-render={live ? "canvas" : shown ? "image" : "svg"}
+      data-render={live ? "canvas" : showSvg ? "svg" : showDot ? "placeholder" : "image"}
       {...rest}
       ref={root}
       onPointerEnter={(e) => {
@@ -288,7 +381,9 @@ export const AgentAvatar = forwardRef<AgentAvatarHandle, AgentAvatarProps>(funct
       }}
       style={box}
     >
-      {shown ? (
+      {showDot ? (
+        <span aria-hidden="true" style={{ ...under, ...dotStyle(agentId) }} />
+      ) : !showSvg && shown ? (
         <img ref={img} src={shown.url} alt="" draggable={false} decoding="async" style={under} />
       ) : (
         <span aria-hidden="true" style={under} dangerouslySetInnerHTML={{ __html: svg }} />

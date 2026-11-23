@@ -53,6 +53,29 @@ function eyeMarkup(e: EyePose, color: string): string {
  */
 export function avatarSvg(seed: string, options: AvatarSvgOptions = {}): string {
   const { size = 40, state = "idle", expression, variant = "slot", idPrefix } = options;
+  const id = idPrefix ? `fa-av-${idPrefix.replace(/[^A-Za-z0-9_-]/g, "_")}` : `fa-av-${avatarLook(seed).n}`;
+  // The markup only depends on the look, so it is built once and only the ids are swapped in.
+  const cacheKey = [seed, size, state, expression ?? "", variant].join("\u0000");
+  let base = svgCache.get(cacheKey);
+  if (base === undefined) {
+    base = buildSvg(seed, size, state, expression, variant);
+    svgCache.set(cacheKey, base);
+    if (svgCache.size > SVG_CACHE_LIMIT) svgCache.delete(svgCache.keys().next().value!);
+  }
+  return base.split(ID_TOKEN).join(id);
+}
+
+const ID_TOKEN = "\u0001id\u0001";
+const SVG_CACHE_LIMIT = 500;
+const svgCache = new Map<string, string>();
+
+function buildSvg(
+  seed: string,
+  size: number,
+  state: AvatarState,
+  expression: AvatarExpression | undefined,
+  variant: "slot" | "enlarged",
+): string {
   const look = avatarLook(seed);
   const shape = avatarShape(look.shape);
   const enlarged = variant === "enlarged";
@@ -67,7 +90,7 @@ export function avatarSvg(seed: string, options: AvatarSvgOptions = {}): string 
     interactive: false,
   }).step(0);
   const [edge, main, light] = look.palette;
-  const id = idPrefix ? `fa-av-${idPrefix.replace(/[^A-Za-z0-9_-]/g, "_")}` : `fa-av-${look.n}`;
+  const id = ID_TOKEN;
   const out: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-half} ${-half} ${2 * half} ${2 * half}" width="${css}" height="${css}" aria-hidden="true" focusable="false">`,
     `<defs><radialGradient id="${id}-a" cx=".32" cy=".28" r=".85"><stop offset="0" stop-color="${light}"/><stop offset=".7" stop-color="${main}"/></radialGradient>`,

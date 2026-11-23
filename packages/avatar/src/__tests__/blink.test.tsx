@@ -1,14 +1,14 @@
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../renderer.js", () => ({ hasWebGL: () => true, drawBody: () => true }));
+vi.mock("../renderer.js", () => ({ hasWebGL: () => true, prepareRenderer: () => Promise.resolve(true), drawBody: () => true }));
 
 const { AgentAvatar } = await import("../react.js");
 const { blinkStats, BLINK_SHUT_MS, MAX_BLINKING } = await import("../blink.js");
-const { clearAvatarImages } = await import("../image.js");
+const { clearAvatarImages, resetAvatarImages } = await import("../image.js");
 
 let blobs = 0;
-const observed = new Map<Element, (inView: boolean) => void>();
+const observed = new Map<Element, Array<(inView: boolean) => void>>();
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -19,7 +19,9 @@ beforeEach(() => {
     class {
       constructor(private cb: (entries: Array<{ target: Element; isIntersecting: boolean }>) => void) {}
       observe(el: Element) {
-        observed.set(el, (inView) => this.cb([{ target: el, isIntersecting: inView }]));
+        const list = observed.get(el) ?? [];
+        list.push((inView) => this.cb([{ target: el, isIntersecting: inView }]));
+        observed.set(el, list);
       }
       unobserve(el: Element) {
         observed.delete(el);
@@ -52,29 +54,39 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   clearAvatarImages();
+  resetAvatarImages();
   observed.clear();
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
+/** Lets queued images get made: idle slices and encoding run on (fake) timers. */
 const settle = () =>
   act(async () => {
-    for (let i = 0; i < 10; i++) await Promise.resolve();
+    for (let i = 0; i < 40; i++) {
+      vi.advanceTimersByTime(20);
+      for (let j = 0; j < 5; j++) await Promise.resolve();
+    }
   });
-function showAll() {
-  act(() => {
-    for (const [, cb] of observed) cb(true);
-  });
+/** Reports every observed avatar as on screen, twice: once to get its image made, once more for the blink observer that starts afterwards. */
+async function showAll() {
+  for (let round = 0; round < 2; round++) {
+    act(() => {
+      for (const [, cbs] of observed) for (const cb of cbs) cb(true);
+    });
+    await settle();
+  }
 }
 /** Runs the clock in 10 ms steps and records each avatar image's src over time. */
-function watch(container: HTMLElement, ms: number) {
+async function watch(container: HTMLElement, ms: number) {
   const seen: string[][] = [];
   const imgs = [...container.querySelectorAll("img")];
   let maxShut = 0;
   for (let t = 0; t < ms; t += 10) {
-    act(() => {
+    await act(async () => {
       vi.advanceTimersByTime(10);
+      for (let j = 0; j < 5; j++) await Promise.resolve();
     });
     seen.push(imgs.map((i) => i.getAttribute("src")!));
     maxShut = Math.max(maxShut, blinkStats().shut);
@@ -85,11 +97,10 @@ function watch(container: HTMLElement, ms: number) {
 describe("blinks on small still avatars", () => {
   it.each([16, 24])("swaps %ipx avatars to the shut-eye image and back, with no canvas", async (size) => {
     const { container } = render(<AgentAvatar agentId="blinker" size={size} animated />);
-    await settle();
-    showAll();
+    await showAll();
     const img = container.querySelector("img")!;
     const open = img.getAttribute("src");
-    const { seen } = watch(container, 9000);
+    const { seen } = await watch(container, 9000);
     const srcs = seen.map((s) => s[0]);
     const shut = srcs.filter((s) => s !== open);
     expect(shut.length).toBeGreaterThan(0);
@@ -110,22 +121,21 @@ describe("blinks on small still avatars", () => {
 
   it("does not blink with reduced motion", async () => {
     const { container } = render(<AgentAvatar agentId="still" size={16} animated reducedMotion />);
-    await settle();
-    showAll();
+    await showAll();
     const open = container.querySelector("img")!.getAttribute("src");
-    const { seen } = watch(container, 9000);
+    const { seen } = await watch(container, 9000);
     expect(seen.every((s) => s[0] === open)).toBe(true);
     expect(blinkStats().avatars).toBe(0);
   });
 
   it("does not blink while out of view", async () => {
     const { container } = render(<AgentAvatar agentId="hidden" size={16} animated />);
-    await settle();
+    await showAll();
     act(() => {
-      for (const [, cb] of observed) cb(false);
+      for (const [, cbs] of observed) for (const cb of cbs) cb(false);
     });
     const open = container.querySelector("img")!.getAttribute("src");
-    const { seen } = watch(container, 9000);
+    const { seen } = await watch(container, 9000);
     expect(seen.every((s) => s[0] === open)).toBe(true);
     expect(blinkStats().timer).toBe(false);
   });
@@ -133,10 +143,9 @@ describe("blinks on small still avatars", () => {
   it("does not blink in a background tab", async () => {
     const hidden = vi.spyOn(document, "hidden", "get").mockReturnValue(true);
     const { container } = render(<AgentAvatar agentId="tab" size={16} animated />);
-    await settle();
-    showAll();
+    await showAll();
     const open = container.querySelector("img")!.getAttribute("src");
-    const { seen } = watch(container, 9000);
+    const { seen } = await watch(container, 9000);
     expect(seen.every((s) => s[0] === open)).toBe(true);
     hidden.mockRestore();
   });
@@ -149,8 +158,7 @@ describe("blinks on small still avatars", () => {
         <AgentAvatar agentId="c" size={16} animated expression="happy" />
       </div>,
     );
-    await settle();
-    showAll();
+    await showAll();
     expect(blinkStats().avatars).toBe(0);
     expect(container.querySelectorAll("canvas")).toHaveLength(0);
   });
@@ -163,10 +171,9 @@ describe("blinks on small still avatars", () => {
         ))}
       </div>,
     );
-    await settle();
-    showAll();
+    await showAll();
     expect(blinkStats().avatars).toBe(60);
-    const { seen, maxShut } = watch(container, 12000);
+    const { seen, maxShut } = await watch(container, 12000);
     expect(maxShut).toBeLessThanOrEqual(MAX_BLINKING);
     const blinked = new Set<number>();
     for (const s of seen) s.forEach((src, i) => src !== seen[0]![i] && blinked.add(i));
