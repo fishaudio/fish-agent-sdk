@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent avatar demo</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        --bg: #faf9f7;
+        --card: #ffffff;
+        --line: #e7e5e1;
+        --text: #1c1b1a;
+        --muted: #78716c;
+        --chip: #f2f0ec;
+        --accent: #1c1b1a;
+        --accent-text: #ffffff;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #121110; --card: #1b1a19; --line: #2e2c2a; --text: #f3f1ee; --muted: #a29d97; --chip: #262422;
+          --accent: #f3f1ee; --accent-text: #121110; color-scheme: dark;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #121110; --card: #1b1a19; --line: #2e2c2a; --text: #f3f1ee; --muted: #a29d97; --chip: #262422;
+        --accent: #f3f1ee; --accent-text: #121110; color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--text); background: var(--bg); }
+      main { max-width: 1120px; margin: 0 auto; padding: 32px 24px 64px; }
+      header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+      h1 { margin: 0; font-size: 22px; font-weight: 600; }
+      h1 + p { margin: 4px 0 0; color: var(--muted); }
+      h2 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+      h2 + p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+      section { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px; margin-bottom: 12px; }
+      .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .seg button, .chip { font: inherit; font-size: 13px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); cursor: pointer; }
+      .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+      input { font: inherit; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); width: 220px; }
+      .hero { display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: center; }
+      .stage { width: 160px; height: 160px; display: grid; place-items: center; background: var(--chip); border-radius: 24px; }
+      .controls { display: grid; gap: 10px; min-width: 0; }
+      .label { color: var(--muted); font-size: 12px; min-width: 72px; }
+      .cells { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; }
+      .cell { display: grid; justify-items: center; gap: 8px; color: var(--muted); font-size: 12px; text-align: center; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 16px 8px; }
+      table { border-collapse: collapse; width: 100%; font-size: 13px; }
+      th, td { text-align: left; padding: 8px 10px; border-top: 1px solid var(--line); vertical-align: middle; }
+      th { color: var(--muted); font-weight: 500; border-top: 0; }
+      .scroll { height: 180px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; }
+      .scroll .item { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+      .menu { width: 220px; border: 1px solid var(--line); border-radius: 16px; padding: 6px; background: var(--card); box-shadow: 0 8px 24px rgb(0 0 0 / 0.08); }
+      .menu .item { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; }
+      .menu .item:hover { background: var(--chip); }
+      .slotbox { outline: 1px dashed var(--muted); outline-offset: 0; }
+      #seq-time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; }
+      .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .compare > div { min-width: 0; }
+      @media (max-width: 640px) {
+        main { padding: 20px 16px 48px; }
+        .hero { grid-template-columns: 1fr; justify-items: start; }
+        .compare { grid-template-columns: 1fr; }
+        .wide { overflow-x: auto; }
+        th:nth-child(4), td:nth-child(4) { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>@fishaudio/agent-avatar</h1>
+          <p>One stable face per seed: 18 outlines × 13 colours, a flowing painted body and white eyes. <a href="./list.html" style="color: inherit">Long list (120 rows) →</a></p>
+        </div>
+        <div class="row">
+          <span class="label">Theme</span>
+          <div class="seg row" id="theme">
+            <button data-v="light" aria-pressed="false">Light</button>
+            <button data-v="dark" aria-pressed="false">Dark</button>
+          </div>
+        </div>
+      </header>
+
+      <section>
+        <div class="hero">
+          <div class="stage"><canvas id="hero"></canvas></div>
+          <div class="controls">
+            <div class="row"><span class="label">Seed</span><input id="seed" value="agent-1" aria-label="Seed" /></div>
+            <div class="row"><span class="label">State</span><div class="seg row" id="state"></div></div>
+            <div class="row"><span class="label">Emote</span><div class="row" id="emote"></div></div>
+            <div class="row">
+              <span class="label">Sequence</span>
+              <button class="chip" id="seq">Play connecting → listening → speaking → ended</button>
+              <span id="seq-time"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Sizes</h2>
+        <p>The same seed at every size. Small avatars keep their outline and larger eyes; texture thins out below 96 px.</p>
+        <div class="cells" id="sizes"></div>
+        <div class="wide" style="margin-top: 16px">
+          <table>
+            <thead><tr><th>Size</th><th>Body</th><th>Eyes</th><th>Pointer</th></tr></thead>
+            <tbody>
+              <tr><td>16–24</td><td>Still frame</td><td>Blink</td><td>None</td></tr>
+              <tr><td>32–40</td><td>Still frame</td><td>Blink, slow look-around</td><td>Looks at the pointer, press to 95%</td></tr>
+              <tr><td>48–63</td><td>Flowing, breathing</td><td>Blink, look-around</td><td>Same</td></tr>
+              <tr><td>64+</td><td>Flowing, breathing, small bounces, speaking squash</td><td>All, plus micro-saccades</td><td>Same</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2>Outlines and colours</h2>
+        <p>18 full, rounded outlines of equal area and 13 restrained colours, picked by the seed's hash. Hover one.</p>
+        <div class="grid" id="shapes"></div>
+      </section>
+
+      <section>
+        <h2>Call states</h2>
+        <p>Each state has its own expression. Connecting folds into three bars; error fades the body 42%.</p>
+        <div class="cells" id="states"></div>
+      </section>
+
+      <section>
+        <h2>Expressions</h2>
+        <p>Product expressions. Click one to play it as an event: it returns to the state after about 1.3 s.</p>
+        <div class="cells" id="expressions"></div>
+      </section>
+
+      <section>
+        <h2>Reduced motion</h2>
+        <p>With reduced motion the state stays readable, but nothing moves: no flow, blink, breathing or bars.</p>
+        <div class="compare">
+          <div><div class="label" style="margin-bottom: 8px">Motion</div><div class="cells" id="motion-on"></div></div>
+          <div><div class="label" style="margin-bottom: 8px">Reduced motion</div><div class="cells" id="motion-off"></div></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>In context</h2>
+        <p>A still list (hover looks at the pointer), a clipped scroll area, and the enlarged variant used in menus: 1.25× the slot, body about 78%.</p>
+        <div class="compare">
+          <div class="scroll" id="list"></div>
+          <div class="row" style="align-items: flex-start; gap: 24px">
+            <div class="menu" id="menu"></div>
+            <div class="cells">
+              <div class="cell"><span class="slotbox" id="slot-normal"></span>slot</div>
+              <div class="cell"><span class="slotbox" id="slot-enlarged"></span>enlarged</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
