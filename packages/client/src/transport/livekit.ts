@@ -14,6 +14,7 @@ import {
   AGENT_EVENT_TOPIC,
   AGENT_READY_ATTRIBUTE,
   AGENT_STATE_ATTRIBUTE,
+  CLIENT_AUDIO_INPUT_ATTRIBUTE,
   CLIENT_AUDIO_READY_ATTRIBUTE,
   CLIENT_AUDIO_READY_PENDING,
   CLIENT_EVENT_TOPIC,
@@ -21,6 +22,7 @@ import {
   type ClientSessionMessage,
   type SessionToken,
 } from "@fishaudio/agent-protocol";
+import { readClientAudioInputInfo } from "../audio/inputInfo.js";
 import { FishAgentError } from "../errors.js";
 import type { Transport, TransportCallbacks, TransportConnectOptions } from "./types.js";
 
@@ -49,6 +51,8 @@ export class LiveKitTransport implements Transport {
   private pendingMicTrack?: Promise<LocalAudioTrack>;
   /** The epoch-ms value published as `fish.client.audio_ready`, kept to republish after a reconnect. */
   private audioReadyStamp?: string;
+  /** Serialized `ClientAudioInputInfo` published as `fish.client.audio_input`, kept for reconnects. */
+  private audioInputJson?: string;
 
   prepareMicrophone(options: { inputDeviceId?: string }): void {
     const pending = captureMicrophone(options.inputDeviceId);
@@ -61,6 +65,7 @@ export class LiveKitTransport implements Transport {
   async connect(sessionToken: SessionToken, options: TransportConnectOptions): Promise<void> {
     this.callbacks = options.callbacks;
     this.audioReadyStamp = undefined;
+    this.audioInputJson = undefined;
     const room = new Room({
       audioCaptureDefaults: {
         deviceId: options.inputDeviceId,
@@ -153,6 +158,9 @@ export class LiveKitTransport implements Transport {
       // A full reconnect recreates our participant without the attributes we
       // set on it, so the handshake value goes out again.
       this.publishAudioReady(room, this.audioReadyStamp ?? CLIENT_AUDIO_READY_PENDING);
+      if (this.audioInputJson !== undefined) {
+        this.publishAudioInputAttribute(room, this.audioInputJson);
+      }
       // A full reconnect replays the roster from the join response before this
       // event; an agent still missing here hung up while we were away.
       if (room.remoteParticipants.size === 0) {
@@ -220,6 +228,7 @@ export class LiveKitTransport implements Transport {
     if (micTrack) {
       await room.localParticipant.publishTrack(micTrack);
       this.pendingMicTrack = undefined;
+      this.publishAudioInput(room, micTrack.mediaStreamTrack);
       this.publishInputStream();
     }
   }
@@ -284,6 +293,31 @@ export class LiveKitTransport implements Transport {
     );
   }
 
+  private publishAudioInput(room: Room, mediaStreamTrack?: MediaStreamTrack): void {
+    const info = readClientAudioInputInfo(mediaStreamTrack);
+    if (!info) {
+      return;
+    }
+    const json = JSON.stringify(info);
+    if (json === this.audioInputJson) {
+      return;
+    }
+    this.audioInputJson = json;
+    this.publishAudioInputAttribute(room, json);
+  }
+
+  private publishAudioInputAttribute(room: Room, value: string): void {
+    let result: Promise<void>;
+    try {
+      result = room.localParticipant.setAttributes({ [CLIENT_AUDIO_INPUT_ATTRIBUTE]: value });
+    } catch (error) {
+      result = Promise.reject(error);
+    }
+    void result.catch((error: unknown) => {
+      console.debug("[fish-agent] audio input report rejected", error);
+    });
+  }
+
   private handleAgentLeft(room: Room): void {
     this.callbacks?.onConnectionState("disconnected", "AGENT_LEFT");
     void room.disconnect();
@@ -299,6 +333,7 @@ export class LiveKitTransport implements Transport {
     this.room = undefined;
     this.callbacks = undefined;
     this.audioReadyStamp = undefined;
+    this.audioInputJson = undefined;
     await room?.disconnect();
   }
 
@@ -370,6 +405,7 @@ export class LiveKitTransport implements Transport {
       }
       const mediaStreamTrack = track?.mediaStreamTrack;
       if (mediaStreamTrack) {
+        this.publishAudioInput(room, mediaStreamTrack);
         this.callbacks?.onInputStream(new MediaStream([mediaStreamTrack]));
       }
     }

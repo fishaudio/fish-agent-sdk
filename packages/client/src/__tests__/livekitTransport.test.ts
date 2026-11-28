@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ConnectionState, RoomEvent } from "livekit-client";
 import {
   AGENT_READY_ATTRIBUTE,
+  CLIENT_AUDIO_INPUT_ATTRIBUTE,
   CLIENT_AUDIO_READY_ATTRIBUTE,
   CLIENT_AUDIO_READY_PENDING,
   CLIENT_EVENT_TOPIC,
@@ -584,5 +585,48 @@ describe("LiveKitTransport agent presence", () => {
     await flush();
     expect(agentReady()).toBe(1);
     expect(states.map((entry) => entry.state)).toEqual(["reconnecting", "connected"]);
+  });
+});
+
+describe("LiveKitTransport audio input telemetry", () => {
+  it("publishes sanitized microphone metadata after publishing the mic track and republishes after reconnect", async () => {
+    createLocalAudioTrack.mockResolvedValueOnce({
+      stop: () => {},
+      on: () => {},
+      mediaStreamTrack: {
+        label: "Default - MacBook Pro Microphone",
+        getSettings: () => ({
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+          channelCount: 1,
+        }),
+      } as unknown as undefined,
+    });
+    const { room } = await connectTransport({ microphone: true });
+    await flush();
+
+    const expected = JSON.stringify({
+      micClass: "builtin",
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+      sampleRate: 48000,
+      channelCount: 1,
+    });
+    expect(room.localParticipant.attributes[CLIENT_AUDIO_INPUT_ATTRIBUTE]).toBe(expected);
+
+    emitFullReconnectStart(room);
+    await flush();
+    room.remoteParticipants.set("agent", {});
+    room.state = ConnectionState.Connected;
+    room.emit(RoomEvent.Reconnected);
+    await flush();
+
+    const inputUpdates = room.localParticipant.attributeUpdates
+      .map((update) => update[CLIENT_AUDIO_INPUT_ATTRIBUTE])
+      .filter((value): value is string => value !== undefined);
+    expect(inputUpdates).toEqual([expected, expected]);
   });
 });

@@ -47,6 +47,40 @@ export const CLIENT_AUDIO_READY_ATTRIBUTE = "fish.client.audio_ready";
 export const CLIENT_AUDIO_READY_PENDING = "pending";
 
 /**
+ * Participant attribute the client sets with sanitized microphone metadata
+ * (device class and active capture settings) as a compact JSON object matching
+ * `ClientAudioInputInfo`. Never carries raw device labels. Updated when the
+ * microphone track is published, switched, or restarted, and republished after
+ * a full reconnect.
+ */
+export const CLIENT_AUDIO_INPUT_ATTRIBUTE = "fish.client.audio_input";
+
+/** Coarse microphone category derived locally from the capture track label. */
+export const CLIENT_MICROPHONE_CLASSES = [
+  "headset",
+  "bluetooth",
+  "builtin",
+  "webcam",
+  "speakerphone",
+  "external",
+  "virtual",
+  "unknown",
+] as const;
+
+export type ClientMicrophoneClass = (typeof CLIENT_MICROPHONE_CLASSES)[number];
+
+/** Sanitized microphone capture metadata carried by `CLIENT_AUDIO_INPUT_ATTRIBUTE`. */
+export interface ClientAudioInputInfo {
+  micClass: ClientMicrophoneClass;
+  echoCancellation?: boolean;
+  noiseSuppression?: boolean;
+  autoGainControl?: boolean;
+  voiceIsolation?: boolean;
+  sampleRate?: number;
+  channelCount?: number;
+}
+
+/**
  * Where a tool call is executed; `background` is a call the agent delegated to a
  * background task, `unknown` a model call the runtime could not resolve (still
  * reported, as a failure).
