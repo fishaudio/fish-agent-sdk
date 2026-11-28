@@ -8,7 +8,6 @@ describe("classifyMicrophoneLabel", () => {
     expect(classifyMicrophoneLabel("Microphone Array (Intel Smart Sound Technology)")).toBe("builtin");
     expect(classifyMicrophoneLabel("Microphone (Realtek(R) Audio)")).toBe("builtin");
     expect(classifyMicrophoneLabel("iPhone Microphone")).toBe("builtin");
-    expect(classifyMicrophoneLabel("内置麦克风")).toBe("builtin");
   });
 
   it("classifies Bluetooth headsets separately from wired headsets", () => {

@@ -41,7 +41,7 @@ const LABEL_RULES: readonly LabelRule[] = [
   {
     micClass: "builtin",
     pattern:
-      /\b(macbook|imac|mac mini|built-?in|internal|integrated|microphone array|mic array|realtek|intel smart sound|iphone|ipad)\b|内置|内蔵|micro int[ée]gr[ée]/i,
+      /\b(macbook|imac|mac mini|built-?in|internal|integrated|microphone array|mic array|realtek|intel smart sound|iphone|ipad)\b/i,
   },
   {
     micClass: "external",
